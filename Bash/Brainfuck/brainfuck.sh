@@ -21,7 +21,5 @@ func=$(
         esac
     done | sed 's/^/ptr=0; /g'
 )
-stty=`stty -g`
-stty -echo -icanon
+stty -echo -icanon 2>/dev/null
 eval $func
-stty $stty
