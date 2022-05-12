@@ -12,4 +12,4 @@ insomnia (-s | -d) [-t TIME]
 
 `-s`: Your screen will turn off as usual, but your system won't sleep.
 
-`-t`: Program will run for `TIME` milliseconds, you can press ESC any time to stop it. If don't use this argument, it will keep running until you press ESC.
+`-t`: Program will run for `TIME` milliseconds, you can press <kbd>Esc</kbd> any time to stop it. If don't use this argument, it will keep running until you press <kbd>Esc</kbd>.
