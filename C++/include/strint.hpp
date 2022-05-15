@@ -1,4 +1,5 @@
 #pragma once
+#include <stdint.h>
 class StrInt {
 	size_t len;
 	int8_t *abs;
@@ -14,16 +15,27 @@ public:
 		for (size_t i = 0; i <= rval.len; i++)
 			abs[i] = rval.abs[i];
 	}
-	~StrInt() {
-		delete[] abs;
+	StrInt(StrInt &&rval) : len(-1), abs(nullptr) {
+		std::swap(len, rval.len);
+		std::swap(abs, rval.abs);
 	}
 	StrInt &operator=(StrInt const &rval) {
-		delete[] abs;
-		len = rval.len;
-		abs = new int8_t[rval.len + 1];
-		for (size_t i = 0; i <= rval.len; i++)
-			abs[i] = rval.abs[i];
+		if (&rval != this) {
+			delete[] abs;
+			len = rval.len;
+			abs = new int8_t[rval.len + 1];
+			for (size_t i = 0; i <= rval.len; i++)
+				abs[i] = rval.abs[i];
+		}
 		return *this;
+	}
+	StrInt &operator=(StrInt &&rval) {
+		std::swap(len, rval.len);
+		std::swap(abs, rval.abs);
+		return *this;
+	}
+	~StrInt() {
+		delete[] abs;
 	}
 	friend StrInt operator+(StrInt const &, StrInt const &);
 	friend StrInt operator-(StrInt const &, StrInt const &);
@@ -193,4 +205,19 @@ bool operator==(StrInt const &lhs, StrInt const &rhs) {
 		if (lhs.get(i) != rhs.get(i))
 			return false;
 	return true;
+}
+StrInt &operator+=(StrInt &lhs, StrInt const &rhs) {
+	return lhs = lhs + rhs;
+}
+StrInt &operator-=(StrInt &lhs, StrInt const &rhs) {
+	return lhs = lhs - rhs;
+}
+StrInt &operator*=(StrInt &lhs, StrInt const &rhs) {
+	return lhs = lhs * rhs;
+}
+StrInt &operator/=(StrInt &lhs, StrInt const &rhs) {
+	return lhs = lhs / rhs;
+}
+StrInt &operator%=(StrInt &lhs, StrInt const &rhs) {
+	return lhs = lhs % rhs;
 }
