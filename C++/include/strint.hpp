@@ -3,14 +3,22 @@
 class StrInt {
 	size_t len;
 	int8_t *abs;
+	size_t *ctr;
+	auto const &get(size_t const &i) const {
+		return abs[i < len ? i : len];
+	}
+	/*
 	StrInt(size_t const &rlen, int8_t *const &rabs) : len(rlen), abs(rabs) {
 		while (len && abs[len - 1] == abs[len])
 			len--;
 	}
-	auto const &get(size_t const &i) const {
-		return abs[i < len ? i : len];
+	*/
+	StrInt(size_t const &rlen, int8_t *const &rabs) : len(rlen), abs(rabs), ctr(new size_t(1)) {
+		while (len && abs[len - 1] == abs[len])
+			len--;
 	}
 public:
+	/*
 	StrInt(StrInt const &rval) : len(rval.len), abs(new int8_t[rval.len + 1]) {
 		for (size_t i = 0; i <= rval.len; i++)
 			abs[i] = rval.abs[i];
@@ -36,6 +44,27 @@ public:
 	}
 	~StrInt() {
 		delete[] abs;
+	}
+	*/
+	StrInt(StrInt const &rval) : len(rval.len), abs(aval.abs), ctr(rval.ctr) {
+		++*ctr;
+	}
+	StrInt &operator=(StrInt const &rval) {
+		++*rval.ctr;
+		if (--*ctr == 0) {
+			delete[] abs;
+			delete ctr;
+		}
+		len = rval.len;
+		abs = rval.abs;
+		ctr = rval.ctr;
+		return *this;
+	}
+	~StrInt() {
+		if (--*ctr == 0) {
+			delete[] abs;
+			delete ctr;
+		}
 	}
 	friend StrInt operator+(StrInt const &, StrInt const &);
 	friend StrInt operator-(StrInt const &, StrInt const &);
