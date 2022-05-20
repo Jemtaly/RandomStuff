@@ -46,7 +46,7 @@ public:
 		delete[] abs;
 	}
 	*/
-	StrInt(StrInt const &rval) : len(rval.len), abs(aval.abs), ctr(rval.ctr) {
+	StrInt(StrInt const &rval) : len(rval.len), abs(rval.abs), ctr(rval.ctr) {
 		++*ctr;
 	}
 	StrInt &operator=(StrInt const &rval) {
@@ -66,18 +66,18 @@ public:
 			delete ctr;
 		}
 	}
-	friend StrInt operator+(StrInt const &, StrInt const &);
-	friend StrInt operator-(StrInt const &, StrInt const &);
-	friend StrInt operator*(StrInt const &, StrInt const &);
-	friend StrInt divmod(StrInt const &, StrInt const &, bool const &);
-	friend StrInt operator/(StrInt const &, StrInt const &);
-	friend StrInt operator%(StrInt const &, StrInt const &);
-	friend bool operator>(StrInt const &, StrInt const &);
-	friend bool operator<(StrInt const &, StrInt const &);
-	friend bool operator>=(StrInt const &, StrInt const &);
-	friend bool operator<=(StrInt const &, StrInt const &);
-	friend bool operator==(StrInt const &, StrInt const &);
-	friend bool operator!=(StrInt const &, StrInt const &);
+	friend inline StrInt operator+(StrInt const &, StrInt const &);
+	friend inline StrInt operator-(StrInt const &, StrInt const &);
+	friend inline StrInt operator*(StrInt const &, StrInt const &);
+	friend inline StrInt divmod(StrInt const &, StrInt const &, bool const &);
+	friend inline StrInt operator/(StrInt const &, StrInt const &);
+	friend inline StrInt operator%(StrInt const &, StrInt const &);
+	friend inline bool operator>(StrInt const &, StrInt const &);
+	friend inline bool operator<(StrInt const &, StrInt const &);
+	friend inline bool operator>=(StrInt const &, StrInt const &);
+	friend inline bool operator<=(StrInt const &, StrInt const &);
+	friend inline bool operator==(StrInt const &, StrInt const &);
+	friend inline bool operator!=(StrInt const &, StrInt const &);
 };
 StrInt operator+(StrInt const &lhs, StrInt const &rhs) {
 	size_t len = (lhs.len > rhs.len ? lhs.len : rhs.len) + 1;
@@ -235,18 +235,18 @@ bool operator==(StrInt const &lhs, StrInt const &rhs) {
 			return false;
 	return true;
 }
-StrInt &operator+=(StrInt &lhs, StrInt const &rhs) {
+inline StrInt &operator+=(StrInt &lhs, StrInt const &rhs) {
 	return lhs = lhs + rhs;
 }
-StrInt &operator-=(StrInt &lhs, StrInt const &rhs) {
+inline StrInt &operator-=(StrInt &lhs, StrInt const &rhs) {
 	return lhs = lhs - rhs;
 }
-StrInt &operator*=(StrInt &lhs, StrInt const &rhs) {
+inline StrInt &operator*=(StrInt &lhs, StrInt const &rhs) {
 	return lhs = lhs * rhs;
 }
-StrInt &operator/=(StrInt &lhs, StrInt const &rhs) {
+inline StrInt &operator/=(StrInt &lhs, StrInt const &rhs) {
 	return lhs = lhs / rhs;
 }
-StrInt &operator%=(StrInt &lhs, StrInt const &rhs) {
+inline StrInt &operator%=(StrInt &lhs, StrInt const &rhs) {
 	return lhs = lhs % rhs;
 }

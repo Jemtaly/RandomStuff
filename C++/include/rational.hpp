@@ -2,11 +2,6 @@
 #include <algorithm>
 #include <string>
 #include <vector>
-char const str36[36] = {
-	'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B',
-	'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
-	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-};
 class Rational {
 private:
 	int n;
@@ -18,6 +13,11 @@ private:
 		if (t)
 			n /= t, d /= t;
 	}
+	static constexpr char str36[36] = {
+		'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B',
+		'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+		'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+	};
 public:
 	Rational &set(int const &numerator = 0, int const &denominator = 1) {
 		if (d < 0) {
@@ -54,43 +54,45 @@ public:
 	operator double() const {
 		return value();
 	}
-	std::string decimal(char const &base = 10) const;
-	friend Rational operator+(Rational const &);
-	friend Rational operator-(Rational const &);
-	friend Rational operator~(Rational const &);
-	friend Rational operator+(Rational const &, Rational const &);
-	friend Rational operator+(Rational const &, int const &);
-	friend Rational operator+(int const &, Rational const &);
-	friend Rational operator-(Rational const &, Rational const &);
-	friend Rational operator-(Rational const &, int const &);
-	friend Rational operator-(int const &, Rational const &);
-	friend Rational operator*(Rational const &, Rational const &);
-	friend Rational operator*(Rational const &, int const &);
-	friend Rational operator*(int const &, Rational const &);
-	friend Rational operator/(Rational const &, Rational const &);
-	friend Rational operator/(Rational const &, int const &);
-	friend Rational operator/(int const &, Rational const &);
-	friend Rational operator%(Rational const &, Rational const &);
-	friend Rational operator%(Rational const &, int const &);
-	friend Rational operator%(int const &, Rational const &);
-	friend bool operator==(Rational const &, Rational const &);
-	friend bool operator==(Rational const &, int const &);
-	friend bool operator==(int const &, Rational const &);
-	friend bool operator>=(Rational const &, Rational const &);
-	friend bool operator>=(Rational const &, int const &);
-	friend bool operator>=(int const &, Rational const &);
-	friend bool operator<=(Rational const &, Rational const &);
-	friend bool operator<=(Rational const &, int const &);
-	friend bool operator<=(int const &, Rational const &);
-	friend bool operator!=(Rational const &, Rational const &);
-	friend bool operator!=(Rational const &, int const &);
-	friend bool operator!=(int const &, Rational const &);
-	friend bool operator>(Rational const &, Rational const &);
-	friend bool operator>(Rational const &, int const &);
-	friend bool operator>(int const &, Rational const &);
-	friend bool operator<(Rational const &, Rational const &);
-	friend bool operator<(Rational const &, int const &);
-	friend bool operator<(int const &, Rational const &);
+	inline std::string decimal(char const &base = 10) const;
+	static inline Rational from_dec(std::string const &str);
+	static inline Rational from_fra(std::string const &str);
+	friend inline Rational operator+(Rational const &);
+	friend inline Rational operator-(Rational const &);
+	friend inline Rational operator~(Rational const &);
+	friend inline Rational operator+(Rational const &, Rational const &);
+	friend inline Rational operator+(Rational const &, int const &);
+	friend inline Rational operator+(int const &, Rational const &);
+	friend inline Rational operator-(Rational const &, Rational const &);
+	friend inline Rational operator-(Rational const &, int const &);
+	friend inline Rational operator-(int const &, Rational const &);
+	friend inline Rational operator*(Rational const &, Rational const &);
+	friend inline Rational operator*(Rational const &, int const &);
+	friend inline Rational operator*(int const &, Rational const &);
+	friend inline Rational operator/(Rational const &, Rational const &);
+	friend inline Rational operator/(Rational const &, int const &);
+	friend inline Rational operator/(int const &, Rational const &);
+	friend inline Rational operator%(Rational const &, Rational const &);
+	friend inline Rational operator%(Rational const &, int const &);
+	friend inline Rational operator%(int const &, Rational const &);
+	friend inline bool operator==(Rational const &, Rational const &);
+	friend inline bool operator==(Rational const &, int const &);
+	friend inline bool operator==(int const &, Rational const &);
+	friend inline bool operator>=(Rational const &, Rational const &);
+	friend inline bool operator>=(Rational const &, int const &);
+	friend inline bool operator>=(int const &, Rational const &);
+	friend inline bool operator<=(Rational const &, Rational const &);
+	friend inline bool operator<=(Rational const &, int const &);
+	friend inline bool operator<=(int const &, Rational const &);
+	friend inline bool operator!=(Rational const &, Rational const &);
+	friend inline bool operator!=(Rational const &, int const &);
+	friend inline bool operator!=(int const &, Rational const &);
+	friend inline bool operator>(Rational const &, Rational const &);
+	friend inline bool operator>(Rational const &, int const &);
+	friend inline bool operator>(int const &, Rational const &);
+	friend inline bool operator<(Rational const &, Rational const &);
+	friend inline bool operator<(Rational const &, int const &);
+	friend inline bool operator<(int const &, Rational const &);
 };
 Rational operator+(Rational const &r) {
 	return Rational(r.n, r.d);
@@ -222,8 +224,7 @@ Rational &operator%=(Rational &r, T const &x) {
 }
 std::string Rational::decimal(char const &base) const {
 	if (d == 0)
-		return n == 0 ? "NaN" : n > 0 ? "Inf"
-									  : "-Inf";
+		return n == 0 ? "NaN" : n > 0 ? "Inf" : "-Inf";
 	std::string result;
 	int integer, decimal;
 	if (n < 0) {
@@ -261,7 +262,7 @@ std::string Rational::decimal(char const &base) const {
 	}
 	return result;
 }
-Rational frac2r(std::string const &str) {
+Rational Rational::from_fra(std::string const &str) {
 	int i;
 	bool neg;
 	if (str[0] == '-')
@@ -285,7 +286,7 @@ Rational frac2r(std::string const &str) {
 		d = 1;
 	return Rational(neg ? -n : n, d);
 }
-Rational deci2r(std::string const &str) {
+Rational Rational::from_dec(std::string const &str) {
 	int i;
 	bool neg;
 	if (str[0] == '-')
@@ -316,15 +317,4 @@ Rational deci2r(std::string const &str) {
 			n = 2;
 	}
 	return Rational(neg ? (integer * m + a) * (1 - n) - b : (integer * m + a) * (n - 1) + b, (n - 1) * m);
-}
-std::istream &operator>>(std::istream &input, Rational &r) {
-	std::string str;
-	input >> str;
-	for (char c : str)
-		if (c == '.') {
-			r = deci2r(str);
-			return input;
-		}
-	r = frac2r(str);
-	return input;
 }
