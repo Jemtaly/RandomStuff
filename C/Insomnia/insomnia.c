@@ -7,34 +7,34 @@
 BOOL timeout(DWORD dwTime) {
 	fprintf(stderr, "Waiting for %lu milliseconds, press Esc to continue, or press Enter to check the remaining time ...", dwTime);
 	HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
-	for (DWORD dwEnd = GetTickCount() + dwTime;;)
+	for (DWORD dwEnd = GetTickCount() + dwTime;;) {
 		if (WaitForSingleObject(hStdin, dwEnd - GetTickCount()) != WAIT_OBJECT_0) {
 			fprintf(stderr, "\n");
 			return TRUE;
-		} else {
-			INPUT_RECORD irpRead[256];
-			DWORD dwRead;
-			ReadConsoleInput(hStdin, irpRead, 256, &dwRead);
-			for (DWORD i = 0; i < dwRead; i++)
-				if (irpRead[i].EventType == KEY_EVENT && irpRead[i].Event.KeyEvent.bKeyDown)
-					switch (irpRead[i].Event.KeyEvent.uChar.AsciiChar) {
-					case 27:
-						fprintf(stderr, "\n");
-						return FALSE;
-					case 13:
-						fprintf(stderr, "\nWaiting for %lu milliseconds ...", dwEnd - GetTickCount());
-					}
 		}
+		INPUT_RECORD irRead;
+		DWORD dwRead;
+		ReadConsoleInput(hStdin, &irRead, 1, &dwRead);
+		if (irRead.EventType == KEY_EVENT && irRead.Event.KeyEvent.bKeyDown)
+			switch (irRead.Event.KeyEvent.uChar.AsciiChar) {
+			case 27:
+				fprintf(stderr, "\n");
+				return FALSE;
+			case 13:
+				fprintf(stderr, "\nWaiting for %lu milliseconds ...", dwEnd - GetTickCount());
+			}
+	}
 }
 void pause() {
 	fprintf(stderr, "Press Esc to continue ...");
 	HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
 	for (;;) {
-		INPUT_RECORD irpRead[256];
+		INPUT_RECORD irRead;
 		DWORD dwRead;
-		ReadConsoleInput(hStdin, irpRead, 256, &dwRead);
-		for (DWORD i = 0; i < dwRead; i++)
-			if (irpRead[i].EventType == KEY_EVENT && irpRead[i].Event.KeyEvent.bKeyDown && irpRead[i].Event.KeyEvent.uChar.AsciiChar == 27) {
+		ReadConsoleInput(hStdin, &irRead, 1, &dwRead);
+		if (irRead.EventType == KEY_EVENT && irRead.Event.KeyEvent.bKeyDown)
+			switch (irRead.Event.KeyEvent.uChar.AsciiChar) {
+			case 27:
 				fprintf(stderr, "\n");
 				return;
 			}
