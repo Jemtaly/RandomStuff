@@ -54,7 +54,7 @@ public:
 	operator double() const {
 		return value();
 	}
-	inline std::string decimal(char const &base = 10) const;
+	inline std::string decimal(uint8_t const &base = 10) const;
 	static inline Rational from_dec(std::string const &str);
 	static inline Rational from_fra(std::string const &str);
 	friend inline Rational operator+(Rational const &);
@@ -222,7 +222,7 @@ template <typename T>
 Rational &operator%=(Rational &r, T const &x) {
 	return r = r % x;
 }
-std::string Rational::decimal(char const &base) const {
+std::string Rational::decimal(uint8_t const &base) const {
 	if (d == 0)
 		return n == 0 ? "NaN" : n > 0 ? "Inf" : "-Inf";
 	std::string result;
@@ -234,13 +234,10 @@ std::string Rational::decimal(char const &base) const {
 		integer = n / d;
 		decimal = n % d;
 	}
-	if (integer == 0)
-		result += '0';
-	else
-		do {
-			result += str36[integer % base];
-			integer /= base;
-		} while (integer);
+	do {
+		result += str36[integer % base];
+		integer /= base;
+	} while (integer);
 	if (n < 0)
 		result += '-';
 	reverse(result.begin(), result.end());
