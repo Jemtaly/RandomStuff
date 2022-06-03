@@ -107,7 +107,7 @@ module sm4;
     32'ha0a7aeb5, 32'hbcc3cad1, 32'hd8dfe6ed, 32'hf4fb0209,
     32'h10171e25, 32'h2c333a41, 32'h484f565d, 32'h646b7279
   };
-  wire [7:0] mk [0:15], src [0:15], dst [0:15], pla[0:15];
+  wire [7:0] mk [0:15], src [0:15], dst [0:15], pla [0:15];
   wire [31:0] rk [0:31];
   assign mk = {8'h01, 8'h23, 8'h45, 8'h67, 8'h89, 8'hab, 8'hcd, 8'hef, 8'hfe, 8'hdc, 8'hba, 8'h98, 8'h76, 8'h54, 8'h32, 8'h10};
   assign src = {8'h01, 8'h23, 8'h45, 8'h67, 8'h89, 8'hab, 8'hcd, 8'hef, 8'hfe, 8'hdc, 8'hba, 8'h98, 8'h76, 8'h54, 8'h32, 8'h10};
