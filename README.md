@@ -10,7 +10,7 @@ Some random stuff.
 
 **[IMFTP](/Python/IMFTP):** A file transfer tool and an instant messager.
 
-**[TurtleBezier](/Python/TurtleBezier):** A Bezier curve drawing tool based on the turtle library implemented in python.
+**[TkBezier](/Python/TkBezier):** A Bezier curve drawing tool based on the tkinter library implemented in python.
 
 **[HexViewer](/C/HexViewer):** Command-line binary viewer for windows and linux.
 
