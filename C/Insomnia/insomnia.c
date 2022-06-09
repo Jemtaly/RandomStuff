@@ -25,7 +25,7 @@ BOOL timeout(DWORD dwTime) {
 			}
 	}
 }
-void pause() {
+BOOL pause() {
 	fprintf(stderr, "Press Esc to continue ...");
 	HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
 	for (;;) {
@@ -36,7 +36,7 @@ void pause() {
 			switch (irRead.Event.KeyEvent.uChar.AsciiChar) {
 			case 27:
 				fprintf(stderr, "\n");
-				return;
+				return FALSE;
 			}
 	}
 }
@@ -70,9 +70,7 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 	SetThreadExecutionState(ES_CONTINUOUS | (rec & REC_DISPLAY ? ES_DISPLAY_REQUIRED : 0) | (rec & REC_SYSTEM ? ES_SYSTEM_REQUIRED : 0));
-	if ((rec & REC_TIMEOUT) == 0)
-		pause();
-	else
-		timeout(t);
+	rec & REC_TIMEOUT ? timeout(t) : pause();
 	SetThreadExecutionState(ES_CONTINUOUS);
+	return 0;
 }
