@@ -7,11 +7,17 @@ private:
 	int n;
 	unsigned int d;
 	void reduce() {
-		unsigned int t;
-		for (unsigned int a = n < 0 ? -n : n, b = d; t = a, b; a = b, b = t % b)
-			;
-		if (t)
-			n /= t, d /= t;
+		unsigned int a = n < 0 ? -n : n;
+		unsigned int b = d;
+		while (b) {
+			unsigned int t = a;
+			a = b;
+			b = t % b;
+		}
+		if (a) {
+			n /= a;
+			d /= a;
+		}
 	}
 	static constexpr char str36[36] = {
 		'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B',
@@ -19,7 +25,7 @@ private:
 		'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
 	};
 public:
-	Rational &set(int const &numerator = 0, int const &denominator = 1) {
+	Rational(int const &numerator = 0, int const &denominator = 1) {
 		if (denominator < 0) {
 			n = -numerator;
 			d = -denominator;
@@ -28,13 +34,6 @@ public:
 			d = denominator;
 		}
 		reduce();
-		return *this;
-	}
-	Rational(int const &numerator = 0, int const &denominator = 1) {
-		set(numerator, denominator);
-	}
-	Rational &operator=(int const &numerator) {
-		return set(numerator);
 	}
 	auto const &numerator() const {
 		return n;
