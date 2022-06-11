@@ -20,7 +20,7 @@ private:
 	};
 public:
 	Rational &set(int const &numerator = 0, int const &denominator = 1) {
-		if (d < 0) {
+		if (denominator < 0) {
 			n = -numerator;
 			d = -denominator;
 		} else {
@@ -107,19 +107,19 @@ Rational operator+(Rational const &r1, Rational const &r2) {
 	return Rational(r1.n * r2.d + r2.n * r1.d, r1.d * r2.d);
 }
 Rational operator+(Rational const &r, int const &n) {
-	return Rational(r.n + n * r.d, r.d);
+	return Rational(r.n + r.d * n, r.d);
 }
 Rational operator+(int const &n, Rational const &r) {
-	return Rational(r.n + n * r.d, r.d);
+	return Rational(r.n + r.d * n, r.d);
 }
 Rational operator-(Rational const &r1, Rational const &r2) {
 	return Rational(r1.n * r2.d - r2.n * r1.d, r1.d * r2.d);
 }
 Rational operator-(Rational const &r, int const &n) {
-	return Rational(r.n - n * r.d, r.d);
+	return Rational(r.n - r.d * n, r.d);
 }
 Rational operator-(int const &n, Rational const &r) {
-	return Rational(r.n - n * r.d, r.d);
+	return Rational(r.d * n - r.n, r.d);
 }
 Rational operator*(Rational const &r1, Rational const &r2) {
 	return Rational(r1.n * r2.n, r1.d * r2.d);
@@ -131,13 +131,13 @@ Rational operator*(int const &n, Rational const &r) {
 	return Rational(r.n * n, r.d);
 }
 Rational operator/(Rational const &r1, Rational const &r2) {
-	return Rational(r1.n * r2.d, r1.d * r2.n);
+	return Rational(r1.n * r2.d, r2.n * r1.d);
 }
 Rational operator/(Rational const &r, int const &n) {
 	return Rational(r.n, r.d * n);
 }
 Rational operator/(int const &n, Rational const &r) {
-	return Rational(r.n, r.d * n);
+	return Rational(r.d * n, r.n);
 }
 Rational operator%(Rational const &r1, Rational const &r2) {
 	return r1 - (r1 / r2).floor() * r2;
@@ -155,7 +155,7 @@ bool operator==(Rational const &r, int const &n) {
 	return (r - n).n == 0;
 }
 bool operator==(int const &n, Rational const &r) {
-	return (r - n).n == 0;
+	return (n - r).n == 0;
 }
 bool operator!=(Rational const &r1, Rational const &r2) {
 	return (r1 - r2).n != 0;
@@ -164,7 +164,7 @@ bool operator!=(Rational const &r, int const &n) {
 	return (r - n).n != 0;
 }
 bool operator!=(int const &n, Rational const &r) {
-	return (r - n).n != 0;
+	return (n - r).n != 0;
 }
 bool operator>=(Rational const &r1, Rational const &r2) {
 	return (r1 - r2).n >= 0;
@@ -173,7 +173,7 @@ bool operator>=(Rational const &r, int const &n) {
 	return (r - n).n >= 0;
 }
 bool operator>=(int const &n, Rational const &r) {
-	return (r - n).n >= 0;
+	return (n - r).n >= 0;
 }
 bool operator<=(Rational const &r1, Rational const &r2) {
 	return (r1 - r2).n <= 0;
@@ -182,7 +182,7 @@ bool operator<=(Rational const &r, int const &n) {
 	return (r - n).n <= 0;
 }
 bool operator<=(int const &n, Rational const &r) {
-	return (r - n).n <= 0;
+	return (n - r).n <= 0;
 }
 bool operator>(Rational const &r1, Rational const &r2) {
 	return (r1 - r2).n > 0;
@@ -191,7 +191,7 @@ bool operator>(Rational const &r, int const &n) {
 	return (r - n).n > 0;
 }
 bool operator>(int const &n, Rational const &r) {
-	return (r - n).n > 0;
+	return (n - r).n > 0;
 }
 bool operator<(Rational const &r1, Rational const &r2) {
 	return (r1 - r2).n < 0;
@@ -200,7 +200,7 @@ bool operator<(Rational const &r, int const &n) {
 	return (r - n).n < 0;
 }
 bool operator<(int const &n, Rational const &r) {
-	return (r - n).n < 0;
+	return (n - r).n < 0;
 }
 template <typename T>
 Rational &operator+=(Rational &r, T const &x) {
