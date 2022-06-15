@@ -12,6 +12,8 @@ Some random stuff.
 
 **[TkBezier](/Python/TkBezier):** A Bezier curve drawing tool based on the tkinter library implemented in python.
 
+**[Vigenere](/Python/Vigenere):** A Vigenère cipher decrypter implemented in python.
+
 **[HexViewer](/C/HexViewer):** Command-line binary viewer for windows and linux.
 
 **[Insomnia](/C/Insomnia):** A tool to prevent Windows from turning off your screen / sleeping for a while.
