@@ -9,15 +9,15 @@ def main():
     import tkinter
     tk = tkinter.Tk()
     canvas = tkinter.Canvas(tk)
-    canvas.pack(fill=tkinter.BOTH, expand=True)
-    def initialize(event=None):
+    canvas.pack(fill = tkinter.BOTH, expand = True)
+    def initialize(event = None):
         global points
         points = []
         canvas.delete(tkinter.ALL)
         canvas.bind('<Button-1>', draw_point)
         canvas.bind('<Double-1>', draw_curve)
     def draw_point(event):
-        canvas.create_text(event.x, event.y, text=str((event.x, event.y)), fill='blue')
+        canvas.create_text(event.x, event.y, text = str((event.x, event.y)), fill = 'blue')
         if points:
             canvas.create_line(*points[-1], event.x, event.y)
         points.append((event.x, event.y))
@@ -26,7 +26,7 @@ def main():
         canvas.unbind('<Double-1>')
         curve = bezier(256, points)
         for p, q in zip(curve[:-1], curve[1:]):
-            canvas.create_line(*p, *q, fill='red')
+            canvas.create_line(*p, *q, fill = 'red')
     canvas.bind('<Button-3>', initialize)
     initialize()
     tk.mainloop()
