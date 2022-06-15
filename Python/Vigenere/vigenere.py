@@ -34,9 +34,9 @@ def main():
     plst = decrypt(klst, clst)
     ptxt, i = '', iter(plst)
     for c in ctxt:
-        if c.isupper(): ptxt += chr(next(i) + 65)
-        if c.islower(): ptxt += chr(next(i) + 97)
-        if not c.isupper() and not c.islower(): ptxt += c
+        if c.isupper(): c = chr(next(i) + 65)
+        if c.islower(): c = chr(next(i) + 97)
+        ptxt += c
     print(ptxt)
 if __name__ == '__main__':
     main()
