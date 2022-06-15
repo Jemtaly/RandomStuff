@@ -2,15 +2,14 @@
 import sys, random
 sys.setrecursionlimit(0x10000)
 def sqrt(n):
-    min, max = 0, n + 1
-    while max - min > 1:
-        a = (max + min) // 2
-        b = a ** 2
-        if b > n:
-            max = a
+    amin, amax = 0, n + 1
+    while amax - amin > 1:
+        a = (amax + amin) // 2
+        if a * a > n:
+            amax = a
         else:
-            min = a
-    return min
+            amin = a
+    return amin
 def power(b, p, m):
     if p == 0:
         return 1
@@ -20,8 +19,8 @@ def exgcd(a, b):
     if b == 0:
         return a, (1, 0)
     else:
-        gcd, (x, y) = exgcd(b, a % b)
-        return gcd, (y, x - a // b * y)
+        d, (x, y) = exgcd(b, a % b)
+        return d, (y, x - a // b * y)
 def isprime(n):
     if n == 2:
         return True
@@ -43,18 +42,6 @@ def randprime(l):
         r = random.getrandbits(l)
         if isprime(r):
             return r
-def encode(s):
-    n, t = 0, 0
-    for c in s:
-        n |= c << t
-        t += 8
-    return n
-def decode(n):
-    s = []
-    while n:
-        s.append(n & 255)
-        n >>= 8
-    return bytes(s)
 class RSA:
     def __init__(self, l):
         p, q = randprime(l), randprime(l)

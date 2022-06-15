@@ -13,31 +13,28 @@ def crt(d):
     A, M = 0, 1
     for a, m in d:
         d, (r, _) = exgcd(M, m)
-        if (a - A) % d:
-            return None
+        assert (a - A) % d == 0
         A += M * r * (a - A) // d
         M *= m // d
     return A, M
 def moddiv(a, b, m):
     d, (r, _) = exgcd(b, m)
-    if a % d:
-        return None
+    assert a % d == 0
     return r * (a // d), m // d
 def reduce(l):
     q = gcd(l)
     return type(l)((i // q for i in l) if q else (0 for _ in l))
 def ref(m):
     s = []
-    j = 0
-    while m and j < len(m[0]):
+    for j in range(len(m[0])):
         for i in range(len(m)):
             if m[i][j] != 0:
-                s.append(reduce(m[i]))
-                m.pop(i)
-                for i in range(len(m)):
-                    m[i] = [m[i][y] * s[-1][j] - s[-1][y] * m[i][j] for y in range(len(m[0]))]
+                s.append(reduce(m[i])); m.pop(i)
+                for x in range(len(m)):
+                    mrecord = m[x][j]
+                    for y in range(len(m[0])):
+                        m[x][y] = m[i][y] * s[-1][j] - s[-1][y] * mrecord
                 break
-        j += 1
     return s + m
 def rref(m):
     m = ref(m)
@@ -46,6 +43,8 @@ def rref(m):
             if m[i][j] != 0:
                 m[i] = reduce(m[i])
                 for x in range(i):
-                    m[x] = [m[x][y] * m[i][j] - m[i][y] * m[x][j] for y in range(len(m[0]))]
+                    mrecord = m[x][j]
+                    for y in range(len(m[0])):
+                        m[x][y] = m[x][y] * m[i][j] - m[i][y] * mrecord
                 break
     return m

@@ -1,9 +1,9 @@
 #!/usr/bin/python3
-v = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 def gcd(a, b):
     return a if b == 0 else gcd(b, a % b)
 class Rational:
-    def __init__(self, n=0, d=1):
+    V = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    def __init__(self, n = 0, d = 1):
         if d == 0:
             self.n = (n > 0) - (n < 0)
             self.d = 0
@@ -39,18 +39,20 @@ class Rational:
         return (self - fles).n >= 0
     def __le__(self, fles):
         return (self - fles).n <= 0
-    def __repr__(self, base=10):
-        if self.d == 0:
-            return ('NaN', 'Inf', '-Inf')[self.n]
-        m, n = divmod(abs(self.n), self.d)
-        a, b, r = [], [], [None for _ in range(self.d)]
-        while m:
-            m, t = divmod(m, base)
-            a.append(t)
-        if not a:
-            a.append(0)
-        while r[n] == None:
-            r[n] = len(b)
-            t, n = divmod(n * base, self.d)
-            b.append(t)
-        return ('-' if self.n < 0 else '') + ''.join([v[i] for i in a[::-1]]) + '.' + ''.join([v[i] for i in b[:r[n]]]) + '(' + ''.join([v[i] for i in b[r[n]:]]) + ')'
+    def __repr__(self, base = 10):
+        assert 2 <= base <= 36
+        s = '-' if self.n < 0 else '+' if self.n > 0 else '±'
+        if self.d:
+            m, n = divmod(abs(self.n), self.d)
+            a, b, r = [], [], [None for _ in range(self.d)]
+            while m:
+                m, t = divmod(m, base)
+                a.append(t)
+            while r[n] == None:
+                r[n] = len(b)
+                t, n = divmod(n * base, self.d)
+                b.append(t)
+            v = ''.join(Rational.V[i] for i in a[::-1]) + '.' + ''.join(Rational.V[i] for i in b[:r[n]]) + '(' + ''.join(Rational.V[i] for i in b[r[n]:]) + ')'
+        else:
+            v = 'Inf' if self.n else 'NaN'
+        return s + v
