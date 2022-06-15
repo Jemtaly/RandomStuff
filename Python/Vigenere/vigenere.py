@@ -28,15 +28,15 @@ def main():
     ctxt = input()
     clst = []
     for c in ctxt:
-        if c.isupper():
-            clst.append(ord(c) - 65)
-        if c.islower():
-            clst.append(ord(c) - 97)
+        if c.isupper(): clst.append(ord(c) - 65)
+        if c.islower(): clst.append(ord(c) - 97)
     klst = get_key(clst)
     plst = decrypt(klst, clst)
     ptxt, i = '', iter(plst)
     for c in ctxt:
-        ptxt += chr(next(i) + 65) if c.isupper() else chr(next(i) + 97) if c.islower() else c
+        if c.isupper(): ptxt += chr(next(i) + 65)
+        if c.islower(): ptxt += chr(next(i) + 97)
+        if not c.isupper() and not c.islower(): ptxt += c
     print(ptxt)
 if __name__ == '__main__':
     main()
