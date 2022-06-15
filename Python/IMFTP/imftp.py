@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import socket, sys, threading, argparse
+import socket, sys, threading
 class TCPClientWrapper:
     def __init__(self, client):
         self.client = client
@@ -9,7 +9,7 @@ class TCPClientWrapper:
     @property
     def peername(self):
         return self.client.getpeername()
-    def sendstream(self, istream, rec=[-1]):
+    def sendstream(self, istream, rec = [-1]):
         self.client.send(b'SS')
         assert self.client.recv(2) == b'RS'
         datasize = 4094
@@ -18,7 +18,7 @@ class TCPClientWrapper:
             datasize = len(data)
             self.client.sendall(datasize.to_bytes(2, 'big') + data)
             rec[0] -= datasize
-    def recvstream(self, ostream, rec=[0]):
+    def recvstream(self, ostream, rec = [0]):
         self.client.send(b'RS')
         assert self.client.recv(2) == b'SS'
         datasize = int.from_bytes(self.client.recv(2, socket.MSG_WAITALL), 'big')
@@ -47,8 +47,8 @@ class TCPClientWrapper:
     def talk(self):
         self.client.send(b'IM')
         assert self.client.recv(2) == b'IM'
-        sending = threading.Thread(target=self.__sending)
-        recving = threading.Thread(target=self.__recving)
+        sending = threading.Thread(target = self.__sending)
+        recving = threading.Thread(target = self.__recving)
         sending.start()
         recving.start()
         sending.join()
@@ -66,16 +66,17 @@ def run(client, recv, send, size):
     else:
         C.talk()
 def main():
-    parser = argparse.ArgumentParser(description="A file transfer tool and an instant messager.")
+    import argparse
+    parser = argparse.ArgumentParser(description = "A file transfer tool and an instant messager.")
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument('--server', metavar='IP', nargs='?', default='', const='', help='run as a server (default)')
-    mode.add_argument('--client', metavar='IP', help='run as a client')
-    parser.add_argument('--port', type=int, default=2351, help='set port (2351 by default)')
-    action = parser.add_mutually_exclusive_group(required=True)
-    action.add_argument('--send', metavar='FILENAME', nargs='?', type=argparse.FileType('rb'), const=sys.stdin.buffer, help='send file')
-    action.add_argument('--recv', metavar='FILENAME', nargs='?', type=argparse.FileType('wb'), const=sys.stdout.buffer, help='receive file')
-    action.add_argument('--talk', action='store_true', help='instant messager')
-    parser.add_argument('--size', type=int, help='set the initial value')
+    mode.add_argument('--server', metavar = 'IP', nargs = '?', default = '', const = '', help = 'run as a server (default)')
+    mode.add_argument('--client', metavar = 'IP', help = 'run as a client')
+    parser.add_argument('--port', type = int, default = 2351, help = 'set port (2351 by default)')
+    action = parser.add_mutually_exclusive_group(required = True)
+    action.add_argument('--send', metavar = 'FILENAME', nargs = '?', type = argparse.FileType('rb'), const = sys.stdin.buffer, help = 'send file')
+    action.add_argument('--recv', metavar = 'FILENAME', nargs = '?', type = argparse.FileType('wb'), const = sys.stdout.buffer, help = 'receive file')
+    action.add_argument('--talk', action = 'store_true', help = 'instant messager')
+    parser.add_argument('--size', type = int, help = 'set the initial value')
     args = parser.parse_args()
     if args.client:
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
