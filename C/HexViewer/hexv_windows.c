@@ -1,7 +1,7 @@
+#include <Windows.h>
 #include <io.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <windows.h>
 #define REC_OPN 1
 #define REC_ERR 2
 #define REC_BEG 4
@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
 	SSIZE_T len = ftell(fp);
 	if ((rec & REC_END) != 0)
 		beg = len;
-	setvbuf(stdout, NULL, _IOFBF, 0x10000); // stream will be fully buffered.
+	setvbuf(stdout, NULL, _IOFBF, 0x10000);	 // stream will be fully buffered.
 	printf("\033[?1049h\033[?25l");
 	fflush(stdout);
 	SHORT w, h;
