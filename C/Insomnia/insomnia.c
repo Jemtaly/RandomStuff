@@ -17,11 +17,12 @@ BOOL timeout(DWORD dwTime) {
 		ReadConsoleInput(hStdin, &irRead, 1, &dwRead);
 		if (irRead.EventType == KEY_EVENT && irRead.Event.KeyEvent.bKeyDown)
 			switch (irRead.Event.KeyEvent.uChar.AsciiChar) {
+			case 13:
+				fprintf(stderr, "\nWaiting for %lu milliseconds ...", dwEnd - GetTickCount());
+				break;
 			case 27:
 				fprintf(stderr, "\n");
 				return FALSE;
-			case 13:
-				fprintf(stderr, "\nWaiting for %lu milliseconds ...", dwEnd - GetTickCount());
 			}
 	}
 }
