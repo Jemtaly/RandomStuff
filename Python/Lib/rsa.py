@@ -18,9 +18,8 @@ def power(b, p, m):
 def exgcd(a, b):
     if b == 0:
         return a, (1, 0)
-    else:
-        d, (x, y) = exgcd(b, a % b)
-        return d, (y, x - a // b * y)
+    d, (x, y) = exgcd(b, a % b)
+    return d, (y, x - a // b * y)
 def isprime(n):
     if n == 2:
         return True
@@ -33,7 +32,7 @@ def isprime(n):
             t = power(a, d, n)
             if t == n - 1:
                 break
-            elif t != 1:
+            if t != 1:
                 return False
             d >>= 1
     return True
