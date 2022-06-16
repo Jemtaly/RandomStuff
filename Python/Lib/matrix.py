@@ -2,9 +2,8 @@
 def exgcd(a, b):
     if b == 0:
         return a, (1, 0)
-    else:
-        d, (x, y) = exgcd(b, a % b)
-        return d, (y, x - a // b * y)
+    d, (x, y) = exgcd(b, a % b)
+    return d, (y, x - a // b * y)
 def gcd(l):
     return 0 if len(l) == 0 else l[0] if len(l) == 1 else exgcd(gcd(l[::2]), gcd(l[1::2]))[0]
 def lcm(l):
