@@ -29,11 +29,11 @@ def ref(m):
     for j in range(len(m[0])):
         for i in range(len(m)):
             if m[i][j] != 0:
-                s.append(reduce(m[i])); m.pop(i)
+                s.append(reduce(m.pop(i)))
                 for x in range(len(m)):
                     mrecord = m[x][j]
                     for y in range(len(m[0])):
-                        m[x][y] = m[i][y] * s[-1][j] - s[-1][y] * mrecord
+                        m[x][y] = m[x][y] * s[-1][j] - s[-1][y] * mrecord
                 break
     return s + m
 def rref(m):
