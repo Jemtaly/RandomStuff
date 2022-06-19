@@ -4,11 +4,13 @@ class SafePtr {
 	struct SafeGroup {
 		size_t count;
 		data_t data;
-	} *ptr;
+	} * ptr;
 public:
 	template <class... vals_t>
-	SafePtr(vals_t const &...vals) : ptr(new SafeGroup{1, {vals...}}) {}
-	SafePtr(SafePtr const &src) : ptr(src.ptr) {
+	SafePtr(vals_t const &...vals):
+		ptr(new SafeGroup{1, {vals...}}) {}
+	SafePtr(SafePtr const &src):
+		ptr(src.ptr) {
 		++ptr->count;
 	}
 	SafePtr &operator=(SafePtr const &src) {

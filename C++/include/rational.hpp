@@ -222,8 +222,9 @@ Rational &operator%=(Rational &r, T const &x) {
 	return r = r % x;
 }
 std::string Rational::decimal(uint8_t const &base) const {
-	if (d == 0)
+	if (d == 0) {
 		return n == 0 ? "NaN" : n > 0 ? "Inf" : "-Inf";
+	}
 	std::string result;
 	int integer, decimal;
 	if (n < 0) {
@@ -237,60 +238,66 @@ std::string Rational::decimal(uint8_t const &base) const {
 		result += str36[integer % base];
 		integer /= base;
 	} while (integer);
-	if (n < 0)
+	if (n < 0) {
 		result += '-';
+	}
 	reverse(result.begin(), result.end());
 	if (decimal) {
 		result += '.';
 		std::vector<int> l;
-		while (decimal and find(l.begin(), l.end(), decimal) == l.end()) {
+		while (decimal && find(l.begin(), l.end(), decimal) == l.end()) {
 			l.push_back(decimal);
 			decimal *= base;
 			decimal %= d;
 		}
 		for (auto i : l) {
-			if (i == decimal)
+			if (i == decimal) {
 				result += '(';
+			}
 			result += str36[i * base / d];
 		}
-		if (decimal)
+		if (decimal) {
 			result += ')';
+		}
 	}
 	return result;
 }
 Rational Rational::from_fra(std::string const &str) {
 	int i;
 	bool neg;
-	if (str[0] == '-')
+	if (str[0] == '-') {
 		i = 1, neg = true;
-	else if (str[0] == '+')
+	} else if (str[0] == '+') {
 		i = 1, neg = false;
-	else
+	} else {
 		i = 0, neg = false;
+	}
 	int n = 0;
 	unsigned int d = 0;
 	for (; str[i] >= '0' && str[i] <= '9'; i++) {
 		n *= 10;
 		n += str[i] - '0';
 	}
-	if (str[i] == '/')
+	if (str[i] == '/') {
 		for (i++; str[i] >= '0' && str[i] <= '9'; i++) {
 			d *= 10;
 			d += str[i] - '0';
 		}
-	else
+	} else {
 		d = 1;
+	}
 	return Rational(neg ? -n : n, d);
 }
 Rational Rational::from_dec(std::string const &str) {
 	int i;
 	bool neg;
-	if (str[0] == '-')
+	if (str[0] == '-') {
 		i = 1, neg = true;
-	else if (str[0] == '+')
+	} else if (str[0] == '+') {
 		i = 1, neg = false;
-	else
+	} else {
 		i = 0, neg = false;
+	}
 	int integer = 0, a = 0, b = 0;
 	unsigned int m = 1, n = 1;
 	for (; str[i] >= '0' && str[i] <= '9'; i++) {
@@ -303,14 +310,15 @@ Rational Rational::from_dec(std::string const &str) {
 			a *= 10;
 			a += str[i] - '0';
 		}
-		if (str[i] == '(')
+		if (str[i] == '(') {
 			for (i++; str[i] >= '0' && str[i] <= '9'; i++) {
 				n *= 10;
 				b *= 10;
 				b += str[i] - '0';
 			}
-		else
+		} else {
 			n = 2;
+		}
 	}
 	return Rational(neg ? (integer * m + a) * (1 - n) - b : (integer * m + a) * (n - 1) + b, (n - 1) * m);
 }
