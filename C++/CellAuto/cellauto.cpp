@@ -30,22 +30,25 @@ auto init_rainbow(int const &c, double const &theta) {
 }
 bool **new_space(uint16_t const &h, uint16_t const &w) {
 	bool **space_new = new bool *[h];
-	for (uint16_t i = 0; i < h; i++)
+	for (uint16_t i = 0; i < h; i++) {
 		space_new[i] = new bool[w]();
+	}
 	return space_new;
 }
 bool **clone_space(bool **const &space_src, uint16_t const &h, uint16_t const &w) {
 	bool **space_dst = new bool *[h];
 	for (uint16_t i = 0; i < h; i++) {
 		space_dst[i] = new bool[w];
-		for (uint16_t j = 0; j < w; j++)
+		for (uint16_t j = 0; j < w; j++) {
 			space_dst[i][j] = space_src[i][j];
+		}
 	}
 	return space_dst;
 }
 void delete_space(bool **const &space_dlt, uint16_t const &h, uint16_t const &w) {
-	for (uint16_t i = 0; i < h; i++)
+	for (uint16_t i = 0; i < h; i++) {
 		delete[] space_dlt[i];
+	}
 	delete[] space_dlt;
 }
 class CellAuto {
@@ -63,15 +66,17 @@ class CellAuto {
 	void clear_undolog() {
 		for (auto bound = current.bound; !undolog.empty(); undolog.pop()) {
 			delete_space(undolog.top().space, height, width);
-			if (auto rec = bound; (bound = undolog.top().bound) && !rec)
+			if (auto rec = bound; (bound = undolog.top().bound) && !rec) {
 				delete bound;
+			}
 		}
 	}
 	void clear_redolog() {
 		for (auto bound = current.bound; !redolog.empty(); redolog.pop()) {
 			delete_space(redolog.top().space, height, width);
-			if (auto rec = bound; (bound = redolog.top().bound) && !rec)
+			if (auto rec = bound; (bound = redolog.top().bound) && !rec) {
 				delete bound;
+			}
 		}
 	}
 	void apply_generation(bool **const &space) {
@@ -84,40 +89,51 @@ class CellAuto {
 		clear_redolog();
 		current.generation = 0;
 	}
-	CellAuto(CellAuto const &);
-	CellAuto &operator=(CellAuto const &);
 public:
-	CellAuto(int const &h, int const &w) : height(h < MIN_HEIGHT ? MIN_HEIGHT : (h > MAX_HEIGHT ? MAX_HEIGHT : h)), width(w < MIN_WIDTH ? MIN_WIDTH : (w > MAX_WIDTH ? MAX_WIDTH : w)), location{0, 0}, reference{0, 0}, current{new_space(height, width), {{0, 0, 0, 1, 0, 0, 0, 0, 0}, {0, 0, 1, 1, 0, 0, 0, 0, 0}}, nullptr, 0} {}
+	CellAuto(CellAuto const &) = delete;
+	CellAuto &operator=(CellAuto const &) = delete;
+	CellAuto(int const &h, int const &w):
+		height(h < MIN_HEIGHT ? MIN_HEIGHT : h > MAX_HEIGHT ? MAX_HEIGHT : h),
+		width(w < MIN_WIDTH ? MIN_WIDTH : w > MAX_WIDTH ? MAX_WIDTH : w),
+		location{0, 0},
+		reference{0, 0},
+		current{new_space(height, width), {{0, 0, 0, 1, 0, 0, 0, 0, 0}, {0, 0, 1, 1, 0, 0, 0, 0, 0}}, nullptr, 0} {}
 	~CellAuto() {
 		clear_undolog();
 		clear_redolog();
 		delete_space(current.space, height, width);
-		if (current.bound)
+		if (current.bound) {
 			delete current.bound;
+		}
 	}
 	void move_location(char const &dir) {
 		switch (dir) {
 		case 'w':
-			if (!current.bound || location.x != reference.x)
+			if (!current.bound || location.x != reference.x) {
 				location.x = (location.x + height - 1) % height;
+			}
 			break;
 		case 's':
-			if (!current.bound || location.x != (reference.x + height - 1) % height)
+			if (!current.bound || location.x != (reference.x + height - 1) % height) {
 				location.x = (location.x + 1) % height;
+			}
 			break;
 		case 'a':
-			if (!current.bound || location.y != reference.y)
+			if (!current.bound || location.y != reference.y) {
 				location.y = (location.y + width - 1) % width;
+			}
 			break;
 		case 'd':
-			if (!current.bound || location.y != (reference.y + width - 1) % width)
+			if (!current.bound || location.y != (reference.y + width - 1) % width) {
 				location.y = (location.y + 1) % width;
+			}
 			break;
 		}
 	}
 	void move_reference(char const &dir) {
-		if (current.bound)
+		if (current.bound) {
 			return;
+		}
 		move_location(dir);
 		switch (dir) {
 		case 'w':
@@ -137,22 +153,25 @@ public:
 	void reset_space(int const &h, int const &w) {
 		init_generation();
 		delete_space(current.space, height, width);
-		height = h < MIN_HEIGHT ? MIN_HEIGHT : (h > MAX_HEIGHT ? MAX_HEIGHT : h);
-		width = w < MIN_WIDTH ? MIN_WIDTH : (w > MAX_WIDTH ? MAX_WIDTH : w);
+		height = h < MIN_HEIGHT ? MIN_HEIGHT : h > MAX_HEIGHT ? MAX_HEIGHT : h;
+		width = w < MIN_WIDTH ? MIN_WIDTH : w > MAX_WIDTH ? MAX_WIDTH : w;
 		current.space = new_space(height, width);
-		if (current.bound)
+		if (current.bound) {
 			current.bound->x = current.bound->y = 0;
+		}
 		reference.x = reference.y = location.x = location.y = 0;
 	}
 	void random_space(uint8_t const &d) {
 		init_generation();
-		for (uint16_t i = 0; i < height; i++)
-			for (uint16_t j = 0; j < width; j++)
+		for (uint16_t i = 0; i < height; i++) {
+			for (uint16_t j = 0; j < width; j++) {
 				current.space[i][j] = rand() % 8 < d;
+			}
+		}
 	}
 	void set_rule(std::string const &rule) {
 		bool new_rule[2][9] = {};
-		for (bool i = 0; auto r : rule)
+		for (bool i = 0; auto r : rule) {
 			switch (r) {
 			case '/':
 				i ^= 1;
@@ -166,12 +185,15 @@ public:
 				i = 1;
 				break;
 			default:
-				if (r >= '0' && r <= '8')
+				if (r >= '0' && r <= '8') {
 					new_rule[i][r - '0'] = 1;
+				}
 			}
+		}
 		bool changed = 0;
-		for (int i = 0; i < 9; i++)
+		for (int i = 0; i < 9; i++) {
 			changed |= current.rule[0][i] != new_rule[0][i] || current.rule[1][i] != new_rule[1][i];
+		}
 		if (changed) {
 			apply_generation(clone_space(current.space, height, width));
 			for (int i = 0; i < 9; i++) {
@@ -182,13 +204,17 @@ public:
 	}
 	auto get_rule() const {
 		std::string rule = "B";
-		for (int i = 0; i < 9; i++)
-			if (current.rule[0][i])
+		for (int i = 0; i < 9; i++) {
+			if (current.rule[0][i]) {
 				rule += char('0' + i);
+			}
+		}
 		rule += "/S";
-		for (int i = 0; i < 9; i++)
-			if (current.rule[1][i])
+		for (int i = 0; i < 9; i++) {
+			if (current.rule[1][i]) {
 				rule += char('0' + i);
+			}
+		}
 		return rule;
 	}
 	void switch_mode() {
@@ -203,12 +229,13 @@ public:
 		current.space[location.x][location.y] ^= 1;
 	}
 	void set_cell(bool const &n) {
-		if (current.space[location.x][location.y] != n)
+		if (current.space[location.x][location.y] != n) {
 			switch_cell();
+		}
 	}
 	void step() {
 		bool **space_step = new_space(height, width);
-		for (uint16_t i = 0; i < height; i++)
+		for (uint16_t i = 0; i < height; i++) {
 			for (uint16_t j = 0; j < width; j++) {
 				uint16_t reference_x = reference.x == 0 ? height - 1 : reference.x - 1, reference_y = reference.y == 0 ? width - 1 : reference.y - 1;
 				uint16_t w = i == 0 ? height - 1 : i - 1, s = i == height - 1 ? 0 : i + 1, a = j == 0 ? width - 1 : j - 1, d = j == width - 1 ? 0 : j + 1;
@@ -222,24 +249,29 @@ public:
 				bool sd = (!current.bound || i != reference_x && j != reference_y) && current.space[s][d];
 				space_step[i][j] = current.rule[current.space[i][j]][wj + sj + ia + id + wa + wd + sa + sd];
 			}
+		}
 		apply_generation(space_step);
 		current.generation++;
 	}
 	bool undo() {
-		if (undolog.empty())
+		if (undolog.empty()) {
 			return 0;
+		}
 		redolog.push(current);
-		if (auto rec = current.bound; (current = undolog.top()).bound && !rec)
+		if (auto rec = current.bound; (current = undolog.top()).bound && !rec) {
 			reference = *current.bound;
+		}
 		undolog.pop();
 		return 1;
 	}
 	bool redo() {
-		if (redolog.empty())
+		if (redolog.empty()) {
 			return 0;
+		}
 		undolog.push(current);
-		if (auto rec = current.bound; (current = redolog.top()).bound && !rec)
+		if (auto rec = current.bound; (current = redolog.top()).bound && !rec) {
 			reference = *current.bound;
+		}
 		redolog.pop();
 		return 1;
 	}
@@ -263,34 +295,39 @@ public:
 	}
 	bool save(std::string const &str) const {
 		std::ofstream file(str);
-		if (file.fail())
+		if (file.fail()) {
 			return 0;
+		}
 		file << get_rule() << std::endl;
 		file << height << '*' << width << ' ' << (current.bound ? '1' : '0') << std::endl;
 		for (uint16_t i = 0; i < height; i++) {
-			for (uint16_t j = 0; j < width; j++)
+			for (uint16_t j = 0; j < width; j++) {
 				file << get_ref_cell(i, j);
+			}
 			file << std::endl;
 		}
 		return 1;
 	}
 	bool open(std::string const &str) {
 		std::ifstream file(str);
-		if (file.fail())
+		if (file.fail()) {
 			return 0;
+		}
 		std::string rule;
 		int h, w;
 		char c, b;
 		file >> rule >> h >> c >> w >> b;
-		if (b != (current.bound ? '1' : '0'))
+		if (b != (current.bound ? '1' : '0')) {
 			switch_mode();
+		}
 		set_rule(rule);
 		reset_space(h, w);
 		for (uint16_t i = 0; i < height; i++) {
 			std::string line;
 			file >> line;
-			for (uint16_t j = 0; j < width; j++)
+			for (uint16_t j = 0; j < width; j++) {
 				current.space[i][j] = line[j] == '1';
+			}
 		}
 		return 1;
 	}
@@ -313,9 +350,11 @@ void show(CellAuto const &ca, uint64_t const &interval, int const &block) {
 		wattroff(space, COLOR_PAIR(2));
 	}
 	wattron(space, COLOR_PAIR(3));
-	for (uint16_t i = 0; i < ca.get_height(); i++)
-		for (uint16_t j = 0; j < ca.get_width(); j++)
+	for (uint16_t i = 0; i < ca.get_height(); i++) {
+		for (uint16_t j = 0; j < ca.get_width(); j++) {
 			mvwaddch(space, i + 1, j * 2 + 2, ca.get_ref_cell(i, j) ? (population++, '*') : ' ');
+		}
+	}
 	wattroff(space, COLOR_PAIR(3));
 	if ((block & 2) == 0) {
 		auto x = ca.get_ref_location_x(), y = ca.get_ref_location_y();
@@ -333,8 +372,9 @@ void show(CellAuto const &ca, uint64_t const &interval, int const &block) {
 	mvwprintw(info, 1, 0, "Speed = %.2f", 1024.0 / interval);
 	mvwprintw(info, 2, 0, "Generation = %d", ca.get_generation());
 	mvwprintw(gen, 0, 0, "%*s%04d", 2 * ca.get_width() - 1, "Population = ", population);
-	if ((block & 1) != 0)
+	if ((block & 1) != 0) {
 		mvwprintw(gen, 0, 0, "Random...");
+	}
 	refresh();
 	wrefresh(info);
 	wrefresh(state);
@@ -378,41 +418,48 @@ int main(int argc, char *argv[]) {
 	uint64_t interval = 1024;
 	CellAuto ca(0, 0);
 	int rec = 0;
-	for (int i = 1; (rec & REC_FLS) == 0 and i < argc; i++)
-		if (argv[i][0] == '-')
-			if (argv[i][1] == 'b' and argv[i][2] == '\0')
+	for (int i = 1; (rec & REC_FLS) == 0 && i < argc; i++) {
+		if (argv[i][0] == '-') {
+			if (argv[i][1] == 'b' && argv[i][2] == '\0') {
 				if ((rec & REC_MOD) == 0) {
 					ca.switch_mode();
 					rec |= REC_MOD;
-				} else
+				} else {
 					rec |= REC_FLS;
-			else if (argv[i][1] == 'r' and argv[i][2] == '\0')
-				if ((rec & REC_RUL) == 0 and i + 1 < argc) {
+				}
+			} else if (argv[i][1] == 'r' && argv[i][2] == '\0') {
+				if ((rec & REC_RUL) == 0 && i + 1 < argc) {
 					ca.set_rule(argv[++i]);
 					rec |= REC_RUL;
-				} else
+				} else {
 					rec |= REC_FLS;
-			else if (argv[i][1] == 'n' and argv[i][2] == '\0')
-				if ((rec & REC_SPC) == 0 and i + 2 < argc) {
+				}
+			} else if (argv[i][1] == 'n' && argv[i][2] == '\0') {
+				if ((rec & REC_SPC) == 0 && i + 2 < argc) {
 					int h = atoi(argv[++i]);
 					int w = atoi(argv[++i]);
 					ca.reset_space(h, w);
 					rec |= REC_SPC;
-				} else
+				} else {
 					rec |= REC_FLS;
-			else
+				}
+			} else {
 				rec |= REC_FLS;
-		else if (rec == 0 and ca.open(argv[i]))
+			}
+		} else if (rec == 0 && ca.open(argv[i])) {
 			rec |= REC_MOD | REC_RUL | REC_SPC;
-		else
+		} else {
 			rec |= REC_FLS;
+		}
+	}
 	if ((rec & REC_FLS) != 0) {
 		std::cerr << "usage: " << argv[0] << " [-b] [-r RULE] [-n H W] or " << argv[0] << " FILENAME" << std::endl;
 		return 1;
 	}
 	auto win = initscr();
-	if ((rec & REC_SPC) == 0)
+	if ((rec & REC_SPC) == 0) {
 		ca.reset_space(STD_HEIGHT, STD_WIDTH);
+	}
 	noecho();
 	curs_set(0);
 	start_color();
@@ -444,12 +491,10 @@ GAME_READ:
 		ca.redo();
 		goto GAME_SHOW;
 	case 'h':
-		while (ca.undo())
-			;
+		while (ca.undo()) {}
 		goto GAME_SHOW;
 	case 'e':
-		while (ca.redo())
-			;
+		while (ca.redo()) {}
 		goto GAME_SHOW;
 	case 'c':
 		ca.random_space(0);
@@ -482,14 +527,15 @@ GAME_READ:
 	RAND_SHOW:
 		show(ca, interval, 1);
 	RAND_READ:
-		if (auto r = getch(); r >= '0' and r <= '9') {
+		if (auto r = getch(); r >= '0' && r <= '9') {
 			ca.random_space(r - '0');
 			goto GAME_SHOW;
 		} else if (r == KEY_RESIZE) {
 			clear();
 			goto RAND_SHOW;
-		} else
+		} else {
 			goto RAND_READ;
+		}
 	case ' ':
 		nodelay(win, 1);
 		for (uint64_t start = usec();;) {
@@ -523,40 +569,45 @@ GAME_READ:
 			endwin();
 			std::string filename;
 			std::cout << ">> Filename: ";
-			while (not(std::cin >> filename))
+			while ((std::cin >> filename).fail()) {
 				std::cin.clear();
+			}
 			bool success = ca.open(filename);
 			std::cout << "=> " << (success ? "File opened successfully!" : "File open failed!") << std::endl;
 			sleep(1);
 			reset_prog_mode();
-			if (success)
+			if (success) {
 				goto GAME_SHOW;
-			else
+			} else {
 				goto MENU_SHOW;
+			}
 		}
 		case 's': {
 			def_prog_mode();
 			endwin();
 			std::string filename;
 			std::cout << ">> Filename: ";
-			while (not(std::cin >> filename))
+			while ((std::cin >> filename).fail()) {
 				std::cin.clear();
+			}
 			bool success = ca.save(filename);
 			std::cout << "=> " << (success ? "File saved successfully!" : "File save failed!") << std::endl;
 			sleep(1);
 			reset_prog_mode();
-			if (success)
+			if (success) {
 				goto GAME_SHOW;
-			else
+			} else {
 				goto MENU_SHOW;
+			}
 		}
 		case 'r': {
 			def_prog_mode();
 			endwin();
 			std::string rule;
 			std::cout << ">> Rule(B/S): ";
-			while (not(std::cin >> rule))
+			while ((std::cin >> rule).fail()) {
 				std::cin.clear();
+			}
 			ca.set_rule(rule);
 			reset_prog_mode();
 			goto GAME_SHOW;
@@ -566,11 +617,13 @@ GAME_READ:
 			endwin();
 			int h, w;
 			std::cout << ">> Height: ";
-			while (not(std::cin >> h))
+			while ((std::cin >> h).fail()) {
 				std::cin.clear();
+			}
 			std::cout << ">> Width: ";
-			while (not(std::cin >> w))
+			while ((std::cin >> w).fail()) {
 				std::cin.clear();
+			}
 			ca.reset_space(h, w);
 			reset_prog_mode();
 			goto GAME_SHOW;
