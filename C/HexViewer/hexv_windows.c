@@ -16,26 +16,31 @@ int main(int argc, char *argv[]) {
 	DWORD rec = 0;
 	SSIZE_T beg = 0;
 	char *filename = NULL;
-	for (int i = 1; (rec & REC_ERR) == 0 && i < argc; i++)
-		if (argv[i][0] == '-')
-			if (argv[i][1] == 'e' && argv[i][2] == '\0')
-				if ((rec & (REC_END | REC_BEG)) == 0)
+	for (int i = 1; (rec & REC_ERR) == 0 && i < argc; i++) {
+		if (argv[i][0] == '-') {
+			if (argv[i][1] == 'e' && argv[i][2] == '\0') {
+				if ((rec & (REC_END | REC_BEG)) == 0) {
 					rec |= REC_END;
-				else
+				} else {
 					rec |= REC_ERR;
-			else if (argv[i][1] == 'b' && argv[i][2] == '\0')
+				}
+			} else if (argv[i][1] == 'b' && argv[i][2] == '\0') {
 				if ((rec & (REC_END | REC_BEG)) == 0 && i + 1 < argc) {
 					beg = atoll(argv[++i]);
 					rec |= REC_BEG;
-				} else
+				} else {
 					rec |= REC_ERR;
-			else
+				}
+			} else {
 				rec |= REC_ERR;
-		else if ((rec & REC_OPN) == 0) {
+			}
+		} else if ((rec & REC_OPN) == 0) {
 			filename = argv[i];
 			rec |= REC_OPN;
-		} else
+		} else {
 			rec |= REC_ERR;
+		}
+	}
 	FILE *fp;
 	if ((rec & REC_ERR) != 0 || (rec & REC_OPN) == 0 || fopen_s(&fp, filename, "rb")) {
 		fprintf(stderr, "usage: %s [-e] [-b N] FILENAME\n", argv[0]);
@@ -43,9 +48,10 @@ int main(int argc, char *argv[]) {
 	}
 	fseek(fp, 0, SEEK_END);
 	SSIZE_T len = ftell(fp);
-	if ((rec & REC_END) != 0)
+	if ((rec & REC_END) != 0) {
 		beg = len;
-	setvbuf(stdout, NULL, _IOFBF, 0x10000); // stream will be fully buffered.
+	}
+	setvbuf(stdout, NULL, _IOFBF, 0x10000);	 // stream will be fully buffered.
 	printf("\033[?1049h\033[?25l");
 	fflush(stdout);
 	SHORT w, h;
@@ -57,7 +63,7 @@ READ:
 		w = (irRead.Event.WindowBufferSizeEvent.dwSize.X - 10) / 4;
 		h = irRead.Event.WindowBufferSizeEvent.dwSize.Y - 1;
 		printf("\033[2J");
-	} else if (irRead.EventType == KEY_EVENT && irRead.Event.KeyEvent.bKeyDown)
+	} else if (irRead.EventType == KEY_EVENT && irRead.Event.KeyEvent.bKeyDown) {
 		switch (irRead.Event.KeyEvent.wVirtualScanCode) {
 		case 72:
 			beg -= w * irRead.Event.KeyEvent.wRepeatCount;
@@ -88,16 +94,20 @@ READ:
 		default:
 			goto READ;
 		}
+	}
 DRAW:
-	if (beg > len)
+	if (beg > len) {
 		beg = len;
-	else if (beg < 0)
+	} else if (beg < 0) {
 		beg = 0;
+	}
 	printf("\033[H\033[1;7m          ");
-	for (SHORT j = 0; j < w; j++)
+	for (SHORT j = 0; j < w; j++) {
 		printf("%02X ", j & 0xff);
-	for (SHORT j = 0; j < w; j++)
+	}
+	for (SHORT j = 0; j < w; j++) {
 		putchar(' ');
+	}
 	printf("\033[22;27m");
 	fseek(fp, beg, SEEK_SET);
 	for (SHORT i = 0; i < h; i++) {
