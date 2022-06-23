@@ -6,8 +6,6 @@
 #include <iostream>
 #include <stack>
 #include "curses.h"
-#define COLOR_LIVES 6
-#define TRIPLET 2.0943951023931953
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MIN_HEIGHT 4
@@ -24,9 +22,6 @@ uint64_t usec() {
 	timeval tv;
 	gettimeofday(&tv, NULL);
 	return (uint64_t)tv.tv_sec * 1000000 + tv.tv_usec;
-}
-auto init_rainbow(int const &c, double const &theta) {
-	return init_color(c, floor(500 + 500 * cos(theta)), floor(500 + 500 * cos(theta - TRIPLET)), floor(500 + 500 * cos(theta + TRIPLET)));
 }
 bool **new_space(uint16_t const &h, uint16_t const &w) {
 	bool **space_new = new bool *[h];
@@ -332,7 +327,7 @@ public:
 		return 1;
 	}
 };
-void show(CellAuto const &ca, uint64_t const &interval, int const &block) {
+void game(CellAuto const &ca, uint64_t const &interval, int const &block) {
 	uint16_t top = MAX((STD_HEIGHT - ca.get_height()) / 2, 0), left = MAX(STD_WIDTH - ca.get_width(), 0);
 	uint32_t population = 0;
 	WINDOW *info = newwin(3, 2 * ca.get_width() - 3, top, left);
@@ -356,17 +351,17 @@ void show(CellAuto const &ca, uint64_t const &interval, int const &block) {
 		}
 	}
 	wattroff(space, COLOR_PAIR(3));
-	if ((block & 2) == 0) {
-		auto x = ca.get_ref_location_x(), y = ca.get_ref_location_y();
-		mvwaddch(space, x + 1, y * 2 + 1, '>');
-		mvwaddch(space, x + 1, y * 2 + 3, '<');
-		wattron(state, COLOR_PAIR(1));
-		mvwaddstr(state, 1, 2, "||");
-		wattroff(state, COLOR_PAIR(1));
-	} else {
+	if ((block & 2) != 0) {
 		wattron(state, COLOR_PAIR(2));
 		mvwaddstr(state, 1, 2, "|>");
 		wattroff(state, COLOR_PAIR(2));
+	} else {
+		wattron(state, COLOR_PAIR(1));
+		mvwaddstr(state, 1, 2, "||");
+		wattroff(state, COLOR_PAIR(1));
+		auto x = ca.get_ref_location_x(), y = ca.get_ref_location_y();
+		mvwaddch(space, x + 1, y * 2 + 1, '>');
+		mvwaddch(space, x + 1, y * 2 + 3, '<');
 	}
 	mvwprintw(info, 0, 0, "Rule = %s", ca.get_rule().c_str());
 	mvwprintw(info, 1, 0, "Speed = %.2f", 1024.0 / interval);
@@ -385,7 +380,7 @@ void show(CellAuto const &ca, uint64_t const &interval, int const &block) {
 	delwin(space);
 	delwin(gen);
 }
-void show_menu(bool const &end) {
+void menu(bool const &end) {
 	uint16_t top = MAX((LINES - 10) / 2, 0), left = MAX((COLS - 18) / 2, 0);
 	WINDOW *menu = newwin(10, 18, top, left);
 	box(menu, ACS_VLINE, ACS_HLINE);
@@ -415,7 +410,6 @@ int main(int argc, char *argv[]) {
 		std::cerr << "error: unsupported stdin/stdout" << std::endl;
 		return 1;
 	}
-	uint64_t interval = 1024;
 	CellAuto ca(0, 0);
 	int rec = 0;
 	for (int i = 1; (rec & REC_FLS) == 0 && i < argc; i++) {
@@ -464,200 +458,205 @@ int main(int argc, char *argv[]) {
 	curs_set(0);
 	start_color();
 	use_default_colors();
-	init_rainbow(COLOR_LIVES, 0);
 	init_pair(1, COLOR_RED, -1);
 	init_pair(2, COLOR_GREEN, -1);
-	init_pair(3, COLOR_LIVES, -1);
-GAME_SHOW:
-	show(ca, interval, 0);
-GAME_READ:
+	init_pair(3, COLOR_YELLOW, -1);
+	uint64_t interval = 1024, recd;
+GAME_INIT:
+	game(ca, interval, 0);
+	recd = usec();
+GAME_REPT:
 	switch (auto c = getch(); c) {
 	case '-':
 		interval = MIN(interval * 2, 4096);
-		goto GAME_SHOW;
+		goto GAME_INIT;
 	case '=':
 		interval = MAX(interval / 2, 1);
-		goto GAME_SHOW;
+		goto GAME_INIT;
 	case 'b':
 		ca.switch_mode();
-		goto GAME_SHOW;
+		goto GAME_INIT;
 	case '`':
 		ca.step();
-		goto GAME_SHOW;
+		goto GAME_INIT;
 	case ',':
 		ca.undo();
-		goto GAME_SHOW;
+		goto GAME_INIT;
 	case '.':
 		ca.redo();
-		goto GAME_SHOW;
+		goto GAME_INIT;
 	case 'h':
 		while (ca.undo()) {}
-		goto GAME_SHOW;
+		goto GAME_INIT;
 	case 'e':
 		while (ca.redo()) {}
-		goto GAME_SHOW;
+		goto GAME_INIT;
 	case 'c':
 		ca.random_space(0);
-		goto GAME_SHOW;
+		goto GAME_INIT;
 	case 'r':
 		ca.random_space(2);
-		goto GAME_SHOW;
+		goto GAME_INIT;
 	case '0':
 		ca.set_cell(0);
-		goto GAME_SHOW;
+		goto GAME_INIT;
 	case '1':
 		ca.set_cell(1);
-		goto GAME_SHOW;
+		goto GAME_INIT;
 	case '8':
 		ca.switch_cell();
-		goto GAME_SHOW;
+		goto GAME_INIT;
 	case 'w':
 	case 's':
 	case 'a':
 	case 'd':
 		ca.move_location(c);
-		goto GAME_SHOW;
+		goto GAME_INIT;
 	case 'W':
 	case 'A':
 	case 'S':
 	case 'D':
 		ca.move_reference(c + 32);
-		goto GAME_SHOW;
+		goto GAME_INIT;
 	case 'R':
-	RAND_SHOW:
-		show(ca, interval, 1);
-	RAND_READ:
-		if (auto r = getch(); r >= '0' && r <= '9') {
-			ca.random_space(r - '0');
-			goto GAME_SHOW;
-		} else if (r == KEY_RESIZE) {
-			clear();
-			goto RAND_SHOW;
-		} else {
-			goto RAND_READ;
-		}
+		goto RAND_INIT;
 	case ' ':
 		nodelay(win, 1);
-		for (uint64_t start = usec();;) {
-			uint64_t end = usec() + interval * 1000, now;
-		PLAY_SHOW:
-			show(ca, interval, 2);
-			do {
-				switch (getch()) {
-				case ' ':
-					nodelay(win, 0);
-					init_rainbow(COLOR_LIVES, 0);
-					goto GAME_SHOW;
-				case KEY_RESIZE:
-					clear();
-					goto PLAY_SHOW;
-				}
-				now = usec();
-				init_rainbow(COLOR_LIVES, (double)(now - start) / 1e6);
-				refresh();
-			} while (now < end);
-			ca.step();
-		}
+		goto PLAY_INIT;
 	case 'm':
 		clear();
-	MENU_SHOW:
-		show_menu(0);
-	MENU_READ:
-		switch (getch()) {
-		case 'o': {
-			def_prog_mode();
-			endwin();
-			std::string filename;
-			std::cout << ">> Filename: ";
-			while ((std::cin >> filename).fail()) {
-				std::cin.clear();
-			}
-			bool success = ca.open(filename);
-			std::cout << "=> " << (success ? "File opened successfully!" : "File open failed!") << std::endl;
-			sleep(1);
-			reset_prog_mode();
-			if (success) {
-				goto GAME_SHOW;
-			} else {
-				goto MENU_SHOW;
-			}
-		}
-		case 's': {
-			def_prog_mode();
-			endwin();
-			std::string filename;
-			std::cout << ">> Filename: ";
-			while ((std::cin >> filename).fail()) {
-				std::cin.clear();
-			}
-			bool success = ca.save(filename);
-			std::cout << "=> " << (success ? "File saved successfully!" : "File save failed!") << std::endl;
-			sleep(1);
-			reset_prog_mode();
-			if (success) {
-				goto GAME_SHOW;
-			} else {
-				goto MENU_SHOW;
-			}
-		}
-		case 'r': {
-			def_prog_mode();
-			endwin();
-			std::string rule;
-			std::cout << ">> Rule(B/S): ";
-			while ((std::cin >> rule).fail()) {
-				std::cin.clear();
-			}
-			ca.set_rule(rule);
-			reset_prog_mode();
-			goto GAME_SHOW;
-		}
-		case 'z': {
-			def_prog_mode();
-			endwin();
-			int h, w;
-			std::cout << ">> Height: ";
-			while ((std::cin >> h).fail()) {
-				std::cin.clear();
-			}
-			std::cout << ">> Width: ";
-			while ((std::cin >> w).fail()) {
-				std::cin.clear();
-			}
-			ca.reset_space(h, w);
-			reset_prog_mode();
-			goto GAME_SHOW;
-		}
-		case 'a':
-			ca.reset_space(STD_HEIGHT, STD_WIDTH);
-		case 'c':
-			goto GAME_SHOW;
-		case 'q':
-		QUIT_SHOW:
-			show_menu(1);
-		QUIT_READ:
-			switch (getch()) {
-			case 'y':
-				endwin();
-				return 0;
-			case 'n':
-				goto MENU_SHOW;
-			case KEY_RESIZE:
-				clear();
-				goto QUIT_SHOW;
-			default:
-				goto QUIT_READ;
-			}
-		case KEY_RESIZE:
-			clear();
-			goto MENU_SHOW;
-		default:
-			goto MENU_READ;
-		}
+		goto MENU_INIT;
 	case KEY_RESIZE:
 		clear();
-		goto GAME_SHOW;
+		goto GAME_INIT;
 	default:
-		goto GAME_READ;
+		goto GAME_REPT;
+	}
+RAND_INIT:
+	game(ca, interval, 1);
+	recd = usec();
+RAND_REPT:
+	if (auto r = getch(); r >= '0' && r <= '9') {
+		ca.random_space(r - '0');
+		goto GAME_INIT;
+	} else if (r == KEY_RESIZE) {
+		clear();
+		goto RAND_INIT;
+	} else {
+		goto RAND_REPT;
+	}
+PLAY_INIT:
+	game(ca, interval, 2);
+	recd = usec();
+PLAY_REPT:
+	switch (getch()) {
+	case ' ':
+		nodelay(win, 0);
+		goto GAME_INIT;
+	case KEY_RESIZE:
+		clear();
+		goto PLAY_INIT;
+	default:
+		if (usec() < recd + interval * 1000) {
+			goto PLAY_REPT;
+		} else {
+			ca.step();
+			goto PLAY_INIT;
+		}
+	}
+MENU_INIT:
+	menu(0);
+MENU_REPT:
+	switch (getch()) {
+	case 'o': {
+		def_prog_mode();
+		endwin();
+		std::string filename;
+		std::cout << ">> Filename: ";
+		while ((std::cin >> filename).fail()) {
+			std::cin.clear();
+		}
+		bool success = ca.open(filename);
+		std::cout << "=> " << (success ? "File opened successfully!" : "File open failed!") << std::endl;
+		sleep(1);
+		reset_prog_mode();
+		if (success) {
+			goto GAME_INIT;
+		} else {
+			goto MENU_INIT;
+		}
+	}
+	case 's': {
+		def_prog_mode();
+		endwin();
+		std::string filename;
+		std::cout << ">> Filename: ";
+		while ((std::cin >> filename).fail()) {
+			std::cin.clear();
+		}
+		bool success = ca.save(filename);
+		std::cout << "=> " << (success ? "File saved successfully!" : "File save failed!") << std::endl;
+		sleep(1);
+		reset_prog_mode();
+		if (success) {
+			goto GAME_INIT;
+		} else {
+			goto MENU_INIT;
+		}
+	}
+	case 'r': {
+		def_prog_mode();
+		endwin();
+		std::string rule;
+		std::cout << ">> Rule(B/S): ";
+		while ((std::cin >> rule).fail()) {
+			std::cin.clear();
+		}
+		ca.set_rule(rule);
+		reset_prog_mode();
+		goto GAME_INIT;
+	}
+	case 'z': {
+		def_prog_mode();
+		endwin();
+		int h, w;
+		std::cout << ">> Height: ";
+		while ((std::cin >> h).fail()) {
+			std::cin.clear();
+		}
+		std::cout << ">> Width: ";
+		while ((std::cin >> w).fail()) {
+			std::cin.clear();
+		}
+		ca.reset_space(h, w);
+		reset_prog_mode();
+		goto GAME_INIT;
+	}
+	case 'a':
+		ca.reset_space(STD_HEIGHT, STD_WIDTH);
+	case 'c':
+		goto GAME_INIT;
+	case 'q':
+		goto QUIT_INIT;
+	case KEY_RESIZE:
+		clear();
+		goto MENU_INIT;
+	default:
+		goto MENU_REPT;
+	}
+QUIT_INIT:
+	menu(1);
+QUIT_REPT:
+	switch (getch()) {
+	case 'y':
+		endwin();
+		return 0;
+	case 'n':
+		goto MENU_INIT;
+	case KEY_RESIZE:
+		clear();
+		goto QUIT_INIT;
+	default:
+		goto QUIT_REPT;
 	}
 }
