@@ -15,8 +15,9 @@ public:
 	}
 	SafePtr &operator=(SafePtr const &src) {
 		++src.ptr->count;
-		if (--ptr->count == 0)
+		if (--ptr->count == 0) {
 			delete ptr;
+		}
 		ptr = src.ptr;
 		return *this;
 	}
@@ -24,7 +25,8 @@ public:
 		return ptr->data;
 	}
 	~SafePtr() {
-		if (--ptr->count == 0)
+		if (--ptr->count == 0) {
 			delete ptr;
+		}
 	}
 };
