@@ -44,11 +44,11 @@ class Rational:
         s = '-' if self.n < 0 else '+' if self.n > 0 else '±'
         if self.d:
             m, n = divmod(abs(self.n), self.d)
-            a, b, r = [], [], [None for _ in range(self.d)]
+            a, b, r = [], [], {}
             while m:
                 m, t = divmod(m, base)
                 a.append(t)
-            while r[n] == None:
+            while n not in r:
                 r[n] = len(b)
                 t, n = divmod(n * base, self.d)
                 b.append(t)
