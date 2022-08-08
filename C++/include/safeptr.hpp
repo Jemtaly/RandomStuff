@@ -4,7 +4,7 @@ class SafePtr {
 	struct SafeGroup {
 		size_t count;
 		data_t data;
-	} * ptr;
+	} *ptr;
 public:
 	template <class... vals_t>
 	SafePtr(vals_t const &...vals):
