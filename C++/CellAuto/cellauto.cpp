@@ -16,8 +16,8 @@
 #define STD_WIDTH ((COLS - 3) / 2)
 #define REC_MOD 1
 #define REC_RUL 2
-#define REC_SPC 4
-#define REC_FLS 128
+#define REC_SPA 4
+#define REC_ERR 8
 uint64_t usec() {
 	timeval tv;
 	gettimeofday(&tv, NULL);
@@ -180,7 +180,7 @@ public:
 				i = 1;
 				break;
 			default:
-				if (r >= '0' && r <= '8') {
+				if (r >= '0' && r < '9') {
 					new_rule[i][r - '0'] = 1;
 				}
 			}
@@ -412,46 +412,46 @@ int main(int argc, char *argv[]) {
 	}
 	CellAuto ca(0, 0);
 	int rec = 0;
-	for (int i = 1; (rec & REC_FLS) == 0 && i < argc; i++) {
+	for (int i = 1; (rec & REC_ERR) == 0 && i < argc; i++) {
 		if (argv[i][0] == '-') {
 			if (argv[i][1] == 'b' && argv[i][2] == '\0') {
 				if ((rec & REC_MOD) == 0) {
 					ca.switch_mode();
 					rec |= REC_MOD;
 				} else {
-					rec |= REC_FLS;
+					rec |= REC_ERR;
 				}
 			} else if (argv[i][1] == 'r' && argv[i][2] == '\0') {
 				if ((rec & REC_RUL) == 0 && i + 1 < argc) {
 					ca.set_rule(argv[++i]);
 					rec |= REC_RUL;
 				} else {
-					rec |= REC_FLS;
+					rec |= REC_ERR;
 				}
 			} else if (argv[i][1] == 'n' && argv[i][2] == '\0') {
-				if ((rec & REC_SPC) == 0 && i + 2 < argc) {
+				if ((rec & REC_SPA) == 0 && i + 2 < argc) {
 					int h = atoi(argv[++i]);
 					int w = atoi(argv[++i]);
 					ca.reset_space(h, w);
-					rec |= REC_SPC;
+					rec |= REC_SPA;
 				} else {
-					rec |= REC_FLS;
+					rec |= REC_ERR;
 				}
 			} else {
-				rec |= REC_FLS;
+				rec |= REC_ERR;
 			}
-		} else if (rec == 0 && ca.open(argv[i])) {
-			rec |= REC_MOD | REC_RUL | REC_SPC;
+		} else if ((rec & (REC_MOD | REC_RUL | REC_SPA)) == 0 && ca.open(argv[i])) {
+			rec |= REC_MOD | REC_RUL | REC_SPA;
 		} else {
-			rec |= REC_FLS;
+			rec |= REC_ERR;
 		}
 	}
-	if ((rec & REC_FLS) != 0) {
-		std::cerr << "usage: " << argv[0] << " [-b] [-r RULE] [-n H W] or " << argv[0] << " FILENAME" << std::endl;
+	if ((rec & REC_ERR) != 0) {
+		std::cerr << "usage: " << argv[0] << " [-b] [-r RULE] [-n HEIGHT WIDTH] or " << argv[0] << " FILE" << std::endl;
 		return 1;
 	}
 	auto win = initscr();
-	if ((rec & REC_SPC) == 0) {
+	if ((rec & REC_SPA) == 0) {
 		ca.reset_space(STD_HEIGHT, STD_WIDTH);
 	}
 	noecho();
@@ -503,7 +503,7 @@ GAME_REPT:
 	case '1':
 		ca.set_cell(1);
 		goto GAME_INIT;
-	case '8':
+	case '*':
 		ca.switch_cell();
 		goto GAME_INIT;
 	case 'w':
@@ -536,7 +536,7 @@ RAND_INIT:
 	game(ca, interval, 1);
 	recd = usec();
 RAND_REPT:
-	if (auto r = getch(); r >= '0' && r <= '9') {
+	if (auto r = getch(); r >= '0' && r < '9') {
 		ca.random_space(r - '0');
 		goto GAME_INIT;
 	} else if (r == KEY_RESIZE) {
