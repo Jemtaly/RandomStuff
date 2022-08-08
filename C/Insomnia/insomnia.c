@@ -75,11 +75,15 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	if ((rec & REC_ERROR) != 0 || (rec & (REC_DISPLAY | REC_SYSTEM)) == 0) {
-		fprintf(stderr, "usage: %s (-s | -d) [-t TIME]\n", argv[0]);
+		fprintf(stderr, "usage: %s (-s | -d) [-t MILLISECONDS]\n", argv[0]);
 		return 1;
 	}
 	SetThreadExecutionState(ES_CONTINUOUS | (rec & REC_DISPLAY ? ES_DISPLAY_REQUIRED : 0) | (rec & REC_SYSTEM ? ES_SYSTEM_REQUIRED : 0));
-	rec & REC_TIMEOUT ? timeout(t) : pause();
+	if ((rec & REC_TIMEOUT) != 0) {
+		timeout(t);
+	} else {
+		pause();
+	}
 	SetThreadExecutionState(ES_CONTINUOUS);
 	return 0;
 }
