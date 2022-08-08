@@ -1,9 +1,10 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include "curses.h"
-#define REC_OPN 1
-#define REC_ERR 2
+#define REC_ERR 1
+#define REC_OPN 2
 #define REC_BEG 4
 #define REC_END 8
 int main(int argc, char *argv[]) {
@@ -99,7 +100,7 @@ DRAW:
 		move(i + 1, w * 3 + 10);
 		for (int j = 0; j < w; j++) {
 			int c = fgetc(fp);
-			addch(c == EOF ? ' ' : c < 32 || c >= 127 ? '.' : c);
+			addch(c == EOF ? ' ' : isprint(c) ? c : '.');
 		}
 	}
 READ:

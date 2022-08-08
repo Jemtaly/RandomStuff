@@ -1,9 +1,9 @@
-#include <Windows.h>
-#include <io.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-#define REC_OPN 1
-#define REC_ERR 2
+#include <Windows.h>
+#define REC_ERR 1
+#define REC_OPN 2
 #define REC_BEG 4
 #define REC_END 8
 int main(int argc, char *argv[]) {
@@ -66,22 +66,22 @@ READ:
 	} else if (irRead.EventType == KEY_EVENT && irRead.Event.KeyEvent.bKeyDown) {
 		switch (irRead.Event.KeyEvent.wVirtualScanCode) {
 		case 72:
-			beg -= w * irRead.Event.KeyEvent.wRepeatCount;
+			beg -= w;
 			break;
 		case 80:
-			beg += w * irRead.Event.KeyEvent.wRepeatCount;
+			beg += w;
 			break;
 		case 75:
-			beg -= irRead.Event.KeyEvent.wRepeatCount;
+			beg--;
 			break;
 		case 77:
-			beg += irRead.Event.KeyEvent.wRepeatCount;
+			beg++;
 			break;
 		case 73:
-			beg -= w * h * irRead.Event.KeyEvent.wRepeatCount;
+			beg -= w * h;
 			break;
 		case 81:
-			beg += w * h * irRead.Event.KeyEvent.wRepeatCount;
+			beg += w * h;
 			break;
 		case 71:
 			beg = 0;
@@ -131,7 +131,7 @@ DRAW:
 		printf("\033[%d;%dH", i + 2, w * 3 + 11);
 		for (SHORT j = 0; j < w; j++) {
 			int c = fgetc(fp);
-			putchar(c == EOF ? ' ' : c < 32 || c >= 127 ? '.' : c);
+			putchar(c == EOF ? ' ' : isprint(c) ? c : '.');
 		}
 	}
 	fflush(stdout);
