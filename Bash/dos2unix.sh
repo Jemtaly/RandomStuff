@@ -1,6 +1,7 @@
 #!/bin/bash
 for file in "$@"
 do
-    tail -c1 "$file" | grep -aq '.' && echo -e '\r' >> "$file"
     sed -i 's/\r$//g' "$file"
+    last=`tail -c1 "$file" | od -An -tu`
+    test ! -z $last && test $last -ne 10 && echo >>"$file"
 done
