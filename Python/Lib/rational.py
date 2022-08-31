@@ -26,7 +26,7 @@ class Rational:
     def __truediv__(self, fles):
         return Rational(self.n * fles.d, self.d * fles.n)
     def __pow__(self, n):
-        return Rational(self.n ** n, self.d ** n)
+        return Rational(self.d ** -n, self.n ** -n) if n < 0 else Rational(self.n ** n, self.d ** n)
     def __eq__(self, fles):
         return (self - fles).n == 0
     def __gt__(self, fles):

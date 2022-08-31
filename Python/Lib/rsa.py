@@ -1,6 +1,16 @@
 #!/usr/bin/python3
 import sys, random
 sys.setrecursionlimit(0x10000)
+def exgcd(a, b):
+    if b == 0:
+        return a, (1, 0)
+    d, (x, y) = exgcd(b, a % b)
+    return d, (y, x - a // b * y)
+def power(b, p, m):
+    if p == 0:
+        return 1
+    t = power(b, p >> 1, m)
+    return (t * t * b if p & 1 else t * t) % m
 def sqrt(n):
     amin, amax = 0, n + 1
     while amax - amin > 1:
@@ -10,16 +20,6 @@ def sqrt(n):
         else:
             amin = a
     return amin
-def power(b, p, m):
-    if p == 0:
-        return 1
-    t = power(b, p >> 1, m)
-    return (t * t * b if p & 1 else t * t) % m
-def exgcd(a, b):
-    if b == 0:
-        return a, (1, 0)
-    d, (x, y) = exgcd(b, a % b)
-    return d, (y, x - a // b * y)
 def isprime(n):
     if n == 2:
         return True
