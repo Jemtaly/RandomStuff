@@ -10,7 +10,7 @@ Some random stuff.
 
 **[IMFTP](Python/IMFTP):** A file transfer tool and an instant messager.
 
-**[TkBezier](Python/TkBezier):** A Bezier curve drawing tool based on the tkinter library implemented in python.
+**[Tkinter](Python/Tkinter):** A Bezier curve drawing tool and a RGB color viewer based on the tkinter library implemented in python.
 
 **[Vigenere](Python/Vigenere):** A Vigenère cipher decrypter implemented in python.
 
