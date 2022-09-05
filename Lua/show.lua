@@ -3,7 +3,7 @@ function show(val, ...)
     local argc = #argv
     for i, v in ipairs(argv) do
         if v == val then
-            return string.rep("../", i)
+            return string.rep(".parent", i)
         end
     end
     if type(val) == "table" then
