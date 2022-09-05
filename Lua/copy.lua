@@ -1,21 +1,15 @@
-function copy(val, ...)
-    local argv = {...}
-    local argc = #argv
-    for _, p in ipairs(argv) do
-        for v, c in pairs(p) do
-            if v == val then
-                return c
-            end
+function copy(val, rec)
+    rec = rec or {}
+    for v, c in pairs(rec) do
+        if v == val then
+            return c
         end
     end
     if type(val) == "table" then
         local res = {}
-        local prs = {}
-        prs[val] = res
+        rec[val] = res
         for k, v in pairs(val) do
-            local cpy = copy(v, prs, ...)
-            res[k] = cpy
-            prs[v] = cpy
+            res[k] = copy(v, rec)
         end
         return res
     else
