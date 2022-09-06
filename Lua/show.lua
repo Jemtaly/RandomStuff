@@ -1,24 +1,20 @@
 function show(val, ...)
+    if type(val) ~= "table" then
+        return tostring(val)
+    end
     local argv = {...}
     local argc = #argv
     for i, v in ipairs(argv) do
         if v == val then
-            return string.rep(".parent", i)
+            return string.rep(".", i)
         end
     end
-    if type(val) == "table" then
-        local res = "{\n"
-        for k, v in pairs(val) do
-            res = res .. string.rep("    ", argc + 1)
-            if type(k) == "string" then
-                res = res .. k
-            else
-                res = res .. "[" .. k .. "]"
-            end
-            res = res .. " = " .. show(v, val, ...) .. ",\n"
+    local str = "{\n"
+    for k, v in pairs(val) do
+        if type(k) ~= "string" then
+            k = "[" .. tostring(k) .. "]"
         end
-        return res .. string.rep("    ", argc) .. "}"
-    else
-        return tostring(val)
+        str = str .. string.rep("    ", argc + 1) .. k .. " = " .. show(v, val, ...) .. ",\n"
     end
+    return str .. string.rep("    ", argc) .. "}"
 end
