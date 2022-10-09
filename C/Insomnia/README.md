@@ -5,11 +5,15 @@ A tool that can prevent Windows from turning off your screen / sleeping for a wh
 ## Usage
 
 ```
-insomnia (-s | -d) [-t TIME]
+insomnia [-d] [-t <milliseconds> | <command>]
 ```
 
-`-d`: Your screen won't turn off.
+`-d`: Your monitor won't turn off.
 
-`-s`: Your screen will turn off as usual, but your system won't sleep.
+*Without the argument above, your screen will turn off as usual, but your system won't sleep.*
 
-`-t`: Program will run for `TIME` milliseconds, you can press <kbd>Esc</kbd> any time to stop it. If don't use this argument, it will keep running until you press <kbd>Esc</kbd>.
+`-t <milliseconds>`: Program will run for `TIME` milliseconds, you can press <kbd>Esc</kbd> any time to stop it.
+
+`<command>`: Do not turn off the monitor / sleep until the end of command execution.
+
+*Without the two arguments above, the program will keep running until you press <kbd>Esc</kbd>.*
