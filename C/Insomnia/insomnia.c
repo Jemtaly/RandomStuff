@@ -4,21 +4,22 @@
 #define REC_COMMAND 2
 #define REC_DISPLAY 8
 #define REC_ERROR 128
-BOOL timeout(ULONGLONG ullPeriod) {
-	fprintf(stderr, "Waiting for %llu milliseconds, press Esc to continue, or press Enter to check the remaining time ...", ullPeriod);
+BOOL timeout(LONGLONG llPeriod) {
+	fprintf(stderr, "Waiting for %lld milliseconds, press Esc to continue, or press Enter to check the remaining time ...", llPeriod);
 	HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
-	for (ULONGLONG ullBegin = GetTickCount64(), ullEnd = ullBegin + ullPeriod;;) {
-		if (WaitForSingleObject(hStdin, ullEnd - GetTickCount64()) != WAIT_OBJECT_0) {
+	for (ULONGLONG ullEnd = GetTickCount64() + llPeriod;;) {
+		if (WaitForSingleObject(hStdin, max(0, llPeriod)) != WAIT_OBJECT_0) {
 			fprintf(stderr, "\n");
 			return TRUE;
 		}
+		llPeriod = ullEnd - GetTickCount64();
 		INPUT_RECORD irRead;
 		DWORD dwRead;
 		ReadConsoleInput(hStdin, &irRead, 1, &dwRead);
 		if (irRead.EventType == KEY_EVENT && irRead.Event.KeyEvent.bKeyDown) {
 			switch (irRead.Event.KeyEvent.uChar.AsciiChar) {
 			case 13:
-				fprintf(stderr, "\nWaiting for %llu milliseconds ...", ullEnd - GetTickCount64());
+				fprintf(stderr, "\nWaiting for %lld milliseconds ...", llPeriod);
 				break;
 			case 27:
 				fprintf(stderr, "\n");
@@ -45,7 +46,7 @@ BOOL pause() {
 }
 int main(int argc, char *argv[]) {
 	int rec = 0, ret = 0;
-	unsigned long long t;
+	long long t;
 	char *cmd = NULL;
 	for (int i = 1; i < argc; i++) {
 		if (argv[i][0] == '-') {
