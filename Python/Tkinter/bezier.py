@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 def tpoint(t, p, q):
-    return tuple(x * (1 - t) + y * t for x, y in zip(p, q))
+    return tuple(x * (1 - t) + z * t for x, z in zip(p, q))
 def bpoint(t, points):
     return points[0] if len(points) == 1 else bpoint(t, [tpoint(t, p, q) for p, q in zip(points[:-1], points[1:])])
 def bezier(n, points):
@@ -11,7 +11,7 @@ def main():
     tk.title('Bezier')
     canvas = tkinter.Canvas(tk)
     canvas.pack(fill = tkinter.BOTH, expand = True)
-    def initialize(event = None):
+    def init_canvas(event = None):
         global points
         points = []
         canvas.delete(tkinter.ALL)
@@ -26,10 +26,9 @@ def main():
         canvas.unbind('<Button-1>')
         canvas.unbind('<Double-1>')
         curve = bezier(256, points)
-        for p, q in zip(curve[:-1], curve[1:]):
-            canvas.create_line(*p, *q, fill = 'red')
-    canvas.bind('<Button-3>', initialize)
-    initialize()
+        canvas.create_line(*curve, fill = 'red')
+    canvas.bind('<Button-3>', init_canvas)
+    init_canvas()
     tk.mainloop()
 if __name__ == '__main__':
     main()
