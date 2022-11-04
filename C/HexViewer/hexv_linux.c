@@ -56,7 +56,11 @@ int main(int argc, char *argv[]) {
 	start_color();
 	use_default_colors();
 	init_pair(2, COLOR_RED, COLOR_WHITE);
-	int w = (COLS - 10) / 4, h = LINES - 1;
+	int w, h;
+INIT:
+	w = (COLS - 10) / 4;
+	h = LINES - 1;
+	clear();
 DRAW:
 	if (beg > len) {
 		beg = len;
@@ -106,10 +110,7 @@ DRAW:
 READ:
 	switch (getch()) {
 	case KEY_RESIZE:
-		w = (COLS - 10) / 4;
-		h = LINES - 1;
-		clear();
-		goto DRAW;
+		goto INIT;
 	case 'w':
 		beg -= w;
 		goto DRAW;

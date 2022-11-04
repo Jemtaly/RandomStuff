@@ -55,46 +55,7 @@ int main(int argc, char *argv[]) {
 	printf("\033[?1049h\033[?25l");
 	fflush(stdout);
 	SHORT w, h;
-READ:
-	INPUT_RECORD irRead;
-	DWORD dwRead;
-	ReadConsoleInput(hStdin, &irRead, 1, &dwRead);
-	if (irRead.EventType == WINDOW_BUFFER_SIZE_EVENT) {
-		w = (irRead.Event.WindowBufferSizeEvent.dwSize.X - 10) / 4;
-		h = irRead.Event.WindowBufferSizeEvent.dwSize.Y - 1;
-		printf("\033[2J");
-	} else if (irRead.EventType == KEY_EVENT && irRead.Event.KeyEvent.bKeyDown) {
-		switch (irRead.Event.KeyEvent.wVirtualScanCode) {
-		case 72:
-			beg -= w;
-			break;
-		case 80:
-			beg += w;
-			break;
-		case 75:
-			beg--;
-			break;
-		case 77:
-			beg++;
-			break;
-		case 73:
-			beg -= w * h;
-			break;
-		case 81:
-			beg += w * h;
-			break;
-		case 71:
-			beg = 0;
-			break;
-		case 79:
-			beg = len;
-			break;
-		case 1:
-			goto QUIT;
-		default:
-			goto READ;
-		}
-	}
+	goto READ;
 DRAW:
 	if (beg > len) {
 		beg = len;
@@ -135,7 +96,48 @@ DRAW:
 		}
 	}
 	fflush(stdout);
-	goto READ;
+READ:
+	INPUT_RECORD irRead;
+	DWORD dwRead;
+	ReadConsoleInput(hStdin, &irRead, 1, &dwRead);
+	if (irRead.EventType == WINDOW_BUFFER_SIZE_EVENT) {
+		w = (irRead.Event.WindowBufferSizeEvent.dwSize.X - 10) / 4;
+		h = irRead.Event.WindowBufferSizeEvent.dwSize.Y - 1;
+		printf("\033[2J");
+		goto DRAW;
+	}
+	if (irRead.EventType == KEY_EVENT && irRead.Event.KeyEvent.bKeyDown) {
+		switch (irRead.Event.KeyEvent.wVirtualScanCode) {
+		case 72:
+			beg -= w;
+			goto DRAW;
+		case 80:
+			beg += w;
+			goto DRAW;
+		case 75:
+			beg--;
+			goto DRAW;
+		case 77:
+			beg++;
+			goto DRAW;
+		case 73:
+			beg -= w * h;
+			goto DRAW;
+		case 81:
+			beg += w * h;
+			goto DRAW;
+		case 71:
+			beg = 0;
+			goto DRAW;
+		case 79:
+			beg = len;
+			goto DRAW;
+		case 1:
+			goto QUIT;
+		default:
+			goto READ;
+		}
+	}
 QUIT:
 	printf("\033[?1049l\033[?25h");
 	fflush(stdout);
