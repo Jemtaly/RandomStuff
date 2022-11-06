@@ -12,7 +12,7 @@ Some random stuff.
 
 **[Tkinter](Python/Tkinter):** A Bezier curve drawing tool and a RGB color viewer based on the tkinter library implemented in python.
 
-**[Vigenere](Python/Vigenere):** A Vigenère cipher decrypter implemented in python.
+**[Crypto](Python/Crypto):** Some cryptographic utilities.
 
 **[HexViewer](C/HexViewer):** Command-line binary viewer for windows and linux.
 
