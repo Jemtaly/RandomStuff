@@ -1,5 +1,6 @@
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/time.h>
 #include <unistd.h>
 #include <fstream>
@@ -23,36 +24,13 @@ uint64_t usec() {
 	gettimeofday(&tv, NULL);
 	return (uint64_t)tv.tv_sec * 1000000 + tv.tv_usec;
 }
-bool **new_space(uint16_t const &h, uint16_t const &w) {
-	bool **space_new = new bool *[h];
-	for (uint16_t i = 0; i < h; i++) {
-		space_new[i] = new bool[w]();
-	}
-	return space_new;
-}
-bool **clone_space(bool **const &space_src, uint16_t const &h, uint16_t const &w) {
-	bool **space_dst = new bool *[h];
-	for (uint16_t i = 0; i < h; i++) {
-		space_dst[i] = new bool[w];
-		for (uint16_t j = 0; j < w; j++) {
-			space_dst[i][j] = space_src[i][j];
-		}
-	}
-	return space_dst;
-}
-void delete_space(bool **const &space_dlt, uint16_t const &h, uint16_t const &w) {
-	for (uint16_t i = 0; i < h; i++) {
-		delete[] space_dlt[i];
-	}
-	delete[] space_dlt;
-}
 class CellAuto {
 	uint16_t height, width;
 	struct XY {
 		uint16_t x, y;
 	} location, reference;
 	struct GenerationInfo {
-		bool **space;
+		bool *space;
 		bool rule[2][9];
 		XY *bound;
 		size_t generation;
@@ -60,7 +38,7 @@ class CellAuto {
 	std::stack<GenerationInfo> undolog, redolog;
 	void clear_undolog() {
 		for (auto bound = current.bound; !undolog.empty(); undolog.pop()) {
-			delete_space(undolog.top().space, height, width);
+			delete[] undolog.top().space;
 			if (auto rec = bound; (bound = undolog.top().bound) && !rec) {
 				delete bound;
 			}
@@ -68,21 +46,28 @@ class CellAuto {
 	}
 	void clear_redolog() {
 		for (auto bound = current.bound; !redolog.empty(); redolog.pop()) {
-			delete_space(redolog.top().space, height, width);
+			delete[] redolog.top().space;
 			if (auto rec = bound; (bound = redolog.top().bound) && !rec) {
 				delete bound;
 			}
 		}
 	}
-	void apply_generation(bool **const &space) {
-		clear_redolog();
-		undolog.push(current);
-		current.space = space;
-	}
-	void init_generation() {
+	void init_generation(bool const &set) {
 		clear_undolog();
 		clear_redolog();
-		current.generation = 0;
+		if (set) {
+			current.generation = 0;
+		}
+	}
+	void copy_generation(bool const &set) {
+		clear_redolog();
+		auto space = new bool[height * width];
+		memcpy(space, current.space, height * width);
+		undolog.push(current);
+		current.space = space;
+		if (set) {
+			current.generation++;
+		}
 	}
 public:
 	CellAuto(CellAuto const &) = delete;
@@ -92,11 +77,11 @@ public:
 		width(w < MIN_WIDTH ? MIN_WIDTH : w > MAX_WIDTH ? MAX_WIDTH : w),
 		location{0, 0},
 		reference{0, 0},
-		current{new_space(height, width), {{0, 0, 0, 1, 0, 0, 0, 0, 0}, {0, 0, 1, 1, 0, 0, 0, 0, 0}}, nullptr, 0} {}
+		current{new bool[height * width], {{0, 0, 0, 1, 0, 0, 0, 0, 0}, {0, 0, 1, 1, 0, 0, 0, 0, 0}}, nullptr, 0} {}
 	~CellAuto() {
 		clear_undolog();
 		clear_redolog();
-		delete_space(current.space, height, width);
+		delete[] current.space;
 		if (current.bound) {
 			delete current.bound;
 		}
@@ -146,21 +131,21 @@ public:
 		}
 	}
 	void reset_space(int const &h, int const &w) {
-		init_generation();
-		delete_space(current.space, height, width);
+		init_generation(true);
+		delete[] current.space;
 		height = h < MIN_HEIGHT ? MIN_HEIGHT : h > MAX_HEIGHT ? MAX_HEIGHT : h;
 		width = w < MIN_WIDTH ? MIN_WIDTH : w > MAX_WIDTH ? MAX_WIDTH : w;
-		current.space = new_space(height, width);
+		current.space = new bool[height * width];
 		if (current.bound) {
 			current.bound->x = current.bound->y = 0;
 		}
 		reference.x = reference.y = location.x = location.y = 0;
 	}
 	void random_space(uint8_t const &d) {
-		init_generation();
+		init_generation(true);
 		for (uint16_t i = 0; i < height; i++) {
 			for (uint16_t j = 0; j < width; j++) {
-				current.space[i][j] = rand() % 8 < d;
+				current.space[i * width + j] = rand() % 8 < d;
 			}
 		}
 	}
@@ -168,9 +153,6 @@ public:
 		bool new_rule[2][9] = {};
 		for (bool i = 0; auto r : rule) {
 			switch (r) {
-			case '/':
-				i ^= 1;
-				break;
 			case 'b':
 			case 'B':
 				i = 0;
@@ -178,6 +160,9 @@ public:
 			case 's':
 			case 'S':
 				i = 1;
+				break;
+			case '/':
+				i ^= 1;
 				break;
 			default:
 				if (r >= '0' && r < '9') {
@@ -190,7 +175,7 @@ public:
 			changed |= current.rule[0][i] != new_rule[0][i] || current.rule[1][i] != new_rule[1][i];
 		}
 		if (changed) {
-			apply_generation(clone_space(current.space, height, width));
+			copy_generation(false);
 			for (int i = 0; i < 9; i++) {
 				current.rule[0][i] = new_rule[0][i];
 				current.rule[1][i] = new_rule[1][i];
@@ -213,40 +198,42 @@ public:
 		return rule;
 	}
 	void switch_mode() {
-		apply_generation(clone_space(current.space, height, width));
+		copy_generation(false);
 		current.bound = current.bound ? nullptr : new XY(reference);
 	}
 	bool get_mode() const {
 		return current.bound;
 	}
 	void switch_cell() {
-		apply_generation(clone_space(current.space, height, width));
-		current.space[location.x][location.y] ^= 1;
+		copy_generation(false);
+		current.space[location.x * width + location.y] ^= 1;
 	}
 	void set_cell(bool const &n) {
-		if (current.space[location.x][location.y] != n) {
+		if (current.space[location.x * width + location.y] != n) {
 			switch_cell();
 		}
 	}
 	void step() {
-		bool **space_step = new_space(height, width);
+		auto space = current.space;
+		auto &next = current.space;
+		copy_generation(true);
 		for (uint16_t i = 0; i < height; i++) {
 			for (uint16_t j = 0; j < width; j++) {
-				uint16_t reference_x = reference.x == 0 ? height - 1 : reference.x - 1, reference_y = reference.y == 0 ? width - 1 : reference.y - 1;
-				uint16_t w = i == 0 ? height - 1 : i - 1, s = i == height - 1 ? 0 : i + 1, a = j == 0 ? width - 1 : j - 1, d = j == width - 1 ? 0 : j + 1;
-				bool wj = (!current.bound || i != reference.x) && current.space[w][j];
-				bool sj = (!current.bound || i != reference_x) && current.space[s][j];
-				bool ia = (!current.bound || j != reference.y) && current.space[i][a];
-				bool id = (!current.bound || j != reference_y) && current.space[i][d];
-				bool wa = (!current.bound || i != reference.x && j != reference.y) && current.space[w][a];
-				bool wd = (!current.bound || i != reference.x && j != reference_y) && current.space[w][d];
-				bool sa = (!current.bound || i != reference_x && j != reference.y) && current.space[s][a];
-				bool sd = (!current.bound || i != reference_x && j != reference_y) && current.space[s][d];
-				space_step[i][j] = current.rule[current.space[i][j]][wj + sj + ia + id + wa + wd + sa + sd];
+				uint16_t reference_x = reference.x == 0 ? height - 1 : reference.x - 1;
+				uint16_t reference_y = reference.y == 0 ? width - 1 : reference.y - 1;
+				uint16_t w = i == 0 ? height - 1 : i - 1, s = i == height - 1 ? 0 : i + 1;
+				uint16_t a = j == 0 ? width - 1 : j - 1, d = j == width - 1 ? 0 : j + 1;
+				bool wj = (!current.bound || i != reference.x) && space[w * width + j];
+				bool sj = (!current.bound || i != reference_x) && space[s * width + j];
+				bool ia = (!current.bound || j != reference.y) && space[i * width + a];
+				bool id = (!current.bound || j != reference_y) && space[i * width + d];
+				bool wa = (!current.bound || i != reference.x && j != reference.y) && space[w * width + a];
+				bool wd = (!current.bound || i != reference.x && j != reference_y) && space[w * width + d];
+				bool sa = (!current.bound || i != reference_x && j != reference.y) && space[s * width + a];
+				bool sd = (!current.bound || i != reference_x && j != reference_y) && space[s * width + d];
+				next[i * width + j] = current.rule[space[i * width + j]][wj + sj + ia + id + wa + wd + sa + sd];
 			}
 		}
-		apply_generation(space_step);
-		current.generation++;
 	}
 	bool undo() {
 		if (undolog.empty()) {
@@ -274,7 +261,7 @@ public:
 		return current.generation;
 	}
 	auto const &get_ref_cell(uint16_t const &x, uint16_t const &y) const {
-		return current.space[(x + reference.x) % height][(y + reference.y) % width];
+		return current.space[(x + reference.x) % height * width + (y + reference.y) % width];
 	}
 	uint16_t get_ref_location_x() const {
 		return (height + location.x - reference.x) % height;
@@ -321,7 +308,7 @@ public:
 			std::string line;
 			file >> line;
 			for (uint16_t j = 0; j < width; j++) {
-				current.space[i][j] = line[j] == '1';
+				current.space[i * width + j] = line[j] == '1';
 			}
 		}
 		return 1;
