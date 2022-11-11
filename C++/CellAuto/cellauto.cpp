@@ -552,7 +552,7 @@ PLAY_REPT:
 		}
 	}
 MENU_INIT:
-	menu(0);
+	menu(false);
 MENU_REPT:
 	switch (getch()) {
 	case 'o': {
@@ -632,7 +632,7 @@ MENU_REPT:
 		goto MENU_REPT;
 	}
 QUIT_INIT:
-	menu(1);
+	menu(true);
 QUIT_REPT:
 	switch (getch()) {
 	case 'y':
