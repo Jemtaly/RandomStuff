@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
 	int w, h;
 INIT:
 	w = (COLS - 10) / 4;
-	h = LINES - 1;
+	h = (LINES - 1) / 1;
 	clear();
 DRAW:
 	if (beg > len) {

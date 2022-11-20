@@ -1,7 +1,7 @@
+#include <Windows.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <Windows.h>
 #define REC_ERR 1
 #define REC_OPN 2
 #define REC_BEG 4
@@ -9,7 +9,9 @@
 int main(int argc, char *argv[]) {
 	HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE), hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
 	DWORD dwStdinMode, dwStdoutMode;
-	if (!GetConsoleMode(hStdin, &dwStdinMode) || !GetConsoleMode(hStdout, &dwStdoutMode) || !SetConsoleMode(hStdout, dwStdoutMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
+	if (!GetConsoleMode(hStdin, &dwStdinMode) ||
+		!GetConsoleMode(hStdout, &dwStdoutMode) ||
+		!SetConsoleMode(hStdout, dwStdoutMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
 		fprintf(stderr, "error: unsupported stdin/stdout\n");
 		return 1;
 	}
@@ -55,8 +57,8 @@ int main(int argc, char *argv[]) {
 	printf("\033[?1049h\033[?25l");
 	fflush(stdout);
 	SHORT w, h;
-	goto READ;
-DRAW:
+	goto LREAD;
+LDRAW:
 	if (beg > len) {
 		beg = len;
 	} else if (beg < 0) {
@@ -96,49 +98,47 @@ DRAW:
 		}
 	}
 	fflush(stdout);
-READ:
+LREAD:
 	INPUT_RECORD irRead;
 	DWORD dwRead;
 	ReadConsoleInput(hStdin, &irRead, 1, &dwRead);
-	if (irRead.EventType == WINDOW_BUFFER_SIZE_EVENT) {
+	switch (irRead.EventType == WINDOW_BUFFER_SIZE_EVENT ? 0xffff :
+			irRead.EventType == KEY_EVENT && irRead.Event.KeyEvent.bKeyDown ? irRead.Event.KeyEvent.wVirtualScanCode : 0x0000) {
+	case 0xffff:
 		w = (irRead.Event.WindowBufferSizeEvent.dwSize.X - 10) / 4;
-		h = irRead.Event.WindowBufferSizeEvent.dwSize.Y - 1;
+		h = (irRead.Event.WindowBufferSizeEvent.dwSize.Y + -1) / 1;
 		printf("\033[2J");
-		goto DRAW;
+		goto LDRAW;
+	case 0x0048:
+		beg -= w;
+		goto LDRAW;
+	case 0x0050:
+		beg += w;
+		goto LDRAW;
+	case 0x004b:
+		beg--;
+		goto LDRAW;
+	case 0x004d:
+		beg++;
+		goto LDRAW;
+	case 0x0049:
+		beg -= w * h;
+		goto LDRAW;
+	case 0x0051:
+		beg += w * h;
+		goto LDRAW;
+	case 0x0047:
+		beg = 0;
+		goto LDRAW;
+	case 0x004f:
+		beg = len;
+		goto LDRAW;
+	case 0x0001:
+		goto LQUIT;
+	default:
+		goto LREAD;
 	}
-	if (irRead.EventType == KEY_EVENT && irRead.Event.KeyEvent.bKeyDown) {
-		switch (irRead.Event.KeyEvent.wVirtualScanCode) {
-		case 72:
-			beg -= w;
-			goto DRAW;
-		case 80:
-			beg += w;
-			goto DRAW;
-		case 75:
-			beg--;
-			goto DRAW;
-		case 77:
-			beg++;
-			goto DRAW;
-		case 73:
-			beg -= w * h;
-			goto DRAW;
-		case 81:
-			beg += w * h;
-			goto DRAW;
-		case 71:
-			beg = 0;
-			goto DRAW;
-		case 79:
-			beg = len;
-			goto DRAW;
-		case 1:
-			goto QUIT;
-		default:
-			goto READ;
-		}
-	}
-QUIT:
+LQUIT:
 	printf("\033[?1049l\033[?25h");
 	fflush(stdout);
 	fclose(fp);
