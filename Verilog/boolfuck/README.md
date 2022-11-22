@@ -5,7 +5,7 @@ An awesome boolfuck machine implemented in verilog.
 ## Compile and Run Testbench File
 
 ```
-verilator --cc --exe --build -Wall boolfuck.cpp boolfuck.v -LDFLAGS -lncurses
+verilator --cc --exe --build -Wall boolfuck.cpp boolfuck.v -LDFLAGS -static
 obj_dir/Vboolfuck
 ```
 
