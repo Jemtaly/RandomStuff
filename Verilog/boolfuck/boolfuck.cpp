@@ -1,68 +1,96 @@
+#include <stdio.h>
 #include "Vboolfuck.h"
+#include "Windows.h"
 #include "verilated.h"
-#include "curses.h"
-#include <iostream>
 #define INSTRS "/~<>.,[]"
-#define VALUES "01?"
-int main(int argc, char** argv, char** env) {
-	if (!isatty(fileno(stdin)) || !isatty(fileno(stdout))) {
-		std::cerr << "error: unsupported stdin/stdout" << std::endl;
+#define VALUES "01??????"
+#define mv(x, y) printf("\033[%d;%dH", (x) + 1, (y) + 1)
+#define mvprintf(x, y, ...) mv(x, y), printf(__VA_ARGS__)
+#define UNDERLN "\004\030"
+#define REVERSE "\007\033"
+#define attron(x) printf("\033[%dm", x[0])
+#define attrno(x) printf("\033[%dm", x[1])
+int main(int argc, char **argv, char **env) {
+	HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
+    HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
+	DWORD dwStdinMode, dwStdoutMode;
+	if (!GetConsoleMode(hStdin, &dwStdinMode) ||
+		!GetConsoleMode(hStdout, &dwStdoutMode) ||
+        !SetConsoleMode(hStdin, dwStdinMode & ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT)) ||
+        !SetConsoleMode(hStdout, dwStdoutMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
+		fprintf(stderr, "error: unsupported stdin/stdout\n");
 		return 1;
 	}
-    Verilated::commandArgs(argc, argv);
-    Vboolfuck* top = new Vboolfuck;
-	auto win = initscr();
-    nodelay(win, true);
-    noecho();
-    curs_set(0);
-    while (true) {
-        mvprintw( 0, 0, "----------- PROGRAM ------------");
-        for (int i = 0; i < 8; i++) {
-            move(i +  1, 0);
-            for (int j = 0; j < 32; j++)
-                printw("%c", INSTRS[top->prg[i * 32 + j]]);
+	printf("\033[?1049h\033[?25l\033(0");
+	for (Vboolfuck vbfo; GetKeyState(VK_ESCAPE) >= 0; Sleep(1), vbfo.clk = !vbfo.clk, vbfo.eval()) {
+        CONSOLE_SCREEN_BUFFER_INFO csbi;
+        GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+        if (static int w = 0, h = 0; w != csbi.dwSize.X || h != csbi.dwSize.Y) {
+            w = csbi.dwSize.X;
+            h = csbi.dwSize.Y;
+            printf("\033[2J");
         }
-        mvprintw( 9, 0, "--------- DATA MEMORY ----------");
-        for (int i = 0; i < 8; i++) {
-            move(i + 10, 0);
-            for (int j = 0; j < 32; j++)
-                printw("%c", VALUES[top->mem[i * 32 + j]]);
+		mvprintf( 0,  0, "lqqqqqqqqqqqq PROGRAM qqqqqqqqqqqqqwwqqq INPUT qqqk");
+		for (int i = 0; i < 8; i++) {
+			mvprintf(i +  1,  0, "x ");
+			for (int j = 0; j < 32; j++)
+				printf("%c", INSTRS[vbfo.prg[i * 32 + j]]);
+            printf(" xx             x");
+		}
+		mvprintf( 9,  0, "tqqqqqqqqqq DATA MEMORY qqqqqqqqqqqux             x");
+		for (int i = 0; i < 8; i++) {
+			mvprintf(i + 10,  0, "x ");
+			for (int j = 0; j < 32; j++)
+				printf("%c", VALUES[vbfo.mem[i * 32 + j]]);
+            printf(" xx             x");
+		}
+		mvprintf(18,  0, "tqqqqqqqqqqqqqqqqqqqqqq STACK qqqqqvvqqqqqqqqqqqqqu");
+		for (int i = 0; i < 4; i++) {
+            mvprintf(i + 19,  0, "x ");
+			for (int j = 0; j < 16; j++)
+				printf("%02X ", vbfo.stk[i * 11 + j]);
+            printf("x");
+		}
+        mvprintf(23,  0, "mqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqj");
+		for (int i = 0; i < 8; i++)
+			mvprintf(i +  1, 36, "x (%c) x q %d q x", INSTRS[i], vbfo.key >> i & 1);
+        mvprintf( 9, 36, "tqqqqqqqqqqqqqu");
+		mvprintf(10, 36, "x LFT x q %d q x", vbfo.lft & 1);
+		mvprintf(11, 36, "x RGT x q %d q x", vbfo.rgt & 1);
+		mvprintf(12, 36, "x CTR x q %d q x", vbfo.ctl & 1);
+        mvprintf(13, 36, "tqqqqqqqqqqqqqu");
+		mvprintf(14, 36, "x CLK x q %d q x", vbfo.clk & 1);
+        mvprintf(15, 36, "tqqqqqqqqqqqqqu");
+        mvprintf(17, 36, "x WRB x q %d q x", vbfo.blk % 2);
+        mvprintf(16, 36, "x RDB x q %d q x", vbfo.blk / 2);
+		attron(UNDERLN);
+		mvprintf( 1 + vbfo.cur / 32, vbfo.cur % 32 + 2, "%c", INSTRS[vbfo.prg[vbfo.cur]]);
+		mvprintf(10 + vbfo.ptr / 32, vbfo.ptr % 32 + 2, "%c", VALUES[vbfo.mem[vbfo.ptr]]);
+		mvprintf(19 + vbfo.top / 11, vbfo.top % 11 * 3 + 2, "%02X", vbfo.stk[vbfo.top]);
+		attrno(UNDERLN);
+		attron(REVERSE);
+		switch (vbfo.blk) {
+		case 0b11: mvprintf( 1 + vbfo.cur / 32, vbfo.cur % 32 + 2, "%c", INSTRS[vbfo.prg[vbfo.cur]]); break;
+		case 0b01: mvprintf(10 + vbfo.ptr / 32, vbfo.ptr % 32 + 2, "%c", VALUES[vbfo.mem[vbfo.ptr]]); break;
+		case 0b10: mvprintf(10 + vbfo.ptr / 32, vbfo.ptr % 32 + 2, "%c", VALUES[7]); break;
         }
-        mvprintw(18, 0, "----------- STACK --------------");
-        for (int i = 0; i < 3; i++) {
-            move(i + 19, 0);
-            for (int j = 0; j < 11; j++)
-                printw("%02X ",    (top->stk[i * 11 + j]));
-        }
-        attron (A_UNDERLINE);
-        mvprintw( 1 + top->cur / 32, top->cur % 32, "%c", INSTRS[top->prg[top->cur]]);
-        mvprintw(10 + top->ptr / 32, top->ptr % 32, "%c", VALUES[top->mem[top->ptr]]);
-        mvprintw(19 + top->top / 11, top->top % 11 * 3, "%02X", (top->stk[top->top]));
-        attroff(A_UNDERLINE);
-        attron (A_REVERSE);
-        switch (top->blk) {
-        case 0b11: mvprintw( 1 + top->cur / 32, top->cur % 32, "%c", INSTRS[top->prg[top->cur]]); break;
-        case 0b01: mvprintw(10 + top->ptr / 32, top->ptr % 32, "%c", VALUES[top->mem[top->ptr]]); break;
-        case 0b10: mvprintw(10 + top->ptr / 32, top->ptr % 32, "%c", VALUES[0x0000000000000002]); break;
-        }
-        attroff(A_REVERSE);
-        auto c = getch();
-        top->key = c == INSTRS[0] ? 0b00000001 :
-                   c == INSTRS[1] ? 0b00000010 :
-                   c == INSTRS[2] ? 0b00000100 :
-                   c == INSTRS[3] ? 0b00001000 :
-                   c == INSTRS[4] ? 0b00010000 :
-                   c == INSTRS[5] ? 0b00100000 :
-                   c == INSTRS[6] ? 0b01000000 :
-                   c == INSTRS[7] ? 0b10000000 : 0;
-        top->lft = c == 'a';
-        top->rgt = c == 'd';
-        top->swi = c == ' ';
-        if (c == 'q') break;
-        top->clk = 0; top->eval();
-        top->clk = 1; top->eval();
-    }
-    endwin();
-    delete top;
-    return 0;
+		attrno(REVERSE);
+		fflush(stdout);
+		vbfo.lft = GetAsyncKeyState(VK_LEFT)  < 0;
+		vbfo.rgt = GetAsyncKeyState(VK_RIGHT) < 0;
+		vbfo.ctl = GetAsyncKeyState(VK_SPACE) < 0;
+        auto rei = GetAsyncKeyState(VK_OEM_2) < 0;
+        auto wav = GetAsyncKeyState(VK_OEM_3) < 0;
+        auto lbr = GetAsyncKeyState(VK_OEM_4) < 0;
+        auto rbr = GetAsyncKeyState(VK_OEM_6) < 0;
+        auto alt = GetAsyncKeyState(VK_SHIFT) < 0;
+        auto cma = GetAsyncKeyState(VK_OEM_COMMA)  < 0;
+        auto prd = GetAsyncKeyState(VK_OEM_PERIOD) < 0;
+		vbfo.key = rei << 0 | wav << 1 | cma << (alt ? 2 : 5) | prd << (alt ? 3 : 4) | lbr << 6 | rbr << 7;
+	}
+	printf("\033[?1049l\033[?25h\033(B");
+	fflush(stdout);
+	SetConsoleMode(hStdout, dwStdoutMode);
+	SetConsoleMode(hStdin, dwStdinMode);
+	return 0;
 }

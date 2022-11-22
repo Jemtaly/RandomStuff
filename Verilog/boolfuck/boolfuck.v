@@ -2,7 +2,6 @@
 /* verilator lint_off BLKSEQ */
 /* verilator lint_off CASEINCOMPLETE */
 /* verilator lint_off WIDTH */
-/* verilator lint_off CASEX */
 parameter C = 8;
 parameter M = 8;
 parameter S = 5;
@@ -10,7 +9,7 @@ module boolfuck(
     input clk,
     input lft,
     input rgt,
-    input swi,
+    input ctl,
     input [8 - 1 : 0] key,
     output reg [3 - 1 : 0] prg [2 ** C - 1 : 0],
     output reg [1 - 1 : 0] mem [2 ** M - 1 : 0],
@@ -22,17 +21,17 @@ module boolfuck(
     output reg [S - 1 : 0] ctr,
     output reg [2 - 1 : 0] blk = 2'b11
   );
-  reg  dlft, drgt, dswi;
-  wire plft, prgt, nswi;
-  reg  [8 - 1 : 0] dkey;
-  wire [8 - 1 : 0] pkey;
-  assign plft = lft & ~dlft;
-  assign prgt = rgt & ~drgt;
-  assign nswi = ~swi | dswi;
-  assign pkey = key & ~dkey;
+  reg  lftd, rgtd, ctld;
+  wire lftp, rgtp, ctlp;
+  reg  [8 - 1 : 0] keyd;
+  wire [8 - 1 : 0] keyp;
+  assign lftp = lft & ~lftd;
+  assign rgtp = rgt & ~rgtd;
+  assign ctlp = ctl & ~ctld;
+  assign keyp = key & ~keyd;
   always @(posedge clk)
   begin
-    if (nswi)
+    if (~ctlp)
       case (blk)
       2'b00:
       begin
@@ -67,17 +66,19 @@ module boolfuck(
           endcase
       end
       2'b01:
-        if (pkey)
+      begin
+        if (keyp)
           blk = 2'b00;
+      end
       2'b10:
       begin
-        mem[ptr] = key != 8'b00000001;
-        if (pkey)
+        mem[ptr] = ~keyp[0];
+        if (keyp)
           blk = 2'b00;
       end
       2'b11:
       begin
-        case (key)
+        case (keyp)
         8'b00000001: prg[cur] = 3'b000;
         8'b00000010: prg[cur] = 3'b001;
         8'b00000100: prg[cur] = 3'b010;
@@ -87,10 +88,11 @@ module boolfuck(
         8'b01000000: prg[cur] = 3'b110;
         8'b10000000: prg[cur] = 3'b111;
         endcase
-        cur = cur + prgt - plft + |pkey;
+        cur = cur + {7'b0000000, rgtp} - {7'b0000000, lftp} + {7'b0000000, $onehot(keyp)};
       end
       endcase
-    else if (blk == 2'b11)
+    else
+    if (blk == 2'b11)
     begin
       nxt = 0;
       ptr = 0;
@@ -100,9 +102,9 @@ module boolfuck(
     end
     else
       blk = 2'b11;
-    dlft <= lft;
-    drgt <= rgt;
-    dswi <= swi;
-    dkey <= key;
+    lftd <= lft;
+    rgtd <= rgt;
+    ctld <= ctl;
+    keyd <= key;
   end
 endmodule
