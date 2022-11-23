@@ -4,7 +4,7 @@
 /* verilator lint_off WIDTH */
 parameter C = 8;
 parameter M = 8;
-parameter S = 5;
+parameter S = 6;
 module boolfuck(
     input clk,
     input lft,
@@ -35,8 +35,7 @@ module boolfuck(
       case (blk)
       2'b00:
       begin
-        cur = nxt;
-        nxt = nxt + 1;
+        nxt = cur + 1;
         if (ctr)
           case (prg[cur])
           3'b110: ctr = ctr + 1;
@@ -102,6 +101,8 @@ module boolfuck(
     end
     else
       blk = 2'b11;
+    if (blk == 2'b00)
+      cur = nxt;
     lftd <= lft;
     rgtd <= rgt;
     ctld <= ctl;
