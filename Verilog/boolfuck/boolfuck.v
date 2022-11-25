@@ -2,23 +2,17 @@
 /* verilator lint_off BLKSEQ */
 /* verilator lint_off CASEINCOMPLETE */
 /* verilator lint_off WIDTH */
-parameter C = 8;
-parameter M = 8;
-parameter S = 6;
-module boolfuck(
-    input clk,
-    input lft,
-    input rgt,
-    input ctl,
-    input [8 - 1 : 0] key,
+module boolfuck
+  #(
+    parameter C = 8,  M = 8, S = 6
+  )(
+    input wire clk, lft, rgt, ctl,
+    input wire [8 - 1 : 0] key,
     output reg [3 - 1 : 0] prg [2 ** C - 1 : 0],
     output reg [1 - 1 : 0] mem [2 ** M - 1 : 0],
-    output reg [C - 1 : 0] stk [2 ** S - 0 : 0],
-    output reg [C - 1 : 0] cur,
-    output reg [C - 1 : 0] nxt,
+    output reg [C - 1 : 0] stk [2 ** S - 1 : 0], cur, nxt,
     output reg [M - 1 : 0] ptr,
-    output reg [S - 1 : 0] top,
-    output reg [S - 1 : 0] ctr,
+    output reg [S - 1 : 0] top, ctr,
     output reg [2 - 1 : 0] blk = 2'b11
   );
   reg  lftd, rgtd, ctld;
@@ -31,7 +25,18 @@ module boolfuck(
   assign keyp = key & ~keyd;
   always @(posedge clk)
   begin
-    if (~ctlp)
+    if (ctlp)
+      if (blk == 2'b11)
+      begin
+        nxt = 0;
+        ptr = 0;
+        top = 0;
+        ctr = 0;
+        blk = 2'b00;
+      end
+      else
+        blk = 2'b11;
+    else
       case (blk)
       2'b00:
       begin
@@ -65,42 +70,27 @@ module boolfuck(
           endcase
       end
       2'b01:
-      begin
         if (keyp)
           blk = 2'b00;
-      end
       2'b10:
-      begin
-        mem[ptr] = ~keyp[0];
         if (keyp)
+        begin
+          mem[ptr] = ~keyp[0];
           blk = 2'b00;
-      end
+        end
       2'b11:
-      begin
         case (keyp)
-        8'b00000001: prg[cur] = 3'b000;
-        8'b00000010: prg[cur] = 3'b001;
-        8'b00000100: prg[cur] = 3'b010;
-        8'b00001000: prg[cur] = 3'b011;
-        8'b00010000: prg[cur] = 3'b100;
-        8'b00100000: prg[cur] = 3'b101;
-        8'b01000000: prg[cur] = 3'b110;
-        8'b10000000: prg[cur] = 3'b111;
+        8'b00000001: begin prg[cur] = 3'b000; cur = cur + 1; end
+        8'b00000010: begin prg[cur] = 3'b001; cur = cur + 1; end
+        8'b00000100: begin prg[cur] = 3'b010; cur = cur + 1; end
+        8'b00001000: begin prg[cur] = 3'b011; cur = cur + 1; end
+        8'b00010000: begin prg[cur] = 3'b100; cur = cur + 1; end
+        8'b00100000: begin prg[cur] = 3'b101; cur = cur + 1; end
+        8'b01000000: begin prg[cur] = 3'b110; cur = cur + 1; end
+        8'b10000000: begin prg[cur] = 3'b111; cur = cur + 1; end
+        default:     cur = cur + (rgtp ? 1 : 0) - (lftp ? 1 : 0);
         endcase
-        cur = cur + {7'b0000000, rgtp} - {7'b0000000, lftp} + {7'b0000000, $onehot(keyp)};
-      end
       endcase
-    else
-    if (blk == 2'b11)
-    begin
-      nxt = 0;
-      ptr = 0;
-      top = 0;
-      ctr = 0;
-      blk = 2'b00;
-    end
-    else
-      blk = 2'b11;
     if (blk == 2'b00)
       cur = nxt;
     lftd <= lft;

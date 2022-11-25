@@ -1,0 +1,82 @@
+#include <stdio.h>
+#include "Vhexadecimal_decoder.h"
+#include "Windows.h"
+#include "verilated.h"
+#define mv(x, y) printf("\033[%d;%dH", (x) + 1, (y) + 1)
+#define mvprintf(x, y, ...) mv(x, y), printf(__VA_ARGS__)
+#define MASK_A 0x1
+#define MASK_D 0x2
+#define MASK_W 0x4
+#define MASK_S 0x8
+struct {
+	char wchar[4];
+	char alpha[2];
+} table[16] = {
+	{" ", " "}, {"╴", "~"}, {"╶", "~"}, {"─", "q"},
+	{"╵", "~"}, {"┘", "j"}, {"└", "m"}, {"┴", "v"},
+	{"╷", "~"}, {"┐", "k"}, {"┌", "l"}, {"┬", "w"},
+	{"│", "x"}, {"┤", "u"}, {"├", "t"}, {"┼", "n"},
+};
+int main(int argc, char **argv, char **env) {
+	HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE), hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
+	DWORD dwStdinMode, dwStdoutMode;
+	if (!GetConsoleMode(hStdin, &dwStdinMode) ||
+		!GetConsoleMode(hStdout, &dwStdoutMode) ||
+        !SetConsoleMode(hStdin, dwStdinMode & ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT)) ||
+        !SetConsoleMode(hStdout, dwStdoutMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING) ||
+		!SetConsoleOutputCP(CP_UTF8)) {
+		fprintf(stderr, "error: unsupported stdin/stdout\n");
+		return 1;
+	}
+	setvbuf(stdout, NULL, _IOFBF, 0x10000);
+	printf("\033[?1049h\033[?25l\033(0");
+	for (Vhexadecimal_decoder vhd; vhd.eval(), GetKeyState(VK_ESCAPE) >= 0; Sleep(1), vhd.clk = !vhd.clk) {
+        CONSOLE_SCREEN_BUFFER_INFO csbi;
+        GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+        if (static int w = 0, h = 0; w != csbi.dwSize.X || h != csbi.dwSize.Y) {
+            w = csbi.dwSize.X;
+            h = csbi.dwSize.Y;
+            printf("\033[2J");
+        }
+		mvprintf( 0,  0, "lqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqk");
+		mvprintf( 1,  0, "x                                                 x");
+		mvprintf( 2,  0, "x                                                 x");
+		mvprintf( 3,  0, "x                                                 x");
+        mvprintf( 4,  0, "x                                                 x");
+        mvprintf( 5,  0, "x                                                 x");
+		mvprintf( 6,  0, "mqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqj");
+		mvprintf( 0, 21, " \033[1mLED7SEG\033[22m ");
+		static int lum[8][8] = {};
+		for (int i = 0; i < 8; i++)
+			for (int j = 0; j < 8; j++)
+				if ((vhd.id >> i & 1) == 0 && (vhd.out >> j & 1) == 0)
+					lum[i][j] = 15;
+				else if (lum[i][j] > 0)
+					lum[i][j] -= 1;
+		for (int i = 0; i < 8; i++) {
+			int pos[5][3] = {};
+			if (lum[i][7]) pos[0][0] |= MASK_D, pos[0][1] |= MASK_A | MASK_D, pos[0][2] |= MASK_A; // A SEGMENT
+			if (lum[i][6]) pos[0][2] |= MASK_S, pos[1][2] |= MASK_W | MASK_S, pos[2][2] |= MASK_W; // B SEGMENT
+			if (lum[i][5]) pos[2][2] |= MASK_S, pos[3][2] |= MASK_W | MASK_S, pos[4][2] |= MASK_W; // C SEGMENT
+			if (lum[i][4]) pos[4][0] |= MASK_D, pos[4][1] |= MASK_A | MASK_D, pos[4][2] |= MASK_A; // D SEGMENT
+			if (lum[i][3]) pos[2][0] |= MASK_S, pos[3][0] |= MASK_W | MASK_S, pos[4][0] |= MASK_W; // E SEGMENT
+			if (lum[i][2]) pos[0][0] |= MASK_S, pos[1][0] |= MASK_W | MASK_S, pos[2][0] |= MASK_W; // F SEGMENT
+			if (lum[i][1]) pos[2][0] |= MASK_D, pos[2][1] |= MASK_A | MASK_D, pos[2][2] |= MASK_A; // G SEGMENT
+			for (int j = 0; j < 5; j++) {
+				mv(j +  1, 44 - i * 6);
+				printf(table[pos[j][0]].wchar);
+				printf(table[pos[j][1]].wchar);
+				printf(table[pos[j][1]].wchar);
+				printf(table[pos[j][1]].wchar);
+				printf(table[pos[j][2]].wchar);
+			}
+		}
+		fflush(stdout);
+		vhd.in += 1;
+	}
+	printf("\033[?1049l\033[?25h\033(B");
+	fflush(stdout);
+	SetConsoleMode(hStdout, dwStdoutMode);
+	SetConsoleMode(hStdin, dwStdinMode);
+	return 0;
+}
