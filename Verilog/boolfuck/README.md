@@ -6,10 +6,10 @@ An awesome boolfuck machine implemented in verilog.
 
 ```
 verilator --cc --exe --build -Wall boolfuck.cpp boolfuck.v -LDFLAGS -static
-obj_dir/Vboolfuck
+obj_dir/Vboolfuck.exe
 ```
 
-*Notice: You need to install verilator and libncurses first.*
+*Notice: You need to install verilator in msys2 to compile it.*
 
 ## Usage
 
