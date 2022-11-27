@@ -20,5 +20,5 @@ obj_dir/Vboolfuck.exe
 | Left | move the cursor left | | | |
 | Right | move the cursor right | | | |
 | Space | run your bf program | halt | halt | halt |
-| `/` | input a "halt" instruction | | input `0` | confirm |
-| `~` `<` `>` `,` `.` `[` `]` | input the corresponding bf instruction | | input `1` | confirm |
+| `/` | input a "halt" instruction at the current position of the cursor | | input `0` | confirm |
+| `~` `<` `>` `,` `.` `[` `]` | input the corresponding command at the current position of the cursor | | input `1` | confirm |
