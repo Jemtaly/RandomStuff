@@ -1,9 +1,8 @@
-#!/usr/bin/python3
 import sys, random
 sys.setrecursionlimit(0x10000)
 def exgcd(a, b):
     if b == 0:
-        return a, (1, 0)
+        return abs(a), ((a > 0) - (a < 0), 0)
     d, (x, y) = exgcd(b, a % b)
     return d, (y, x - a // b * y)
 def power(b, p, m):

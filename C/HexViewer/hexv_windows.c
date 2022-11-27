@@ -1,5 +1,4 @@
 #include <Windows.h>
-#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #define REC_ERR 1
@@ -11,6 +10,7 @@ int main(int argc, char *argv[]) {
 	DWORD dwStdinMode, dwStdoutMode;
 	if (!GetConsoleMode(hStdin, &dwStdinMode) ||
 		!GetConsoleMode(hStdout, &dwStdoutMode) ||
+		!SetConsoleMode(hStdin, dwStdinMode | ENABLE_WINDOW_INPUT) ||
 		!SetConsoleMode(hStdout, dwStdoutMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
 		fprintf(stderr, "error: unsupported stdin/stdout\n");
 		return 1;
@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
 	if ((rec & REC_END) != 0) {
 		beg = len;
 	}
-	setvbuf(stdout, NULL, _IOFBF, 0x10000);	 // stream will be fully buffered.
+	setvbuf(stdout, NULL, _IOFBF, 0x10000);
 	printf("\033[?1049h\033[?25l");
 	fflush(stdout);
 	SHORT w, h;
@@ -74,7 +74,7 @@ LDRAW:
 	printf("\033[22;27m");
 	fseek(fp, beg, SEEK_SET);
 	for (SHORT i = 0; i < h; i++) {
-		printf("\033[%dH\033[1m%08X:\033[22m ", i + 2, beg + i * w & 0xffffffff);
+		printf("\033[%dH\033[1m%08X: \033[22m", i + 2, beg + i * w & 0xffffffff);
 		for (SHORT j = 0; j < w; j++) {
 			int c = fgetc(fp);
 			switch (c) {
@@ -85,7 +85,7 @@ LDRAW:
 				printf("00 ");
 				break;
 			default:
-				printf("\033[47;31m%02X\033[0m ", c);
+				printf("\033[31;47m%02X\033[39;49m ", c);
 			}
 		}
 	}
@@ -102,38 +102,38 @@ LREAD:
 	INPUT_RECORD irRead;
 	DWORD dwRead;
 	ReadConsoleInput(hStdin, &irRead, 1, &dwRead);
-	switch (irRead.EventType == WINDOW_BUFFER_SIZE_EVENT ? 0xffff :
-			irRead.EventType == KEY_EVENT && irRead.Event.KeyEvent.bKeyDown ? irRead.Event.KeyEvent.wVirtualScanCode : 0x0000) {
-	case 0xffff:
+	switch (irRead.EventType == WINDOW_BUFFER_SIZE_EVENT ? VK_F5 :
+			irRead.EventType == KEY_EVENT && irRead.Event.KeyEvent.bKeyDown ? irRead.Event.KeyEvent.wVirtualKeyCode : 0) {
+	case VK_F5:
 		w = (irRead.Event.WindowBufferSizeEvent.dwSize.X - 10) / 4;
 		h = (irRead.Event.WindowBufferSizeEvent.dwSize.Y + -1) / 1;
 		printf("\033[2J");
 		goto LDRAW;
-	case 0x0048:
+	case VK_UP:
 		beg -= w;
 		goto LDRAW;
-	case 0x0050:
+	case VK_DOWN:
 		beg += w;
 		goto LDRAW;
-	case 0x004b:
+	case VK_LEFT:
 		beg--;
 		goto LDRAW;
-	case 0x004d:
+	case VK_RIGHT:
 		beg++;
 		goto LDRAW;
-	case 0x0049:
+	case VK_PRIOR:
 		beg -= w * h;
 		goto LDRAW;
-	case 0x0051:
+	case VK_NEXT:
 		beg += w * h;
 		goto LDRAW;
-	case 0x0047:
+	case VK_HOME:
 		beg = 0;
 		goto LDRAW;
-	case 0x004f:
+	case VK_END:
 		beg = len;
 		goto LDRAW;
-	case 0x0001:
+	case VK_ESCAPE:
 		goto LQUIT;
 	default:
 		goto LREAD;
@@ -142,6 +142,7 @@ LQUIT:
 	printf("\033[?1049l\033[?25h");
 	fflush(stdout);
 	fclose(fp);
+	SetConsoleMode(hStdin, dwStdinMode);
 	SetConsoleMode(hStdout, dwStdoutMode);
 	return 0;
 }

@@ -11,10 +11,7 @@ function show(val, ...)
     end
     local str = "{\n"
     for k, v in pairs(val) do
-        if type(k) ~= "string" then
-            k = "[" .. tostring(k) .. "]"
-        end
-        str = str .. string.rep("    ", argc + 1) .. k .. " = " .. show(v, val, ...) .. ",\n"
+        str = str .. string.rep("    ", argc + 1) .. (type(k) == "string" and k or "[" .. tostring(k) .. "]") .. " = " .. show(v, val, ...) .. ",\n"
     end
     return str .. string.rep("    ", argc) .. "}"
 end

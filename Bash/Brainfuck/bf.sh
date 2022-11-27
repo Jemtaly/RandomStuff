@@ -1,6 +1,6 @@
 #!/bin/bash
 func=$(
-    for ch in `test $# -gt 0 && sed 's/\s*/ /g' "$1" || sed 's/\s*/ /g'`
+    for ch in `sed 's/\s*/ /g' "$1"`
     do
         case $ch in
         '+')
@@ -31,6 +31,6 @@ func=$(
     done | sed 's/^/ptr=0; /g'
 )
 stty=`stty -g`
-stty -echo -icanon
+stty -echo -icanon &>/dev/null
 eval $func
-stty $stty
+stty $stty &>/dev/null

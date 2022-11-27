@@ -51,8 +51,8 @@ int main(int argc, char *argv[]) {
 		beg = len;
 	}
 	initscr();
-	noecho();
 	curs_set(0);
+	noecho();
 	start_color();
 	use_default_colors();
 	init_pair(2, COLOR_RED, COLOR_WHITE);
@@ -70,7 +70,8 @@ DRAW:
 	attron(A_BOLD | A_REVERSE);
 	mvprintw(0, 0, "          ");
 	for (int j = 0; j < w; j++) {
-		printw("%02X ", j & 0xff);
+		printw("%02X", j & 0xff);
+		addch(' ');
 	}
 	for (int j = 0; j < w; j++) {
 		addch(' ');
@@ -79,24 +80,23 @@ DRAW:
 	fseek(fp, beg, SEEK_SET);
 	for (int i = 0; i < h; i++) {
 		attron(A_BOLD);
-		mvprintw(i + 1, 0, "%08X:", beg + i * w & 0xffffffff);
+		mvprintw(i + 1, 0, "%08X: ", beg + i * w & 0xffffffff);
 		attroff(A_BOLD);
-		addch(' ');
 		for (int j = 0; j < w; j++) {
 			int c = fgetc(fp);
 			switch (c) {
 			case EOF:
-				printw("   ");
+				printw("  ");
 				break;
 			case 0:
-				printw("00 ");
+				printw("00");
 				break;
 			default:
 				attron(COLOR_PAIR(2));
 				printw("%02X", c);
 				attroff(COLOR_PAIR(2));
-				addch(' ');
 			}
+			addch(' ');
 		}
 	}
 	fseek(fp, beg, SEEK_SET);
@@ -110,6 +110,7 @@ DRAW:
 READ:
 	switch (getch()) {
 	case KEY_RESIZE:
+	case 'r':
 		goto INIT;
 	case 'w':
 		beg -= w;

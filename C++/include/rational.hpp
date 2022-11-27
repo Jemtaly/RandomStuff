@@ -316,9 +316,8 @@ Rational Rational::from_dec(std::string const &str) {
 				b *= 10;
 				b += str[i] - '0';
 			}
-		} else {
-			n = 2;
+			n--;
 		}
 	}
-	return Rational(neg ? (integer * m + a) * (1 - n) - b : (integer * m + a) * (n - 1) + b, (n - 1) * m);
+	return Rational(neg ? (-integer * m - a) * n - b : (integer * m + a) * n + b, n * m);
 }

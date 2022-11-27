@@ -299,7 +299,7 @@ public:
 		int h, w;
 		char c, b;
 		file >> rule >> h >> c >> w >> b;
-		if (b != (current.bound ? '1' : '0')) {
+		if (current.bound ? b == '0' : b != '0') {
 			switch_mode();
 		}
 		set_rule(rule);

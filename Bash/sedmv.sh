@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 CMD=$1
 shift
 for orig in "$@"

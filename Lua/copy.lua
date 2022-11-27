@@ -1,17 +1,17 @@
-function copy(val, rec)
+function copy(val, map)
     if type(val) ~= "table" then
         return val
     end
-    rec = rec or {}
-    for v, c in pairs(rec) do
+    map = map or {}
+    for v, c in pairs(map) do
         if v == val then
             return c
         end
     end
     local cpy = {}
-    rec[val] = cpy
+    map[val] = cpy
     for k, v in pairs(val) do
-        cpy[k] = copy(v, rec)
+        cpy[k] = copy(v, map)
     end
     return cpy
 end

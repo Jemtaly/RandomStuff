@@ -2,8 +2,10 @@
 #include <stdio.h>
 #if defined _WIN32
 #include <Windows.h>
-#elif defined __linux__
+#define msleep(x) Sleep(x)
+#elif defined __unix__
 #include <unistd.h>
+#define msleep(x) usleep((x) * 1000)
 #endif
 #define TAU 6.283185307179586
 #define PIE 3.141592653589793
@@ -43,28 +45,35 @@ void setc(RGB *fgc, RGB *bgc) {
 }
 int main() {
 #if defined _WIN32
-	HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
-	DWORD dwStdoutMode;
-	BOOL bStdout = GetConsoleMode(hStdout, &dwStdoutMode);
-	if (bStdout && !SetConsoleMode(hStdout, dwStdoutMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
-		return 1;
+	HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE), hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
+	DWORD dwStdinMode, dwStdoutMode;
+	if (!GetConsoleMode(hStdin, &dwStdinMode) ||
+		!GetConsoleMode(hStdout, &dwStdoutMode) ||
+		!SetConsoleMode(hStdin, dwStdinMode | ENABLE_WINDOW_INPUT) ||
+        !SetConsoleMode(hStdout, dwStdoutMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
+		goto fallback;
 	}
-	setvbuf(stdout, NULL, _IOFBF, 0x10000);	 // stream will be fully buffered.
+#elif defined __unix__
+	if (!isatty(fileno(stdin)) || !isatty(fileno(stdout))) {
+		goto fallback;
+	}
 #endif
+	setvbuf(stdout, NULL, _IOFBF, 0x10000);
 	printf("\033[?1049h\033[?25l");
-	for (float T = 0; T < TAU; T += DELTA_T) {
-		float W = 3.0 * T, Z = 1.0 * T;
-		float z[DISPL_H][DISPL_W] = {};
+	fflush(stdout);
+	for (double T = 0; T < TAU; T += DELTA_T) {
+		double W = 3.0 * T, Z = 1.0 * T;
+		double z[DISPL_H][DISPL_W] = {};
 		RGB fgc[DISPL_H][DISPL_W] = {};
-		for (float u = 0; u < TAU; u += DELTA_U) {
-			for (float v = 0; v < TAU; v += DELTA_V) {
-				float su = sin(u), cu = cos(u);
-				float sv = sin(v), cv = cos(v);
-				float sW = sin(W), cW = cos(W);
-				float sZ = sin(Z), cZ = cos(Z);
-				float h = 2 + cv;
-				float t = su * h * cW - sv * sW;
-				float d = su * h * sW + sv * cW + 5;
+		for (double u = 0; u < TAU; u += DELTA_U) {
+			for (double v = 0; v < TAU; v += DELTA_V) {
+				double su = sin(u), cu = cos(u);
+				double sv = sin(v), cv = cos(v);
+				double sW = sin(W), cW = cos(W);
+				double sZ = sin(Z), cZ = cos(Z);
+				double h = 2 + cv;
+				double t = su * h * cW - sv * sW;
+				double d = su * h * sW + sv * cW + 5;
 				int y = DISPL_H * 0.5 + GRAPH_H * (cu * h * sZ + t * cZ) / d;
 				int x = DISPL_W * 0.5 + GRAPH_W * (cu * h * cZ - t * sZ) / d;
 				if (DISPL_H > y && y >= 0 && DISPL_W > x && x >= 0 && z[y][x] < 1 / d) {
@@ -82,17 +91,16 @@ int main() {
 			}
 		}
 		fflush(stdout);
-#if defined _WIN32
-		Sleep(WAITING);
-#elif defined __linux__
-		usleep(WAITING * 1000);
-#endif
+		msleep(WAITING);
 	};
 	printf("\033[?1049l\033[?25h");
+	fflush(stdout);
 #if defined _WIN32
-	if (bStdout && !SetConsoleMode(hStdout, dwStdoutMode)) {
-		return 1;
-	}
+	SetConsoleMode(hStdin, dwStdinMode);
+	SetConsoleMode(hStdout, dwStdoutMode);
 #endif
 	return 0;
+fallback:
+	fprintf(stderr, "error: unsupported stdin/stdout\n");
+	return 1;
 }
