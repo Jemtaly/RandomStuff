@@ -15,7 +15,7 @@ obj_dir/Vboolfuck.exe
 
 ## Usage
 
-| Key | while your bf program is stopped | while your bf program is running | while your bf program is waiting for an input | when your bf program have output one bit and is waiting for user confirmation |
+| Key | while your bf program is stopped | while your bf program is running | while your bf program is waiting for an input | when your bf program has output one bit and is waiting for user confirmation |
 | --- | --- | --- | --- | --- |
 | Left | move the cursor left | | | |
 | Right | move the cursor right | | | |
