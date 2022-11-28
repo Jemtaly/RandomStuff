@@ -30,7 +30,7 @@ func=$(
         esac
     done | sed 's/^/ptr=0; /g'
 )
-stty=`stty -g`
+stty=`stty -g 2>/dev/null`
 stty -echo -icanon &>/dev/null
 eval $func
 stty $stty &>/dev/null
