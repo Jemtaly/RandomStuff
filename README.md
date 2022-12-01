@@ -6,7 +6,7 @@ Some random stuff.
 
 **[Bash Tools](Bash):** Some useful tools written in bash, including unix2dos, dos2unix, sedmv (a tool to perform batch renaming of files with sed command).
 
-**[Brainfuck](Bash/Brainfuck):** A brainfuck language interpreter written in bash.
+**[BashBrainfuck](Bash/Brainfuck):** A brainfuck language ~interpreter~ translator written in bash.
 
 **[IMFTP](Python/IMFTP):** A file transfer tool and an instant messager.
 
