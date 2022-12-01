@@ -18,7 +18,8 @@
 #define REC_MOD 1
 #define REC_RUL 2
 #define REC_SPA 4
-#define REC_ERR 8
+#define REC_OPN 8
+#define REC_ERR 128
 uint64_t usec() {
 	timeval tv;
 	gettimeofday(&tv, NULL);
@@ -52,14 +53,14 @@ class CellAuto {
 			}
 		}
 	}
-	void init_generation(bool const &set) {
+	void init_generation(bool set) {
 		clear_undolog();
 		clear_redolog();
 		if (set) {
 			current.generation = 0;
 		}
 	}
-	void copy_generation(bool const &set) {
+	void copy_generation(bool set) {
 		clear_redolog();
 		auto space = new bool[height * width];
 		memcpy(space, current.space, height * width);
@@ -72,7 +73,7 @@ class CellAuto {
 public:
 	CellAuto(CellAuto const &) = delete;
 	CellAuto &operator=(CellAuto const &) = delete;
-	CellAuto(int const &h, int const &w):
+	CellAuto(int h, int w):
 		height(h < MIN_HEIGHT ? MIN_HEIGHT : h > MAX_HEIGHT ? MAX_HEIGHT : h),
 		width(w < MIN_WIDTH ? MIN_WIDTH : w > MAX_WIDTH ? MAX_WIDTH : w),
 		location{0, 0},
@@ -86,7 +87,7 @@ public:
 			delete current.bound;
 		}
 	}
-	void move_location(char const &dir) {
+	void move_location(char dir) {
 		switch (dir) {
 		case 'w':
 			if (!current.bound || location.x != reference.x) {
@@ -110,7 +111,7 @@ public:
 			break;
 		}
 	}
-	void move_reference(char const &dir) {
+	void move_reference(char dir) {
 		if (current.bound) {
 			return;
 		}
@@ -130,7 +131,7 @@ public:
 			break;
 		}
 	}
-	void reset_space(int const &h, int const &w) {
+	void reset_space(int h, int w) {
 		init_generation(true);
 		delete[] current.space;
 		height = h < MIN_HEIGHT ? MIN_HEIGHT : h > MAX_HEIGHT ? MAX_HEIGHT : h;
@@ -141,7 +142,7 @@ public:
 		}
 		reference.x = reference.y = location.x = location.y = 0;
 	}
-	void random_space(uint8_t const &d) {
+	void random_space(uint8_t d) {
 		init_generation(true);
 		for (uint16_t i = 0; i < height; i++) {
 			for (uint16_t j = 0; j < width; j++) {
@@ -208,7 +209,7 @@ public:
 		copy_generation(false);
 		current.space[location.x * width + location.y] ^= 1;
 	}
-	void set_cell(bool const &n) {
+	void set_cell(bool n) {
 		if (current.space[location.x * width + location.y] != n) {
 			switch_cell();
 		}
@@ -257,10 +258,10 @@ public:
 		redolog.pop();
 		return 1;
 	}
-	auto const &get_generation() const {
+	auto get_generation() const {
 		return current.generation;
 	}
-	auto const &get_ref_cell(uint16_t const &x, uint16_t const &y) const {
+	auto get_ref_cell(uint16_t x, uint16_t y) const {
 		return current.space[(x + reference.x) % height * width + (y + reference.y) % width];
 	}
 	uint16_t get_ref_location_x() const {
@@ -269,10 +270,10 @@ public:
 	uint16_t get_ref_location_y() const {
 		return (width + location.y - reference.y) % width;
 	}
-	auto const &get_width() const {
+	auto get_width() const {
 		return width;
 	}
-	auto const &get_height() const {
+	auto get_height() const {
 		return height;
 	}
 	bool save(std::string const &str) const {
@@ -314,7 +315,8 @@ public:
 		return 1;
 	}
 };
-void game(CellAuto const &ca, uint64_t const &interval, int const &block) {
+template <bool rand, bool play>
+void game(CellAuto const &ca, uint64_t interval) {
 	uint16_t top = MAX((STD_HEIGHT - ca.get_height()) / 2, 0), left = MAX(STD_WIDTH - ca.get_width(), 0);
 	uint32_t population = 0;
 	WINDOW *info = newwin(3, 2 * ca.get_width() - 3, top, left);
@@ -338,7 +340,7 @@ void game(CellAuto const &ca, uint64_t const &interval, int const &block) {
 		}
 	}
 	wattroff(space, COLOR_PAIR(3));
-	if ((block & 2) != 0) {
+	if (play) {
 		wattron(state, COLOR_PAIR(2));
 		mvwaddstr(state, 1, 2, "|>");
 		wattroff(state, COLOR_PAIR(2));
@@ -354,7 +356,7 @@ void game(CellAuto const &ca, uint64_t const &interval, int const &block) {
 	mvwprintw(info, 1, 0, "Speed = %.2f", 1024.0 / interval);
 	mvwprintw(info, 2, 0, "Generation = %d", ca.get_generation());
 	mvwprintw(gen, 0, 0, "%*s%04d", 2 * ca.get_width() - 1, "Population = ", population);
-	if ((block & 1) != 0) {
+	if (rand) {
 		mvwprintw(gen, 0, 0, "Random...");
 	}
 	refresh();
@@ -367,7 +369,8 @@ void game(CellAuto const &ca, uint64_t const &interval, int const &block) {
 	delwin(space);
 	delwin(gen);
 }
-void menu(bool const &end) {
+template <bool end>
+void menu() {
 	uint16_t top = MAX((LINES - 10) / 2, 0), left = MAX((COLS - 18) / 2, 0);
 	WINDOW *menu = newwin(10, 18, top, left);
 	box(menu, ACS_VLINE, ACS_HLINE);
@@ -398,28 +401,27 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 	CellAuto ca(0, 0);
-	int rec = 0;
+	int rec = 0, h, w;
 	for (int i = 1; (rec & REC_ERR) == 0 && i < argc; i++) {
 		if (argv[i][0] == '-') {
 			if (argv[i][1] == 'b' && argv[i][2] == '\0') {
-				if ((rec & REC_MOD) == 0) {
+				if ((rec & (REC_OPN | REC_MOD)) == 0) {
 					ca.switch_mode();
 					rec |= REC_MOD;
 				} else {
 					rec |= REC_ERR;
 				}
 			} else if (argv[i][1] == 'r' && argv[i][2] == '\0') {
-				if ((rec & REC_RUL) == 0 && i + 1 < argc) {
+				if ((rec & (REC_OPN | REC_RUL)) == 0 && i + 1 < argc) {
 					ca.set_rule(argv[++i]);
 					rec |= REC_RUL;
 				} else {
 					rec |= REC_ERR;
 				}
 			} else if (argv[i][1] == 'n' && argv[i][2] == '\0') {
-				if ((rec & REC_SPA) == 0 && i + 2 < argc) {
-					int h = atoi(argv[++i]);
-					int w = atoi(argv[++i]);
-					ca.reset_space(h, w);
+				if ((rec & (REC_SPA | REC_OPN)) == 0 && i + 2 < argc) {
+					h = atoi(argv[++i]);
+					w = atoi(argv[++i]);
 					rec |= REC_SPA;
 				} else {
 					rec |= REC_ERR;
@@ -427,8 +429,8 @@ int main(int argc, char *argv[]) {
 			} else {
 				rec |= REC_ERR;
 			}
-		} else if ((rec & (REC_MOD | REC_RUL | REC_SPA)) == 0 && ca.open(argv[i])) {
-			rec |= REC_MOD | REC_RUL | REC_SPA;
+		} else if ((rec & (REC_MOD | REC_RUL | REC_SPA | REC_OPN)) == 0 && ca.open(argv[i])) {
+			rec |= REC_OPN;
 		} else {
 			rec |= REC_ERR;
 		}
@@ -438,7 +440,9 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 	auto win = initscr();
-	if ((rec & REC_SPA) == 0) {
+	if ((rec & REC_SPA) == 1) {
+		ca.reset_space(h, w);
+	} else if ((rec & REC_OPN) == 0) {
 		ca.reset_space(STD_HEIGHT, STD_WIDTH);
 	}
 	noecho();
@@ -450,7 +454,7 @@ int main(int argc, char *argv[]) {
 	init_pair(3, COLOR_YELLOW, -1);
 	uint64_t interval = 1024, recd;
 GAME_INIT:
-	game(ca, interval, 0);
+	game<0, 0>(ca, interval);
 	recd = usec();
 GAME_REPT:
 	switch (auto c = getch(); c) {
@@ -520,7 +524,7 @@ GAME_REPT:
 		goto GAME_REPT;
 	}
 RAND_INIT:
-	game(ca, interval, 1);
+	game<1, 0>(ca, interval);
 	recd = usec();
 RAND_REPT:
 	if (auto r = getch(); r >= '0' && r < '9') {
@@ -533,7 +537,7 @@ RAND_REPT:
 		goto RAND_REPT;
 	}
 PLAY_INIT:
-	game(ca, interval, 2);
+	game<0, 1>(ca, interval);
 	recd = usec();
 PLAY_REPT:
 	switch (getch()) {
@@ -552,7 +556,7 @@ PLAY_REPT:
 		}
 	}
 MENU_INIT:
-	menu(false);
+	menu<0>();
 MENU_REPT:
 	switch (getch()) {
 	case 'o': {
@@ -621,6 +625,7 @@ MENU_REPT:
 	}
 	case 'a':
 		ca.reset_space(STD_HEIGHT, STD_WIDTH);
+		goto GAME_INIT;
 	case 'c':
 		goto GAME_INIT;
 	case 'q':
@@ -632,7 +637,7 @@ MENU_REPT:
 		goto MENU_REPT;
 	}
 QUIT_INIT:
-	menu(true);
+	menu<1>();
 QUIT_REPT:
 	switch (getch()) {
 	case 'y':
