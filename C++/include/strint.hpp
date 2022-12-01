@@ -78,7 +78,8 @@ public:
 	friend inline StrInt operator+(StrInt const &, StrInt const &);
 	friend inline StrInt operator-(StrInt const &, StrInt const &);
 	friend inline StrInt operator*(StrInt const &, StrInt const &);
-	friend inline StrInt divmod(StrInt const &, StrInt const &, bool const &);
+	template <bool>
+	friend inline StrInt divmod(StrInt const &, StrInt const &);
 	friend inline StrInt operator/(StrInt const &, StrInt const &);
 	friend inline StrInt operator%(StrInt const &, StrInt const &);
 	friend inline bool operator>(StrInt const &, StrInt const &);
@@ -121,7 +122,8 @@ StrInt operator*(StrInt const &lhs, StrInt const &rhs) {
 	}
 	return StrInt(len, abs);
 }
-StrInt divmod(StrInt const &lhs, StrInt const &rhs, bool const &select) {
+template <bool select>
+StrInt divmod(StrInt const &lhs, StrInt const &rhs) {
 	size_t len = lhs.len + rhs.len;
 	int8_t *pabs = new int8_t[len + 1], *tabs = new int8_t[len + 1];
 	int8_t *qabs = new int8_t[lhs.len + 1], *rabs = new int8_t[rhs.len + 1];
@@ -186,10 +188,10 @@ StrInt divmod(StrInt const &lhs, StrInt const &rhs, bool const &select) {
 	}
 }
 StrInt operator/(StrInt const &lhs, StrInt const &rhs) {
-	return divmod(lhs, rhs, 0);
+	return divmod<0>(lhs, rhs);
 }
 StrInt operator%(StrInt const &lhs, StrInt const &rhs) {
-	return divmod(lhs, rhs, 1);
+	return divmod<1>(lhs, rhs);
 }
 bool operator>(StrInt const &lhs, StrInt const &rhs) {
 	if (lhs.abs[lhs.len] < rhs.abs[rhs.len]) {
