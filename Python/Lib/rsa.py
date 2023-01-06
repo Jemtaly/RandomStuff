@@ -40,18 +40,34 @@ def randprime(l):
         r = random.getrandbits(l)
         if isprime(r):
             return r
-class RSA:
-    def __init__(self, l):
-        p, q = randprime(l), randprime(l)
-        self.n = p * q
-        phi = (p - 1) * (q - 1)
-        while True:
-            self.e = random.randrange(0, phi)
-            gcd, (r, _) = exgcd(self.e, phi)
-            if gcd == 1:
-                self.d = r % phi
-                break
-    def encrypt(self, m):
-        return power(m, self.e, self.n)
-    def decrypt(self, c):
-        return power(c, self.d, self.n)
+def RSAGenKey(l):
+    p, q = randprime(l), randprime(l)
+    phi = (p - 1) * (q - 1)
+    while True:
+        e = random.randrange(0, phi)
+        gcd, (r, _) = exgcd(e, phi)
+        if gcd == 1:
+            d = r % phi
+            break
+    return p, q, e, d
+def RSACrypt(n, k, x):
+    return power(x, k, n)
+def CRTCrypt(p, q, k, x):
+    xp = x % p
+    xq = x % q
+    kp = k % (p - 1)
+    kq = k % (q - 1)
+    mp = power(xp, kp, p)
+    mq = power(xq, kq, q)
+    _, (r, s) = exgcd(p, q)
+    return (mp * s * q + mq * r * p) % (p * q)
+def main():
+    p, q, e, d = RSAGenKey(1024)
+    N = p * q
+    m = 0xfedcba9876543210
+    c = CRTCrypt(p, q, e, m) # signature
+    d = RSACrypt(N, d, c)    # verification
+    assert m == d
+    c = RSACrypt(N, e, m)    # encryption
+    d = CRTCrypt(p, q, d, c) # decryption
+    assert m == d

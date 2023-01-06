@@ -7,18 +7,18 @@ def gcd(l):
     return 0 if len(l) == 0 else l[0] if len(l) == 1 else exgcd(gcd(l[::2]), gcd(l[1::2]))[0]
 def lcm(l):
     return 1 if len(l) == 0 else l[0] if len(l) == 1 else (lambda x, y: x * y // exgcd(x, y)[0])(lcm(l[::2]), lcm(l[1::2]))
-def crt(d):
+def crt(D):
     A, M = 0, 1
-    for a, m in d:
+    for a, m in D:
         d, (r, _) = exgcd(M, m)
         assert (a - A) % d == 0
-        A += M * r * (a - A) // d
+        A += (a - A) // d * r * M
         M *= m // d
     return A, M
 def moddiv(a, b, m):
     d, (r, _) = exgcd(b, m)
     assert a % d == 0
-    return r * (a // d), m // d
+    return a // d * r, m // d
 def reduce(l):
     q = gcd(l)
     return type(l)((i // q for i in l) if q else (0 for _ in l))

@@ -1,4 +1,4 @@
-def gcd(a, b):
+def gcd(a, b): # sign is determined by b
     return a if b == 0 else gcd(b, a % b)
 class Rational:
     V = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -27,17 +27,17 @@ class Rational:
     def __pow__(self, n):
         return Rational(self.d ** -n, self.n ** -n) if n < 0 else Rational(self.n ** n, self.d ** n)
     def __eq__(self, fles):
-        return (self - fles).n == 0
+        return self.n * fles.d - fles.n * self.d == 0
     def __gt__(self, fles):
-        return (self - fles).n > 0
+        return self.n * fles.d - fles.n * self.d > 0
     def __lt__(self, fles):
-        return (self - fles).n < 0
+        return self.n * fles.d - fles.n * self.d < 0
     def __ne__(self, fles):
-        return (self - fles).n != 0
+        return self.n * fles.d - fles.n * self.d != 0
     def __ge__(self, fles):
-        return (self - fles).n >= 0
+        return self.n * fles.d - fles.n * self.d >= 0
     def __le__(self, fles):
-        return (self - fles).n <= 0
+        return self.n * fles.d - fles.n * self.d <= 0
     def __repr__(self, base = 10):
         assert 2 <= base <= 36
         s = '-' if self.n < 0 else '+' if self.n > 0 else '±'
