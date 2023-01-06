@@ -19,10 +19,11 @@ int main(int argc, char **argv, char **env) {
 	setvbuf(stdout, NULL, _IOFBF, 0x10000);
 	printf("\033[?1049h\033[?25l");
 	fflush(stdout);
-	for (Vboolfuck vbfo; vbfo.eval(), GetKeyState(VK_ESCAPE) >= 0; Sleep(1), vbfo.clk = !vbfo.clk) {
+	for (Vboolfuck vbfo; vbfo.eval(), GetKeyState(VK_ESCAPE) >= 0; Sleep(1), vbfo.clk = ~vbfo.clk) {
+		static int w = 0, h = 0;
         CONSOLE_SCREEN_BUFFER_INFO csbi;
         GetConsoleScreenBufferInfo(hStdout, &csbi);
-        if (static int w = 0, h = 0; w != csbi.dwSize.X || h != csbi.dwSize.Y) {
+        if (w != csbi.dwSize.X || h != csbi.dwSize.Y) {
             w = csbi.dwSize.X;
             h = csbi.dwSize.Y;
             printf("\033[2J");
