@@ -8,10 +8,7 @@ module hexadecimal_decoder(
     output [7:0] out
   );
   reg [2:0] i = 0;
-  always @(posedge clk) i <= i + 1;
-  assign id = ~(1 << i) | blank;
   wire [3:0] cur;
-  assign cur = in >> {i, 2'b00};
   wire [7:0] hex [0:15];
   assign hex[4'h0] = 8'b0000_0011;
   assign hex[4'h1] = 8'b1001_1111;
@@ -29,5 +26,8 @@ module hexadecimal_decoder(
   assign hex[4'hd] = 8'b1000_0101;
   assign hex[4'he] = 8'b0110_0001;
   assign hex[4'hf] = 8'b0111_0001;
+  assign id = ~(1 << i) | blank;
+  assign cur = in >> {i, 2'b00};
   assign out = hex[cur];
+  always @(posedge clk) i <= i + 1;
 endmodule

@@ -1,6 +1,6 @@
 `include "cellular_automata.v"
 
-module test;
+module testbench;
   reg clk = 1, rst = 1;
   reg [7:0] rule = 30;
   reg [15:0] in = 1;
@@ -15,5 +15,5 @@ module test;
   initial
     #1 rst = 1'b0;
   initial
-    #65535 $finish;
+    #1024 $finish;
 endmodule

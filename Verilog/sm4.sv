@@ -1,23 +1,23 @@
 `timescale 1ns / 1ps
-
+/* verilator lint_off UNOPTFLAT */
 module SM4_gen_key(
-    input [7:0] sb [0:255],
-    input [31:0] ck [0:31],
-    input [7:0] mk [0:15],
+    input [7:0] SB [0:255],
+    input [31:0] CK [0:31],
+    input [7:0] key [0:15],
     output [31:0] rk [0:31]
   );
   wire [31:0] a [0:31];
   wire [31:0] b [0:31];
   wire [31:0] t [0:35];
-  assign t[0] = {mk['h0], mk['h1], mk['h2], mk['h3]} ^ 32'ha3b1bac6;
-  assign t[1] = {mk['h4], mk['h5], mk['h6], mk['h7]} ^ 32'h56aa3350;
-  assign t[2] = {mk['h8], mk['h9], mk['ha], mk['hb]} ^ 32'h677d9197;
-  assign t[3] = {mk['hc], mk['hd], mk['he], mk['hf]} ^ 32'hb27022dc;
+  assign t[0] = {key['h0], key['h1], key['h2], key['h3]} ^ 32'ha3b1bac6;
+  assign t[1] = {key['h4], key['h5], key['h6], key['h7]} ^ 32'h56aa3350;
+  assign t[2] = {key['h8], key['h9], key['ha], key['hb]} ^ 32'h677d9197;
+  assign t[3] = {key['hc], key['hd], key['he], key['hf]} ^ 32'hb27022dc;
   genvar i;
   generate
     for (i = 0; i < 32; i = i + 1) begin
-      assign a[i] = t[i + 1] ^ t[i + 2] ^ t[i + 3] ^ ck[i];
-      assign b[i] = {sb[a[i][31:24]], sb[a[i][23:16]], sb[a[i][15:8]], sb[a[i][7:0]]};
+      assign a[i] = t[i + 1] ^ t[i + 2] ^ t[i + 3] ^ CK[i];
+      assign b[i] = {SB[a[i][31:24]], SB[a[i][23:16]], SB[a[i][15:8]], SB[a[i][7:0]]};
       assign t[i + 4] = t[i] ^ b[i] ^ {b[i][18:0], b[i][31:19]} ^ {b[i][8:0], b[i][31:9]};
       assign rk[i] = t[i + 4];
     end
@@ -25,7 +25,7 @@ module SM4_gen_key(
 endmodule
 
 module SM4_encrypt(
-    input [7:0] sb [0:255],
+    input [7:0] SB [0:255],
     input [31:0] rk [0:31],
     input [7:0] src [0:15],
     output [7:0] dst [0:15]
@@ -41,7 +41,7 @@ module SM4_encrypt(
   generate
     for (i = 0; i < 32; i = i + 1) begin
       assign a[i] = t[i + 1] ^ t[i + 2] ^ t[i + 3] ^ rk[i];
-      assign b[i] = {sb[a[i][31:24]], sb[a[i][23:16]], sb[a[i][15:8]], sb[a[i][7:0]]};
+      assign b[i] = {SB[a[i][31:24]], SB[a[i][23:16]], SB[a[i][15:8]], SB[a[i][7:0]]};
       assign t[i + 4] = t[i] ^ b[i] ^ {b[i][29:0], b[i][31:30]} ^ {b[i][21:0], b[i][31:22]} ^ {b[i][13:0], b[i][31:14]} ^ {b[i][7:0], b[i][31:8]};
     end
   endgenerate
@@ -52,7 +52,7 @@ module SM4_encrypt(
 endmodule
 
 module SM4_decrypt(
-    input [7:0] sb [0:255],
+    input [7:0] SB [0:255],
     input [31:0] rk [0:31],
     input [7:0] src [0:15],
     output [7:0] dst [0:15]
@@ -68,7 +68,7 @@ module SM4_decrypt(
   generate
     for (i = 0; i < 32; i = i + 1) begin
       assign a[i] = t[i + 1] ^ t[i + 2] ^ t[i + 3] ^ rk[31 - i];
-      assign b[i] = {sb[a[i][31:24]], sb[a[i][23:16]], sb[a[i][15:8]], sb[a[i][7:0]]};
+      assign b[i] = {SB[a[i][31:24]], SB[a[i][23:16]], SB[a[i][15:8]], SB[a[i][7:0]]};
       assign t[i + 4] = t[i] ^ b[i] ^ {b[i][29:0], b[i][31:30]} ^ {b[i][21:0], b[i][31:22]} ^ {b[i][13:0], b[i][31:14]} ^ {b[i][7:0], b[i][31:8]};
     end
   endgenerate
@@ -79,12 +79,14 @@ module SM4_decrypt(
 endmodule
 
 module SM4(
-    input [7:0] mk [0:15],
+    input [7:0] key [0:15],
     input [7:0] src [0:15],
     output [7:0] dst [0:15],
     input mode
   );
-  wire [7:0] S_box [0:255] = {
+  wire [7:0] SB [0:255];
+  wire [31:0] CK [0:31];
+  assign SB = {
     8'hd6, 8'h90, 8'he9, 8'hfe, 8'hcc, 8'he1, 8'h3d, 8'hb7, 8'h16, 8'hb6, 8'h14, 8'hc2, 8'h28, 8'hfb, 8'h2c, 8'h05,
     8'h2b, 8'h67, 8'h9a, 8'h76, 8'h2a, 8'hbe, 8'h04, 8'hc3, 8'haa, 8'h44, 8'h13, 8'h26, 8'h49, 8'h86, 8'h06, 8'h99,
     8'h9c, 8'h42, 8'h50, 8'hf4, 8'h91, 8'hef, 8'h98, 8'h7a, 8'h33, 8'h54, 8'h0b, 8'h43, 8'hed, 8'hcf, 8'hac, 8'h62,
@@ -102,7 +104,7 @@ module SM4(
     8'h89, 8'h69, 8'h97, 8'h4a, 8'h0c, 8'h96, 8'h77, 8'h7e, 8'h65, 8'hb9, 8'hf1, 8'h09, 8'hc5, 8'h6e, 8'hc6, 8'h84,
     8'h18, 8'hf0, 8'h7d, 8'hec, 8'h3a, 8'hdc, 8'h4d, 8'h20, 8'h79, 8'hee, 8'h5f, 8'h3e, 8'hd7, 8'hcb, 8'h39, 8'h48
   };
-  wire [31:0] CK [0:31] = {
+  assign CK = {
     32'h00070e15, 32'h1c232a31, 32'h383f464d, 32'h545b6269,
     32'h70777e85, 32'h8c939aa1, 32'ha8afb6bd, 32'hc4cbd2d9,
     32'he0e7eef5, 32'hfc030a11, 32'h181f262d, 32'h343b4249,
@@ -113,10 +115,10 @@ module SM4(
     32'h10171e25, 32'h2c333a41, 32'h484f565d, 32'h646b7279
   };
   wire [31:0] rk [0:31];
-  wire [7:0] cph [0:15];
-  wire [7:0] pln [0:15];
-  SM4_gen_key gnk(.sb(S_box), .ck(CK), .mk(mk), .rk(rk));
-  SM4_encrypt enc(.sb(S_box), .rk(rk), .src(src), .dst(cph));
-  SM4_decrypt dec(.sb(S_box), .rk(rk), .src(src), .dst(pln));
-  assign dst = mode ? cph : pln;
+  wire [7:0] enc [0:15];
+  wire [7:0] dec [0:15];
+  SM4_gen_key sm4_gnk(.SB(SB), .CK(CK), .key(key), .rk(rk));
+  SM4_encrypt sm4_enc(.SB(SB), .rk(rk), .src(src), .dst(enc));
+  SM4_decrypt sm4_dec(.SB(SB), .rk(rk), .src(src), .dst(dec));
+  assign dst = mode ? enc : dec;
 endmodule
