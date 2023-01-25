@@ -27,8 +27,7 @@ def encrypt(karr, parr):
     return [(p + karr[i % len(karr)]) % 26 for i, p in enumerate(parr)]
 def decrypt(karr, carr):
     return [(c - karr[i % len(karr)]) % 26 for i, c in enumerate(carr)]
-def main():
-    ctxt = input()
+def autodec(ctxt):
     carr = []
     for c in ctxt:
         if c.isupper():
@@ -44,6 +43,13 @@ def main():
         if c.islower():
             c = chr(next(i) + 97)
         ptxt += c
-    print(ptxt)
+    return ptxt
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(description = 'Vigenere cipher auto decoder.')
+    parser.add_argument('-i', dest = 'input', help = 'input file', type = argparse.FileType('r'), default = '-')
+    parser.add_argument('-o', dest = 'output', help = 'output file', type = argparse.FileType('w'), default = '-')
+    args = parser.parse_args()
+    args.output.write(autodec(args.input.read()))
 if __name__ == '__main__':
     main()
