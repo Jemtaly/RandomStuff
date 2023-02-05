@@ -24,16 +24,20 @@ def isprime(n):
         return True
     if n < 2 or n & 1 == 0:
         return False
+    s, k = n - 1, 0
+    while s & 1 == 0:
+        s, k = s >> 1, k + 1
     for _ in range(16):
         a = random.randrange(1, n)
-        d = n - 1
-        while d & 1 == 0:
-            t = power(a, d, n)
+        t = power(a, s, n)
+        if t == 1:
+            continue
+        for _ in range(k):
             if t == n - 1:
                 break
-            if t != 1:
-                return False
-            d >>= 1
+            t = t * t % n
+        else:
+            return False
     return True
 def randprime(l):
     while True:
@@ -48,8 +52,7 @@ def RSAGenKey(l):
         gcd, (r, _) = exgcd(e, phi)
         if gcd == 1:
             d = r % phi
-            break
-    return p, q, e, d
+            return p, q, e, d
 def RSACrypt(n, k, x):
     return power(x, k, n)
 def CRTCrypt(p, q, k, x):
@@ -63,11 +66,11 @@ def CRTCrypt(p, q, k, x):
     return (mp * s * q + mq * r * p) % (p * q)
 def main():
     p, q, e, d = RSAGenKey(1024)
-    N = p * q
-    m = 0xfedcba9876543210
-    c = CRTCrypt(p, q, e, m) # signature
-    d = RSACrypt(N, d, c)    # verification
-    assert m == d
-    c = RSACrypt(N, e, m)    # encryption
-    d = CRTCrypt(p, q, d, c) # decryption
-    assert m == d
+    n = p * q
+    M = 0xfedcba9876543210
+    S = CRTCrypt(p, q, e, M) # signature
+    V = RSACrypt(n, d, S)    # verification
+    assert M == V
+    C = RSACrypt(n, e, M)    # encryption
+    P = CRTCrypt(p, q, d, C) # decryption
+    assert M == P
