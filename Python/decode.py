@@ -7,6 +7,6 @@ def main():
     parser.add_argument('-e', dest = 'encoding', help = 'encoding', type = str, default = None)
     args = parser.parse_args()
     cont = args.encoded.read()
-    args.output.write(cont.decode(args.encoding or chardet.detect(cont)['encoding']))
+    args.output.write(cont.decode(args.encoding or chardet.detect(cont)['encoding'] or 'utf-8'))
 if __name__ == '__main__':
     main()

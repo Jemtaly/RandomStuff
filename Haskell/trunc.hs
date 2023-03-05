@@ -20,3 +20,7 @@ isPrime n = if n < 40
 truncatablePrimes :: Int -> [[Integer]]
 truncatablePrimes b = map snd $ iterate nxt (1, [0]) where
     nxt (n, x) = (n * toInteger b, [k | t <- x, i <- [1 .. b - 1], let k = n * toInteger i + t, isPrime k])
+show :: Int -> IO ()
+show x = mapM_ (putStrLn . revBase x) $ concat $ takeWhile (not . null) $ truncatablePrimes x
+main :: IO ()
+main = show 16

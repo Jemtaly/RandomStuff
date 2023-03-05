@@ -1,9 +1,9 @@
 #!/bin/sh
-push() {
+begin() {
     sleep "$@" && echo "$@"
 }
-for i in "$@"
+for it in "$@"
 do
-    push "$i" &
+    begin "$it" &
 done
 wait

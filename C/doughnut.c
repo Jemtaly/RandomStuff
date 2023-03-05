@@ -51,11 +51,11 @@ int main() {
 		!GetConsoleMode(hStdout, &dwStdoutMode) ||
 		!SetConsoleMode(hStdin, dwStdinMode | ENABLE_WINDOW_INPUT) ||
         !SetConsoleMode(hStdout, dwStdoutMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
-		goto fallback;
+		goto error;
 	}
 #elif defined __unix__
 	if (!isatty(fileno(stdin)) || !isatty(fileno(stdout))) {
-		goto fallback;
+		goto error;
 	}
 #endif
 	setvbuf(stdout, NULL, _IOFBF, 0x10000);
@@ -100,7 +100,7 @@ int main() {
 	SetConsoleMode(hStdout, dwStdoutMode);
 #endif
 	return 0;
-fallback:
+error:
 	fprintf(stderr, "error: unsupported stdin/stdout\n");
 	return 1;
 }

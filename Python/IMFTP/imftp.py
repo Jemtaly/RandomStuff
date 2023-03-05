@@ -67,7 +67,7 @@ def run(client, recv, send, size):
         C.talk()
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description = "A file transfer tool and an instant messager.")
+    parser = argparse.ArgumentParser(description = "Instant Messager and File Transfer.")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--server', metavar = 'IP', nargs = '?', default = '', const = '', help = 'run as a server (default)')
     mode.add_argument('--client', metavar = 'IP', help = 'run as a client')

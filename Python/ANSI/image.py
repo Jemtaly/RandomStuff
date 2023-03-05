@@ -1,6 +1,6 @@
 #!/usr/bin/python3
-import PIL.Image, numpy, ansi, argparse
-def ishow(image, rows, cols):
+import PIL.Image, numpy, ansi
+def imcat(image, rows, cols):
     if rows <= 0 and cols <= 0:
         diagonal = (image.width ** 2 + image.height ** 2) ** 0.5
         rows, cols = int(image.height * 80 / diagonal), int(image.width * 80 / diagonal)
@@ -17,12 +17,13 @@ def ishow(image, rows, cols):
             print(ansi.SGR(fgc = h, bgc = l) + '▀', end = '')
         print(ansi.SGR())
 def main():
+    import argparse
     parser = argparse.ArgumentParser(description = 'Image Viewer for ANSI Terminal.')
     parser.add_argument('image', type = str, help = 'image file')
     parser.add_argument('-c', '--cols', type = int, default = 0, help = 'number of pixel cols')
     parser.add_argument('-r', '--rows', type = int, default = 0, help = 'number of pixel rows')
     args = parser.parse_args()
     image = PIL.Image.open(args.image)
-    ishow(image, args.rows, args.cols)
+    imcat(image, args.rows, args.cols)
 if __name__ == '__main__':
     main()
