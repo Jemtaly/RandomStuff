@@ -12,7 +12,7 @@ Some utility/experimental/fun little projects I've written myself.
 
 **[Image](Python/ANSI):** Image Viewer for ANSI Terminal.
 
-**[Python Projects](Python/Tkinter):** More and more python projects.
+**[Python Projects](Python):** More and more python projects.
 
 **[HexViewer](C/HexViewer):** Command-line binary viewer for windows and linux.
 
