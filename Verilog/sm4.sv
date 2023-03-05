@@ -51,33 +51,6 @@ module SM4_encrypt(
   assign {dst['hc], dst['hd], dst['he], dst['hf]} = t[32];
 endmodule
 
-module SM4_decrypt(
-    input [7:0] SB [0:255],
-    input [31:0] rk [0:31],
-    input [7:0] src [0:15],
-    output [7:0] dst [0:15]
-  );
-  wire [31:0] a [0:31];
-  wire [31:0] b [0:31];
-  wire [31:0] t [0:35];
-  assign t[0] = {src['h0], src['h1], src['h2], src['h3]};
-  assign t[1] = {src['h4], src['h5], src['h6], src['h7]};
-  assign t[2] = {src['h8], src['h9], src['ha], src['hb]};
-  assign t[3] = {src['hc], src['hd], src['he], src['hf]};
-  genvar i;
-  generate
-    for (i = 0; i < 32; i = i + 1) begin
-      assign a[i] = t[i + 1] ^ t[i + 2] ^ t[i + 3] ^ rk[31 - i];
-      assign b[i] = {SB[a[i][31:24]], SB[a[i][23:16]], SB[a[i][15:8]], SB[a[i][7:0]]};
-      assign t[i + 4] = t[i] ^ b[i] ^ {b[i][29:0], b[i][31:30]} ^ {b[i][21:0], b[i][31:22]} ^ {b[i][13:0], b[i][31:14]} ^ {b[i][7:0], b[i][31:8]};
-    end
-  endgenerate
-  assign {dst['h0], dst['h1], dst['h2], dst['h3]} = t[35];
-  assign {dst['h4], dst['h5], dst['h6], dst['h7]} = t[34];
-  assign {dst['h8], dst['h9], dst['ha], dst['hb]} = t[33];
-  assign {dst['hc], dst['hd], dst['he], dst['hf]} = t[32];
-endmodule
-
 module SM4(
     input [7:0] key [0:15],
     input [7:0] src [0:15],
@@ -86,6 +59,8 @@ module SM4(
   );
   wire [7:0] SB [0:255];
   wire [31:0] CK [0:31];
+  wire [31:0] rk [0:31];
+  wire [31:0] xk [0:31];
   assign SB = {
     8'hd6, 8'h90, 8'he9, 8'hfe, 8'hcc, 8'he1, 8'h3d, 8'hb7, 8'h16, 8'hb6, 8'h14, 8'hc2, 8'h28, 8'hfb, 8'h2c, 8'h05,
     8'h2b, 8'h67, 8'h9a, 8'h76, 8'h2a, 8'hbe, 8'h04, 8'hc3, 8'haa, 8'h44, 8'h13, 8'h26, 8'h49, 8'h86, 8'h06, 8'h99,
@@ -114,11 +89,12 @@ module SM4(
     32'ha0a7aeb5, 32'hbcc3cad1, 32'hd8dfe6ed, 32'hf4fb0209,
     32'h10171e25, 32'h2c333a41, 32'h484f565d, 32'h646b7279
   };
-  wire [31:0] rk [0:31];
-  wire [7:0] enc [0:15];
-  wire [7:0] dec [0:15];
+  genvar i;
+  generate
+    for (i = 0; i < 32; i = i + 1) begin
+      assign xk[i] = mode ? rk[i] : rk[31 - i];
+    end
+  endgenerate
   SM4_gen_key sm4_gnk(.SB(SB), .CK(CK), .key(key), .rk(rk));
-  SM4_encrypt sm4_enc(.SB(SB), .rk(rk), .src(src), .dst(enc));
-  SM4_decrypt sm4_dec(.SB(SB), .rk(rk), .src(src), .dst(dec));
-  assign dst = mode ? enc : dec;
+  SM4_encrypt sm4_xxc(.SB(SB), .rk(xk), .src(src), .dst(dst));
 endmodule
