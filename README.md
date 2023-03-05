@@ -1,6 +1,6 @@
 # RandomStuff
 
-Some random stuff.
+Some utility/experimental/fun little projects I've written myself.
 
 ## Catalogue
 
@@ -10,9 +10,9 @@ Some random stuff.
 
 **[IMFTP](Python/IMFTP):** A file transfer tool and an instant messager.
 
-**[Tkinter](Python/Tkinter):** A Bezier curve drawing tool and a RGB color viewer based on the tkinter library implemented in python.
+**[Image](Python/ANSI):** Image Viewer for ANSI Terminal.
 
-**[Crypto](Python/Crypto):** Some cryptographic utilities.
+**[Python Projects](Python/Tkinter):** More and more python projects.
 
 **[HexViewer](C/HexViewer):** Command-line binary viewer for windows and linux.
 
@@ -20,6 +20,6 @@ Some random stuff.
 
 **[CellAuto](C++/CellAuto):** A cellular automata written in C++.
 
-**[Cpp Headers](C++/include):** Some C++ headers, currently including a rational library and a big integer library.
+**[Cpp Headers](C++/include):** Some C++ headers.
 
 **[Verlog Projects](Verilog):** Several verilog projects.
