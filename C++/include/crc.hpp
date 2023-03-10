@@ -18,7 +18,7 @@ public:
 	template <size_t rlen>
 	CRC &operator=(std::bitset<rlen> const &rhsv) {
 		remn.reset();
-		for (size_t i = rlen - 1; i != -1; i--) {
+		for (size_t i = rlen - 1; i < rlen; i--) {
 			bool temp = remn[elen - 1];
 			remn <<= 1;
 			remn[0] = rhsv[i];
@@ -33,7 +33,7 @@ public:
 	template <size_t rlen>
 	CRC &operator^=(std::bitset<rlen> const &rhsv) {
 		std::bitset<elen> resv;
-		for (size_t i = rlen - 1; i != -1; i--) {
+		for (size_t i = rlen - 1; i < rlen; i--) {
 			bool temp = resv[elen - 1];
 			resv <<= 1;
 			resv[0] = rhsv[i];
@@ -53,7 +53,7 @@ public:
 	template <size_t rlen>
 	CRC &operator*=(std::bitset<rlen> const &rhsv) {
 		std::bitset<elen> resv;
-		for (size_t i = rlen - 1; i != -1; i--) {
+		for (size_t i = rlen - 1; i < rlen; i--) {
 			bool temp = resv[elen - 1];
 			resv <<= 1;
 			if (rhsv[i]) resv ^= remn;
