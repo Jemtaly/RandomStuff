@@ -10,14 +10,14 @@
 #define TAU 6.283185307179586
 #define PIE 3.141592653589793
 #define RT2 1.414213562373095
-#define DISPL_H 0x18
+#define DISPL_H 0x30
 #define DISPL_W 0x50
-#define GRAPH_H 0x10
+#define GRAPH_H 0x20
 #define GRAPH_W 0x20
 #define WAITING 0x08
 #define DELTA_T 0.01
 #define DELTA_U 0.02
-#define DELTA_V 0.06
+#define DELTA_V 0.04
 typedef struct {
 	unsigned char r, g, b;
 } RGB;
@@ -64,7 +64,7 @@ int main() {
 	for (double T = 0; T < TAU; T += DELTA_T) {
 		double W = 3.0 * T, Z = 1.0 * T;
 		double z[DISPL_H][DISPL_W] = {};
-		RGB fgc[DISPL_H][DISPL_W] = {};
+		RGB colr[DISPL_H][DISPL_W] = {};
 		for (double u = 0; u < TAU; u += DELTA_U) {
 			for (double v = 0; v < TAU; v += DELTA_V) {
 				double su = sin(u), cu = cos(u);
@@ -79,15 +79,15 @@ int main() {
 				if (DISPL_H > y && y >= 0 && DISPL_W > x && x >= 0 && z[y][x] < 1 / d) {
 					double c = (su * sv - cu * cv) - TAU / 6;
 					double b = (sv * sW - su * cv * cW) * cZ - su * cv * sW - sv * cW - cu * cv * sZ;
-					fgc[y][x] = rainbow(c, b * RT2, 0.2), z[y][x] = 1 / d;
+					colr[y][x] = rainbow(c, b * RT2, 0.2), z[y][x] = 1 / d;
 				}
 			}
 		}
-		for (int y = 0; y < DISPL_H; y++) {
-			printf("\x1b[%d;0H", y + 1);
-			for (int x = 0; x < DISPL_W; x++) {
-				setc(&fgc[y][x], NULL);
-				putchar(z[y][x] ? '@' : ' ');
+		for (int y = 0; y < DISPL_H; y += 2) {
+			printf("\x1b[%d;0H", y / 2 + 1);
+			for (int x = 0; x < DISPL_W; x += 1) {
+				setc(&colr[y + 0][x], &colr[y + 1][x]);
+				printf("▀");
 			}
 		}
 		fflush(stdout);
