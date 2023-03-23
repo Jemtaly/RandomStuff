@@ -1,7 +1,7 @@
 #!/usr/bin/python3
-import PIL.Image, numpy, ansi
+import PIL.Image, numpy, ansi, os
 def imcat(image, size):
-    cols, rows = size
+    cols, rows = size or os.get_terminal_size()
     image.thumbnail((cols * 1, rows * 2), PIL.Image.LANCZOS)
     image = image.convert('RGB')
     R, G, B = numpy.array(image).transpose((2, 0, 1))
@@ -13,11 +13,11 @@ def imcat(image, size):
             print(ansi.SGR(fgc = h, bgc = l) + '▀', end = '')
         print(ansi.SGR())
 def main():
-    import argparse, os
+    import argparse
     parser = argparse.ArgumentParser(description = 'Image Viewer for ANSI Terminal.')
     parser.add_argument('image', type = str, help = 'image file')
     parser.add_argument('-s', '--size', metavar = ('COLS', 'ROWS'), default = None, type = int, nargs = 2, help = 'size (columns, rows)')
     args = parser.parse_args()
-    imcat(PIL.Image.open(args.image), args.size or os.get_terminal_size())
+    imcat(PIL.Image.open(args.image), args.size)
 if __name__ == '__main__':
     main()
