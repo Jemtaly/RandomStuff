@@ -8,7 +8,7 @@ A file transfer tool and an instant messager.
 usage: imftp [-h] [--server [IP] | --client IP] [--port PORT] (--send [FILENAME] | --recv [FILENAME] | --talk)
              [--size SIZE]
 
-A file transfer tool and an instant messager.
+Instant Messager and File Transfer
 
 options:
   -h, --help         show this help message and exit

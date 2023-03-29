@@ -397,7 +397,7 @@ void menu() {
 }
 int main(int argc, char *argv[]) {
     if (!isatty(fileno(stdin)) || !isatty(fileno(stdout))) {
-        std::cerr << "error: unsupported stdin/stdout" << std::endl;
+        std::cerr << "Error: unsupported stdin/stdout" << std::endl;
         return 1;
     }
     CellAuto ca(0, 0);
@@ -436,7 +436,13 @@ int main(int argc, char *argv[]) {
         }
     }
     if ((rec & REC_ERR) != 0) {
-        std::cerr << "usage: " << argv[0] << " [-b] [-r RULE] [-n HEIGHT WIDTH] or " << argv[0] << " FILE" << std::endl;
+        std::cerr << "Description: Conway's Game of Life" << std::endl
+                  << "Usage: " << argv[0] << " [-b] [-r RULE] [-n H W] or " << argv[0] << " FILE" << std::endl
+                  << "Options:" << std::endl
+                  << "  -b       bounded mode" << std::endl
+                  << "  -r RULE  set rule" << std::endl
+                  << "  -n H W   set height and width" << std::endl
+                  << "  FILE     open file" << std::endl;
         return 1;
     }
     auto win = initscr();

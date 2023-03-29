@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
         !GetConsoleMode(hStdout, &dwStdoutMode) ||
         !SetConsoleMode(hStdin, dwStdinMode | ENABLE_WINDOW_INPUT) ||
         !SetConsoleMode(hStdout, dwStdoutMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
-        fprintf(stderr, "error: unsupported stdin/stdout\n");
+        fprintf(stderr, "Error: unsupported stdin/stdout\n");
         return 1;
     }
     DWORD rec = 0;
@@ -45,7 +45,11 @@ int main(int argc, char *argv[]) {
     }
     FILE *fp;
     if ((rec & REC_ERR) != 0 || (rec & REC_OPN) == 0 || fopen_s(&fp, filename, "rb")) {
-        fprintf(stderr, "usage: %s [-e] [-b N] FILENAME\n", argv[0]);
+        fprintf(stderr, "Description: Terminal-based Hex Viewer\n");
+        fprintf(stderr, "Usage: %s [-e | -b N] FILENAME\n", argv[0]);
+        fprintf(stderr, "Options:\n");
+        fprintf(stderr, "  -e  start at the end of the file\n");
+        fprintf(stderr, "  -b  start at the Nth byte of the file\n");
         return 1;
     }
     fseek(fp, 0, SEEK_END);

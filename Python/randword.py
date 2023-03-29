@@ -2,9 +2,9 @@
 import math, random
 consonant = [
     ['`', 'p', 'b', 't', 'd', 'k', 'g', 'm', 'n', 'l', 'f', 's', 'z', 'c', 'r', 'h', 'x'],
-    ['fp', 'ft', 'fk', 'fm', 'fn', 'sp', 'st', 'sk', 'sm', 'sn', 'cp', 'ct', 'ck', 'cm', 'cn', 'xp', 'xt', 'xk', 'xm', 'xn', 'stc', 'cts'],
+    ['fp', 'ft', 'fk', 'fm', 'fn', 'fl', 'sp', 'st', 'sk', 'sm', 'sn', 'sl', 'cp', 'ct', 'ck', 'cm', 'cn', 'cl', 'xp', 'xt', 'xk', 'xm', 'xn', 'xl'],
     ['pf', 'tf', 'kf', 'ps', 'ts', 'ks', 'pc', 'tc', 'kc', 'ph', 'th', 'kh'],
-    ['pl', 'bl', 'kl', 'gl', 'fl', 'sl', 'cl', 'xl'],
+    ['pl', 'bl', 'tl', 'dl', 'kl', 'gl'],
 ]
 vowel = [
     ['i', 'e', 'a', 'o', 'u', 'w', 'y'],
@@ -34,7 +34,7 @@ def randword():
     return word
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description = 'Random Word Generator.')
+    parser = argparse.ArgumentParser(description = 'Random Word Generator')
     parser.add_argument('-n', dest = 'number', help = 'number of words', type = int, default = 1)
     args = parser.parse_args()
     for _ in range(args.number):

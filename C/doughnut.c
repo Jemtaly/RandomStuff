@@ -102,6 +102,6 @@ int main() {
 #endif
     return 0;
 error:
-    fprintf(stderr, "error: unsupported stdin/stdout\n");
+    fprintf(stderr, "Error: unsupported stdin/stdout\n");
     return 1;
 }

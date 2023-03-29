@@ -80,7 +80,12 @@ int main(int argc, char *argv[]) {
         }
     }
     if ((rec & REC_ERROR) != 0) {
-        fprintf(stderr, "usage: %s [-d] [-t <milliseconds> | <command>]\n", argv[0]);
+        fprintf(stderr, "Description: Prevent the PC from sleeping.\n");
+        fprintf(stderr, "Usage: %s [-d] [-t <ms> | <cmd>]\n", argv[0]);
+        fprintf(stderr, "Options:\n");
+        fprintf(stderr, "  -d       prevent the display from sleeping as well\n");
+        fprintf(stderr, "  -t <ms>  wait for <ms> milliseconds\n");
+        fprintf(stderr, "  <cmd>    execute <cmd> and wait for it to finish\n");
         return 1;
     }
     SetThreadExecutionState(ES_CONTINUOUS | (rec & REC_DISPLAY ? ES_DISPLAY_REQUIRED : ES_SYSTEM_REQUIRED));

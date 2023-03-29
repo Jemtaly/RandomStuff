@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 def main():
     import argparse, chardet
-    parser = argparse.ArgumentParser(description = 'Text file decoder.')
+    parser = argparse.ArgumentParser(description = 'Text File Decoder')
     parser.add_argument(dest = 'encoded', help = 'encoded file', type = argparse.FileType('rb'))
     parser.add_argument('-o', dest = 'output', help = 'output file', type = argparse.FileType('w'), default = '-')
     parser.add_argument('-e', dest = 'encoding', help = 'encoding', type = str, default = None)

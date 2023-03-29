@@ -6,7 +6,7 @@ def translate(text, source, target):
     return ''.join(i[0] for i in ans)
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description = "Command Line Translator.")
+    parser = argparse.ArgumentParser(description = "Command Line Translator")
     parser.add_argument('-s', dest = 'source', help = 'source language', default = 'auto')
     parser.add_argument('-t', dest = 'target', help = 'target language', default = 'auto')
     parser.add_argument('-i', dest = 'input', help = 'input file', type = argparse.FileType('r'), default = '-')

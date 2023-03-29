@@ -15,7 +15,7 @@ def sixel(image, size):
     print('\033\\', end = '')
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description = 'Print image as sixel.')
+    parser = argparse.ArgumentParser(description = 'Sixel Image Viewer')
     parser.add_argument('image', type = str, help = 'image file')
     parser.add_argument('-s', '--size', metavar = ('WIDTH', 'HEIGHT'), default = None, type = int, nargs = 2, help = 'size (width, height)')
     args = parser.parse_args()

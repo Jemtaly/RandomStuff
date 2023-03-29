@@ -46,7 +46,7 @@ def autodec(ctxt):
     return ptxt
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description = 'Vigenere cipher auto decryptor.')
+    parser = argparse.ArgumentParser(description = 'Vigenere Cipher Auto-Decrypter')
     parser.add_argument('-i', dest = 'input', help = 'input file', type = argparse.FileType('r'), default = '-')
     parser.add_argument('-o', dest = 'output', help = 'output file', type = argparse.FileType('w'), default = '-')
     args = parser.parse_args()

@@ -14,7 +14,7 @@ def imcat(image, size):
         print(ansi.SGR())
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description = 'Image Viewer for ANSI Terminal.')
+    parser = argparse.ArgumentParser(description = 'Image Viewer for ANSI Terminal')
     parser.add_argument('image', type = str, help = 'image file')
     parser.add_argument('-s', '--size', metavar = ('COLS', 'ROWS'), default = None, type = int, nargs = 2, help = 'size (columns, rows)')
     args = parser.parse_args()
