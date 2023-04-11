@@ -2,6 +2,8 @@
 
 Image Viewer for ANSI Terminal.
 
+![image](https://user-images.githubusercontent.com/83796250/231065095-68255527-25b1-463c-8494-1048b3893696.png)
+
 ## Usage
 
 ```
