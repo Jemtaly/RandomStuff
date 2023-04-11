@@ -10,7 +10,7 @@ Some utility/experimental/fun little projects I've written myself.
 
 **[IMFTP](Python/IMFTP):** A file transfer tool and an instant messager.
 
-**[Image](Python/ANSI):** Image Viewer for ANSI Terminal.
+**[Imcat](Python/ANSI):** Image Viewer for ANSI Terminal.
 
 **[Python Projects](Python):** More and more python projects.
 
