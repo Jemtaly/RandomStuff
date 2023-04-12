@@ -20,10 +20,10 @@
 #define REC_SPA 4
 #define REC_OPN 8
 #define REC_ERR 128
-uint64_t usec() {
+uint64_t msec() {
     timeval tv;
     gettimeofday(&tv, NULL);
-    return (uint64_t)tv.tv_sec * 1000000 + tv.tv_usec;
+    return (uint64_t)tv.tv_sec * 1000 + (uint64_t)tv.tv_usec / 1000;
 }
 class CellAuto {
     uint16_t height, width;
@@ -517,8 +517,7 @@ GAME_REPT:
     case 'R':
         goto RAND_INIT;
     case ' ':
-        recd = usec();
-        nodelay(win, 1);
+        recd = msec();
         goto PLAY_INIT;
     case 'm':
         clear();
@@ -553,21 +552,19 @@ RAND_REPT:
 PLAY_INIT:
     game<0, 1>(ca, interval);
 PLAY_REPT:
-    switch (getch()) {
+    switch (auto time = msec(), next = recd + interval; timeout(time > next ? 0 : next - time), getch()) {
     case ' ':
-        nodelay(win, 0);
+        timeout(-1);
         goto GAME_INIT;
     case KEY_RESIZE:
         clear();
         goto PLAY_INIT;
+    case ERR: // timeout
+        ca.step();
+        recd = next;
+        goto PLAY_INIT;
     default:
-        if (auto nxtd = recd + interval * 1000; usec() < nxtd) {
-            goto PLAY_REPT;
-        } else {
-            ca.step();
-            recd = nxtd;
-            goto PLAY_INIT;
-        }
+        goto PLAY_REPT;
     }
 MENU_INIT:
     menu<0>();
