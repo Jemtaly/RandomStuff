@@ -6,7 +6,7 @@ Some utility/experimental/fun little projects I've written myself.
 
 **[Bash Tools](Bash):** Some useful tools written in bash, including unix2dos, dos2unix, sedmv (a tool to perform batch renaming of files with sed command).
 
-**[BashBrainfuck](Bash/Brainfuck):** A brainfuck language ~interpreter~ translator written in bash.
+**[BashBF](Bash/Brainfuck):** A BF language ~interpreter~ translator written in bash.
 
 **[IMFTP](Python/IMFTP):** A file transfer tool and an instant messager.
 
