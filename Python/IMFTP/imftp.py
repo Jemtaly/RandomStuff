@@ -9,7 +9,7 @@ class TCPClientWrapper:
     @property
     def peername(self):
         return self.client.getpeername()
-    def sendstream(self, istream, rec = [-1]):
+    def sendstream(self, istream, rec):
         self.client.send(b'SS')
         assert self.client.recv(2) == b'RS'
         datasize = 4094
@@ -18,7 +18,7 @@ class TCPClientWrapper:
             datasize = len(data)
             self.client.sendall(datasize.to_bytes(2, 'big') + data)
             rec[0] -= datasize
-    def recvstream(self, ostream, rec = [0]):
+    def recvstream(self, ostream, rec):
         self.client.send(b'RS')
         assert self.client.recv(2) == b'SS'
         datasize = int.from_bytes(self.client.recv(2, socket.MSG_WAITALL), 'big')
