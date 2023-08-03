@@ -146,7 +146,5 @@ _QUIT:
     printf("\033[?1049l\033[?25h");
     fflush(stdout);
     fclose(fp);
-    SetConsoleMode(hStdin, dwStdinMode);
-    SetConsoleMode(hStdout, dwStdoutMode);
     return 0;
 }
