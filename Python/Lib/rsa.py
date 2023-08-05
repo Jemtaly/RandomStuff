@@ -10,7 +10,7 @@ def power(b, p, m):
         return 1
     t = power(b, p >> 1, m)
     return (t * t * b if p & 1 else t * t) % m
-def sqrt(n):
+def nsqrt(n):
     amin, amax = 0, n + 1
     while amax - amin > 1:
         a = (amax + amin) // 2
@@ -19,7 +19,7 @@ def sqrt(n):
         else:
             amin = a
     return amin
-def isprime(n):
+def chkPrime(n):
     if n == 2:
         return True
     if n < 2 or n & 1 == 0:
@@ -39,13 +39,13 @@ def isprime(n):
         else:
             return False
     return True
-def randprime(l):
+def rndPrime(l):
     while True:
         r = random.getrandbits(l)
-        if isprime(r):
+        if chkPrime(r):
             return r
 def RSAGenKey(l):
-    p, q = randprime(l), randprime(l)
+    p, q = rndPrime(l), rndPrime(l)
     phi = (p - 1) * (q - 1)
     while True:
         e = random.randrange(0, phi)
@@ -55,7 +55,7 @@ def RSAGenKey(l):
             return p, q, e, d
 def RSACrypt(n, k, x):
     return power(x, k, n)
-def CRTCrypt(p, q, k, x):
+def CRTCrypt(p, q, k, x): # Optimized by CRT (private key is required)
     xp = x % p
     xq = x % q
     kp = k % (p - 1)

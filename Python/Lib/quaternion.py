@@ -9,6 +9,8 @@ class Quaternion:
         self.x = x
         self.y = y
         self.z = z
+    def __repr__(self):
+        return '<%s, %s, %s, %s>' % (self.w, self.x, self.y, self.z)
     def __neg__(self):
         return Quaternion(-self.w, -self.x, -self.y, -self.z)
     def __pos__(self):
@@ -43,8 +45,6 @@ class Quaternion:
         return Quaternion(np.log(scal), x * h, y * h, z * h)
     def __pow__(self, num):
         return exp(num * log(self))
-    def __str__(self):
-        return '{%s, %s, %s, %s}' % (self.w, self.x, self.y, self.z)
     def pauli(self):
         return np.array([
             [self.w * +1. + self.z * -1j, self.y * -1. + self.x * -1j],

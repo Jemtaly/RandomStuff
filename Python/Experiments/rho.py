@@ -24,7 +24,7 @@ def collide(hash, seed):
 def main():
     import sys
     hlen = sys.hash_info.width // 8
-    x, y = collide(lambda data: hash(data).to_bytes(hlen, 'little'), hash(None).to_bytes(hlen, 'little'))
+    x, y = collide(lambda data: hash(data).to_bytes(hlen, 'little', signed = True), hash(None).to_bytes(hlen, 'little', signed = True))
     print(x.hex())
     print(y.hex())
 if __name__ == '__main__':

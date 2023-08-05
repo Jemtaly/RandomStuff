@@ -78,10 +78,10 @@ class RGB:
         return '#{:02x}{:02x}{:02x}'.format(self.r, self.g, self.b)
     def __invert__(self):
         return RGB(255 - self.r, 255 - self.g, 255 - self.b)
-    def rainbow(theta, brightness = 1, grayscale = 0): # theta in radians, brightness and grayscale >= 0
-        B = math.log(brightness) if brightness > 0 else 0 - math.inf
-        H = 0.5 + math.atan(B) / math.pi
-        R = 0.5 - math.atan((B * B + grayscale) ** 0.5) / math.pi if grayscale > 0 else min(H, 1 - H)
+    def rainbow(theta, brightness = 0, saturation = math.inf):
+        S = (math.exp(+saturation) - math.exp(-saturation)) / (math.exp(+saturation) + math.exp(-saturation))
+        H = 1 / (1 + math.exp(-brightness))
+        R = S / (1 + math.exp(-brightness) + math.exp(+brightness))
         r = min(255, math.floor(256 * (H + R * math.cos(theta))))
         g = min(255, math.floor(256 * (H + R * math.cos(theta - math.tau / 3))))
         b = min(255, math.floor(256 * (H + R * math.cos(theta + math.tau / 3))))
