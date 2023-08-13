@@ -20,7 +20,7 @@
 #define REC_SPA 4
 #define REC_OPN 8
 #define REC_ERR 128
-uint64_t msec() {
+static uint64_t msec() {
     timeval tv;
     gettimeofday(&tv, NULL);
     return (uint64_t)tv.tv_sec * 1000 + (uint64_t)tv.tv_usec / 1000;
@@ -80,11 +80,29 @@ public:
         reference{0, 0},
         current{new bool[height * width], {{0, 0, 0, 1, 0, 0, 0, 0, 0}, {0, 0, 1, 1, 0, 0, 0, 0, 0}}, nullptr, 0} {}
     ~CellAuto() {
-        clear_undolog();
-        clear_redolog();
+        init_generation(false);
         delete[] current.space;
         if (current.bound) {
             delete current.bound;
+        }
+    }
+    void resize_space(int h, int w) {
+        init_generation(true);
+        delete[] current.space;
+        if (current.bound) {
+            current.bound->x = current.bound->y = 0;
+        }
+        reference.x = reference.y = location.x = location.y = 0;
+        height = h < MIN_HEIGHT ? MIN_HEIGHT : h > MAX_HEIGHT ? MAX_HEIGHT : h;
+        width = w < MIN_WIDTH ? MIN_WIDTH : w > MAX_WIDTH ? MAX_WIDTH : w;
+        current.space = new bool[height * width];
+    }
+    void random_space(uint8_t d) {
+        init_generation(true);
+        for (uint16_t i = 0; i < height; i++) {
+            for (uint16_t j = 0; j < width; j++) {
+                current.space[i * width + j] = rand() % 8 < d;
+            }
         }
     }
     void move_location(char dir) {
@@ -129,25 +147,6 @@ public:
         case 'd':
             reference.y = (reference.y + 1) % width;
             break;
-        }
-    }
-    void reset_space(int h, int w) {
-        init_generation(true);
-        delete[] current.space;
-        height = h < MIN_HEIGHT ? MIN_HEIGHT : h > MAX_HEIGHT ? MAX_HEIGHT : h;
-        width = w < MIN_WIDTH ? MIN_WIDTH : w > MAX_WIDTH ? MAX_WIDTH : w;
-        current.space = new bool[height * width];
-        if (current.bound) {
-            current.bound->x = current.bound->y = 0;
-        }
-        reference.x = reference.y = location.x = location.y = 0;
-    }
-    void random_space(uint8_t d) {
-        init_generation(true);
-        for (uint16_t i = 0; i < height; i++) {
-            for (uint16_t j = 0; j < width; j++) {
-                current.space[i * width + j] = rand() % 8 < d;
-            }
         }
     }
     void set_rule(std::string const &rule) {
@@ -282,7 +281,7 @@ public:
             return 0;
         }
         file << get_rule() << std::endl;
-        file << height << '*' << width << ' ' << (current.bound ? '1' : '0') << std::endl;
+        file << height << 'x' << width << ' ' << (current.bound ? '1' : '0') << std::endl;
         for (uint16_t i = 0; i < height; i++) {
             for (uint16_t j = 0; j < width; j++) {
                 file << get_ref_cell(i, j);
@@ -300,11 +299,11 @@ public:
         int h, w;
         char c, b;
         file >> rule >> h >> c >> w >> b;
-        if (current.bound ? b == '0' : b != '0') {
+        if (b != (current.bound ? '1' : '0')) {
             switch_mode();
         }
         set_rule(rule);
-        reset_space(h, w);
+        resize_space(h, w);
         for (uint16_t i = 0; i < height; i++) {
             std::string line;
             file >> line;
@@ -447,9 +446,9 @@ int main(int argc, char *argv[]) {
     }
     auto win = initscr();
     if ((rec & REC_SPA) != 0) {
-        ca.reset_space(h, w);
+        ca.resize_space(h, w);
     } else if ((rec & REC_OPN) == 0) {
-        ca.reset_space(STD_HEIGHT, STD_WIDTH);
+        ca.resize_space(STD_HEIGHT, STD_WIDTH);
     }
     noecho();
     curs_set(0);
@@ -630,12 +629,12 @@ MENU_REPT:
         while ((std::cin >> w).fail()) {
             std::cin.clear();
         }
-        ca.reset_space(h, w);
+        ca.resize_space(h, w);
         reset_prog_mode();
         goto GAME_INIT;
     }
     case 'a':
-        ca.reset_space(STD_HEIGHT, STD_WIDTH);
+        ca.resize_space(STD_HEIGHT, STD_WIDTH);
         goto GAME_INIT;
     case 'c':
         goto GAME_INIT;
