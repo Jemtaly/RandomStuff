@@ -44,8 +44,8 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Description: Terminal-based Hex Viewer\n");
         fprintf(stderr, "Usage: %s [-e N | -b N] FILENAME\n", argv[0]);
         fprintf(stderr, "Options:\n");
-        fprintf(stderr, "  -e  start at the Nth byte from the end of the file\n");
-        fprintf(stderr, "  -b  start at the Nth byte from the beginning of the file\n");
+        fprintf(stderr, "  -e N  start at the Nth byte from the end of the file\n");
+        fprintf(stderr, "  -b N  start at the Nth byte from the beginning of the file\n");
         return 1;
     }
     fseek(fp, 0, SEEK_END);

@@ -7,7 +7,7 @@ An awesome boolfuck machine implemented in verilog.
 Run following commands in current path:
 
 ```
-verilator --cc --exe --build main.cpp boolfuck.v -LDFLAGS -static
+verilator --cc --exe --build main.cpp boolfuck.sv -LDFLAGS -static
 obj_dir/Vboolfuck.exe
 ```
 

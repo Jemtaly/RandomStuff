@@ -3,17 +3,22 @@
 #include "Windows.h"
 #include "verilated.h"
 #define mv(x, y) printf("\033[%d;%dH", (x) + 1, (y) + 1)
-#define mvprintf(x, y, ...) mv(x, y), printf(__VA_ARGS__)
+#define mvprintf(x, y, format, ...) printf("\033[%d;%dH" format, (x) + 1, (y) + 1 __VA_OPT__(,) __VA_ARGS__)
 #define INSTRS "/~<>.,[]"
 #define VALUES "01??????"
 int main(int argc, char **argv, char **env) {
     HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE), hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
-    DWORD dwStdinMode, dwStdoutMode;
-    if (!GetConsoleMode(hStdin, &dwStdinMode) ||
-        !GetConsoleMode(hStdout, &dwStdoutMode) ||
-        !SetConsoleMode(hStdin, dwStdinMode | ENABLE_WINDOW_INPUT) ||
-        !SetConsoleMode(hStdout, dwStdoutMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
-        fprintf(stderr, "error: unsupported stdin/stdout\n");
+    DWORD dwStdinModeOld, dwStdoutModeOld, dwStdinModeNew, dwStdoutModeNew;
+    if (!GetConsoleMode(hStdin, &dwStdinModeOld) || !GetConsoleMode(hStdout, &dwStdoutModeOld)) {
+        fprintf(stderr, "Error: unsupported stdin/stdout\n");
+        return 1;
+    }
+    dwStdinModeNew = dwStdinModeOld | ENABLE_WINDOW_INPUT;
+    dwStdoutModeNew = dwStdoutModeOld | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    if (!SetConsoleMode(hStdin, dwStdinModeNew) || !SetConsoleMode(hStdout, dwStdoutModeNew)) {
+        SetConsoleMode(hStdin, dwStdinModeOld);
+        SetConsoleMode(hStdout, dwStdoutModeOld);
+        fprintf(stderr, "Error: unsupported stdin/stdout\n");
         return 1;
     }
     setvbuf(stdout, NULL, _IOFBF, 0x10000);
@@ -57,8 +62,9 @@ int main(int argc, char **argv, char **env) {
             mvprintf( 9, 15, " \033[1mDATA\033[22m ");
             mvprintf(18, 22, " \033[1mSTACK\033[22m ");
             mvprintf( 0, 40, " \033[1mSTATE\033[22m ");
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < 8; i++) {
                 mvprintf(i +  1, 38, "(%c)", INSTRS[i]);
+            }
             mvprintf(10, 38, "LFT");
             mvprintf(11, 38, "RGT");
             mvprintf(12, 38, "CTL");
@@ -68,18 +74,21 @@ int main(int argc, char **argv, char **env) {
         }
         for (int i = 0; i < 8; i++) {
             mv(i +  1,  2);
-            for (int j = 0; j < 32; j++)
+            for (int j = 0; j < 32; j++) {
                 printf("%c", INSTRS[vbfo.prg[i * 32 + j]]);
+            }
         }
         for (int i = 0; i < 8; i++) {
             mv(i + 10,  2);
-            for (int j = 0; j < 32; j++)
+            for (int j = 0; j < 32; j++) {
                 printf("%c", VALUES[vbfo.mem[i * 32 + j]]);
+            }
         }
         for (int i = 0; i < 4; i++) {
             mv(i + 19,  2);
-            for (int j = 0; j < 16; j++)
+            for (int j = 0; j < 16; j++) {
                 printf("%02X ", vbfo.stk[i * 16 + j]);
+            }
         }
         mvprintf( 1 + vbfo.cur / 32, vbfo.cur % 32 + 2, "\033[4m%c\033[24m", INSTRS[vbfo.prg[vbfo.cur]]);
         mvprintf(10 + vbfo.ptr / 32, vbfo.ptr % 32 + 2, "\033[4m%c\033[24m", VALUES[vbfo.mem[vbfo.ptr]]);
@@ -87,9 +96,11 @@ int main(int argc, char **argv, char **env) {
         switch (vbfo.blk) {
         case 0b11: mvprintf( 1 + vbfo.cur / 32, vbfo.cur % 32 + 2, "\033[7m%c\033[27m", INSTRS[vbfo.prg[vbfo.cur]]); break;
         case 0b01: mvprintf(10 + vbfo.ptr / 32, vbfo.ptr % 32 + 2, "\033[7m%c\033[27m", VALUES[vbfo.mem[vbfo.ptr]]); break;
-        case 0b10: mvprintf(10 + vbfo.ptr / 32, vbfo.ptr % 32 + 2, "\033[7m%c\033[27m", VALUES[7]); break; }
-        for (int i = 0; i < 8; i++)
+        case 0b10: mvprintf(10 + vbfo.ptr / 32, vbfo.ptr % 32 + 2, "\033[7m%c\033[27m", VALUES[7]); break;
+        }
+        for (int i = 0; i < 8; i++) {
             mvprintf(i +  1, 46, "%d", vbfo.key >> i & 1);
+        }
         mvprintf(10, 46, "%d", vbfo.lft & 1);
         mvprintf(11, 46, "%d", vbfo.rgt & 1);
         mvprintf(12, 46, "%d", vbfo.ctl & 1);
@@ -111,8 +122,8 @@ int main(int argc, char **argv, char **env) {
     }
     printf("\033[?1049l\033[?25h");
     fflush(stdout);
-    SetConsoleMode(hStdout, dwStdoutMode);
-    SetConsoleMode(hStdin, dwStdinMode);
+    SetConsoleMode(hStdout, dwStdoutModeOld);
+    SetConsoleMode(hStdin, dwStdinModeOld);
     FlushConsoleInputBuffer(hStdin);
     return 0;
 }
