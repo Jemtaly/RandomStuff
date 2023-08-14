@@ -20,10 +20,10 @@
 #define REC_SPA 4
 #define REC_OPN 8
 #define REC_ERR 128
-static uint64_t msec() {
-    timeval tv;
-    gettimeofday(&tv, NULL);
-    return (uint64_t)tv.tv_sec * 1000 + (uint64_t)tv.tv_usec / 1000;
+uint64_t msec() {
+    struct timeval tv;
+    gettimeofday(&tv, nullptr);
+    return (uint64_t)tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
 class CellAuto {
     uint16_t height, width;
@@ -78,7 +78,7 @@ public:
         width(w < MIN_WIDTH ? MIN_WIDTH : w > MAX_WIDTH ? MAX_WIDTH : w),
         location{0, 0},
         reference{0, 0},
-        current{new bool[height * width], {{0, 0, 0, 1, 0, 0, 0, 0, 0}, {0, 0, 1, 1, 0, 0, 0, 0, 0}}, nullptr, 0} {}
+        current{new bool[height * width]{}, {{0, 0, 0, 1, 0, 0, 0, 0, 0}, {0, 0, 1, 1, 0, 0, 0, 0, 0}}, nullptr, 0} {}
     ~CellAuto() {
         init_generation(false);
         delete[] current.space;
@@ -95,7 +95,7 @@ public:
         reference.x = reference.y = location.x = location.y = 0;
         height = h < MIN_HEIGHT ? MIN_HEIGHT : h > MAX_HEIGHT ? MAX_HEIGHT : h;
         width = w < MIN_WIDTH ? MIN_WIDTH : w > MAX_WIDTH ? MAX_WIDTH : w;
-        current.space = new bool[height * width];
+        current.space = new bool[height * width]{};
     }
     void random_space(uint8_t d) {
         init_generation(true);
@@ -149,57 +149,54 @@ public:
             break;
         }
     }
-    void set_rule(std::string const &rule) {
-        bool new_rule[2][9] = {};
-        for (bool i = 0; auto r : rule) {
+    void set_rule(std::string const &rule_str) {
+        bool rule[2][9] = {};
+        for (bool i = 0; auto r : rule_str) {
             switch (r) {
-            case 'b':
-            case 'B':
-                i = 0;
-                break;
-            case 's':
-            case 'S':
-                i = 1;
-                break;
-            case '/':
-                i ^= 1;
-                break;
+            case 'b': case 'B': i = 0; break;
+            case 's': case 'S': i = 1; break;
+            case '/': i ^= 1; break;
             default:
                 if (r >= '0' && r < '9') {
-                    new_rule[i][r - '0'] = 1;
+                    rule[i][r - '0'] = 1;
                 }
             }
         }
         bool changed = 0;
         for (int i = 0; i < 9; i++) {
-            changed |= current.rule[0][i] != new_rule[0][i] || current.rule[1][i] != new_rule[1][i];
+            changed |= current.rule[0][i] != rule[0][i] || current.rule[1][i] != rule[1][i];
         }
         if (changed) {
             copy_generation(false);
             for (int i = 0; i < 9; i++) {
-                current.rule[0][i] = new_rule[0][i];
-                current.rule[1][i] = new_rule[1][i];
+                current.rule[0][i] = rule[0][i];
+                current.rule[1][i] = rule[1][i];
             }
         }
     }
     auto get_rule() const {
-        std::string rule = "B";
+        std::string rule_str = "B";
         for (int i = 0; i < 9; i++) {
             if (current.rule[0][i]) {
-                rule += char('0' + i);
+                rule_str += char('0' + i);
             }
         }
-        rule += "/S";
+        rule_str += "/S";
         for (int i = 0; i < 9; i++) {
             if (current.rule[1][i]) {
-                rule += char('0' + i);
+                rule_str += char('0' + i);
             }
         }
-        return rule;
+        return rule_str;
     }
     void switch_mode() {
         copy_generation(false);
         current.bound = current.bound ? nullptr : new XY(reference);
+    }
+    void set_mode(bool n) {
+        if ((bool)current.bound != n) {
+            switch_mode();
+        }
     }
     bool get_mode() const {
         return current.bound;
@@ -295,14 +292,12 @@ public:
         if (file.fail()) {
             return 0;
         }
-        std::string rule;
+        std::string rule_str;
         int h, w;
         char c, b;
-        file >> rule >> h >> c >> w >> b;
-        if (b != (current.bound ? '1' : '0')) {
-            switch_mode();
-        }
-        set_rule(rule);
+        file >> rule_str >> h >> c >> w >> b;
+        set_mode(b == '1');
+        set_rule(rule_str);
         resize_space(h, w);
         for (uint16_t i = 0; i < height; i++) {
             std::string line;
@@ -314,8 +309,7 @@ public:
         return 1;
     }
 };
-template <bool rand, bool play>
-void game(CellAuto const &ca, uint64_t interval) {
+void game(CellAuto const &ca, uint64_t interval, bool rand, bool play) {
     uint16_t top = MAX((STD_HEIGHT - ca.get_height()) / 2, 0), left = MAX(STD_WIDTH - ca.get_width(), 0);
     uint32_t population = 0;
     WINDOW *info = newwin(3, 2 * ca.get_width() - 3, top, left);
@@ -368,8 +362,7 @@ void game(CellAuto const &ca, uint64_t interval) {
     delwin(space);
     delwin(gen);
 }
-template <bool end>
-void menu() {
+void menu(bool quit) {
     uint16_t top = MAX((LINES - 10) / 2, 0), left = MAX((COLS - 18) / 2, 0);
     WINDOW *menu = newwin(10, 18, top, left);
     box(menu, ACS_VLINE, ACS_HLINE);
@@ -383,7 +376,7 @@ void menu() {
     mvwaddstr(menu, 8, 1, "[Q]         Quit");
     refresh();
     wrefresh(menu);
-    if (end) {
+    if (quit) {
         WINDOW *exit = newwin(5, 18, top + 2, left);
         box(exit, ACS_VLINE, ACS_HLINE);
         mvwaddstr(exit, 0, 6, " Quit ");
@@ -402,34 +395,34 @@ int main(int argc, char *argv[]) {
     CellAuto ca(0, 0);
     int rec = 0, h, w;
     for (int i = 1; (rec & REC_ERR) == 0 && i < argc; i++) {
-        if (argv[i][0] == '-') {
-            if (argv[i][1] == 'b' && argv[i][2] == '\0') {
-                if ((rec & (REC_OPN | REC_MOD)) == 0) {
-                    ca.switch_mode();
-                    rec |= REC_MOD;
-                } else {
-                    rec |= REC_ERR;
-                }
-            } else if (argv[i][1] == 'r' && argv[i][2] == '\0') {
-                if ((rec & (REC_OPN | REC_RUL)) == 0 && i + 1 < argc) {
-                    ca.set_rule(argv[++i]);
-                    rec |= REC_RUL;
-                } else {
-                    rec |= REC_ERR;
-                }
-            } else if (argv[i][1] == 'n' && argv[i][2] == '\0') {
-                if ((rec & (REC_SPA | REC_OPN)) == 0 && i + 2 < argc) {
-                    h = atoi(argv[++i]);
-                    w = atoi(argv[++i]);
-                    rec |= REC_SPA;
-                } else {
-                    rec |= REC_ERR;
-                }
+        if (argv[i][0] != '-') {
+            if ((rec & (REC_MOD | REC_RUL | REC_SPA | REC_OPN)) == 0 && ca.open(argv[i])) {
+                rec |= REC_OPN;
             } else {
                 rec |= REC_ERR;
             }
-        } else if ((rec & (REC_MOD | REC_RUL | REC_SPA | REC_OPN)) == 0 && ca.open(argv[i])) {
-            rec |= REC_OPN;
+        } else if (argv[i][1] == 'b' && argv[i][2] == '\0') {
+            if ((rec & (REC_OPN | REC_MOD)) == 0) {
+                ca.set_mode(1);
+                rec |= REC_MOD;
+            } else {
+                rec |= REC_ERR;
+            }
+        } else if (argv[i][1] == 'r' && argv[i][2] == '\0') {
+            if ((rec & (REC_OPN | REC_RUL)) == 0 && i + 1 < argc) {
+                ca.set_rule(argv[++i]);
+                rec |= REC_RUL;
+            } else {
+                rec |= REC_ERR;
+            }
+        } else if (argv[i][1] == 'n' && argv[i][2] == '\0') {
+            if ((rec & (REC_SPA | REC_OPN)) == 0 && i + 2 < argc) {
+                h = atoi(argv[++i]);
+                w = atoi(argv[++i]);
+                rec |= REC_SPA;
+            } else {
+                rec |= REC_ERR;
+            }
         } else {
             rec |= REC_ERR;
         }
@@ -459,7 +452,7 @@ int main(int argc, char *argv[]) {
     init_pair(3, COLOR_YELLOW, -1);
     uint64_t interval = 1024, recd;
 GAME_INIT:
-    game<0, 0>(ca, interval);
+    game(ca, interval, 0, 0);
 GAME_REPT:
     switch (auto c = getch(); c) {
     case '-':
@@ -528,7 +521,7 @@ GAME_REPT:
         goto GAME_REPT;
     }
 RAND_INIT:
-    game<1, 0>(ca, interval);
+    game(ca, interval, 1, 0);
 RAND_REPT:
     switch (auto c = getch(); c) {
     case '0':
@@ -549,7 +542,7 @@ RAND_REPT:
         goto RAND_REPT;
     }
 PLAY_INIT:
-    game<0, 1>(ca, interval);
+    game(ca, interval, 0, 1);
 PLAY_REPT:
     switch (auto time = msec(), next = recd + interval; timeout(time > next ? 0 : next - time), getch()) {
     case ' ':
@@ -566,7 +559,7 @@ PLAY_REPT:
         goto PLAY_REPT;
     }
 MENU_INIT:
-    menu<0>();
+    menu(0);
 MENU_REPT:
     switch (getch()) {
     case 'o': {
@@ -608,12 +601,12 @@ MENU_REPT:
     case 'r': {
         def_prog_mode();
         endwin();
-        std::string rule;
+        std::string rule_str;
         std::cout << ">> Rule(B/S): ";
-        while ((std::cin >> rule).fail()) {
+        while ((std::cin >> rule_str).fail()) {
             std::cin.clear();
         }
-        ca.set_rule(rule);
+        ca.set_rule(rule_str);
         reset_prog_mode();
         goto GAME_INIT;
     }
@@ -647,7 +640,7 @@ MENU_REPT:
         goto MENU_REPT;
     }
 QUIT_INIT:
-    menu<1>();
+    menu(1);
 QUIT_REPT:
     switch (getch()) {
     case 'y':
