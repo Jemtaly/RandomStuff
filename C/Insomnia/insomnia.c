@@ -4,13 +4,13 @@
 #define REC_COMMAND 2
 #define REC_DISPLAY 8
 #define REC_ERROR 128
-BOOL timeout(LONGLONG llPeriod) {
+int timeout(LONGLONG llPeriod) {
     fprintf(stderr, "Waiting for %lld milliseconds, press Esc to continue, or press Enter to check the remaining time ...", llPeriod);
     HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
     for (ULONGLONG ullEnd = GetTickCount64() + llPeriod;;) {
         if (WaitForSingleObject(hStdin, max(0, llPeriod)) != WAIT_OBJECT_0) {
             fprintf(stderr, "\n");
-            return TRUE;
+            return 0;
         }
         llPeriod = ullEnd - GetTickCount64();
         INPUT_RECORD irRead;
@@ -23,12 +23,12 @@ BOOL timeout(LONGLONG llPeriod) {
                 break;
             case 27:
                 fprintf(stderr, "\n");
-                return FALSE;
+                return 0;
             }
         }
     }
 }
-BOOL pause() {
+int pause() {
     fprintf(stderr, "Press Esc to continue ...");
     HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
     for (;;) {
@@ -39,64 +39,57 @@ BOOL pause() {
             switch (irRead.Event.KeyEvent.uChar.AsciiChar) {
             case 27:
                 fprintf(stderr, "\n");
-                return FALSE;
+                return 0;
             }
         }
     }
 }
 int main(int argc, char *argv[]) {
-    int rec = 0, ret = 0;
+    int rec = 0;
     long long t;
-    char *cmd = NULL;
+    char *c;
     for (int i = 1; i < argc; i++) {
-        if (argv[i][0] == '-') {
-            if (argv[i][1] == 'd' && argv[i][2] == '\0') {
-                if ((rec & REC_DISPLAY) == 0) {
-                    rec |= REC_DISPLAY;
-                } else {
-                    rec |= REC_ERROR;
-                }
-            } else if (argv[i][1] == 't' && argv[i][2] == '\0') {
-                if ((rec & (REC_COMMAND | REC_TIMEOUT)) == 0 && i + 1 < argc) {
-                    t = atoll(argv[++i]);
-                    rec |= REC_TIMEOUT;
-                } else {
-                    rec |= REC_ERROR;
-                }
+        if (argv[i][0] != '-') {
+            rec |= REC_ERROR;
+        } else if (argv[i][1] == 'c' && argv[i][2] == '\0') {
+            if ((rec & (REC_COMMAND | REC_TIMEOUT)) == 0 && i + 1 < argc) {
+                c = argv[++i];
+                rec |= REC_COMMAND;
             } else {
                 rec |= REC_ERROR;
             }
-        } else if ((rec & (REC_COMMAND | REC_TIMEOUT)) == 0) {
-            cmd = malloc(strlen(argv[i]) + 1);
-            strcpy(cmd, argv[i]);
-            while (++i < argc) {
-                cmd = realloc(cmd, strlen(cmd) + strlen(argv[i]) + 2);
-                strcat(cmd, " ");
-                strcat(cmd, argv[i]);
+        } else if (argv[i][1] == 't' && argv[i][2] == '\0') {
+            if ((rec & (REC_COMMAND | REC_TIMEOUT)) == 0 && i + 1 < argc) {
+                t = atoll(argv[++i]);
+                rec |= REC_TIMEOUT;
+            } else {
+                rec |= REC_ERROR;
             }
-            rec |= REC_COMMAND;
+        } else if (argv[i][1] == 'd' && argv[i][2] == '\0') {
+            if ((rec & REC_DISPLAY) == 0) {
+                rec |= REC_DISPLAY;
+            } else {
+                rec |= REC_ERROR;
+            }
         } else {
             rec |= REC_ERROR;
         }
     }
     if ((rec & REC_ERROR) != 0) {
         fprintf(stderr, "Description: Prevent the PC from sleeping.\n");
-        fprintf(stderr, "Usage: %s [-d] [-t <ms> | <cmd>]\n", argv[0]);
+        fprintf(stderr, "Usage: %s [-d] [-t <ms> | -c <cmd>]\n", argv[0]);
         fprintf(stderr, "Options:\n");
-        fprintf(stderr, "  -d       prevent the display from sleeping as well\n");
-        fprintf(stderr, "  -t <ms>  wait for <ms> milliseconds\n");
-        fprintf(stderr, "  <cmd>    execute <cmd> and wait for it to finish\n");
+        fprintf(stderr, "  -d        prevent the display from sleeping as well\n");
+        fprintf(stderr, "  -t <ms>   wait for <ms> milliseconds\n");
+        fprintf(stderr, "  -c <cmd>  execute <cmd> and wait for it to finish\n");
         return 1;
     }
     SetThreadExecutionState(ES_CONTINUOUS | (rec & REC_DISPLAY ? ES_DISPLAY_REQUIRED : ES_SYSTEM_REQUIRED));
-    if ((rec & REC_COMMAND) != 0) {
-        ret = system(cmd);
-        free(cmd);
+    if ((rec & (REC_COMMAND | REC_TIMEOUT)) == 0) {
+        return pause();
+    } else if ((rec & REC_COMMAND) != 0) {
+        return system(c);
     } else if ((rec & REC_TIMEOUT) != 0) {
-        timeout(t);
-    } else {
-        pause();
+        return timeout(t);
     }
-    // SetThreadExecutionState(ES_CONTINUOUS);
-    return ret;
 }

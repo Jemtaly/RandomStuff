@@ -13,29 +13,28 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     int rec = 0;
-    ssize_t beg = 0;
-    char *filename = NULL;
+    ssize_t beg, end;
+    char *filename;
     for (int i = 1; (rec & REC_ERR) == 0 && i < argc; i++) {
-        if (argv[i][0] == '-') {
-            if (argv[i][1] == 'e' && argv[i][2] == '\0') {
-                if ((rec & (REC_END | REC_BEG)) == 0) {
-                    rec |= REC_END;
-                } else {
-                    rec |= REC_ERR;
-                }
-            } else if (argv[i][1] == 'b' && argv[i][2] == '\0') {
-                if ((rec & (REC_END | REC_BEG)) == 0 && i + 1 < argc) {
-                    beg = atoll(argv[++i]);
-                    rec |= REC_BEG;
-                } else {
-                    rec |= REC_ERR;
-                }
+        if (argv[i][0] != '-') {
+            if ((rec & REC_OPN) == 0) {
+                filename = argv[i];
+                rec |= REC_OPN;
             } else {
                 rec |= REC_ERR;
             }
-        } else if ((rec & REC_OPN) == 0) {
-            filename = argv[i];
-            rec |= REC_OPN;
+        } else if (argv[i][1] == 'e' && argv[i][2] == '\0') {
+            if ((rec & (REC_BEG | REC_END)) == 0 && i + 1 < argc && (end = atoll(argv[++i])) >= 0) {
+                rec |= REC_END;
+            } else {
+                rec |= REC_ERR;
+            }
+        } else if (argv[i][1] == 'b' && argv[i][2] == '\0') {
+            if ((rec & (REC_BEG | REC_END)) == 0 && i + 1 < argc && (beg = atoll(argv[++i])) >= 0) {
+                rec |= REC_BEG;
+            } else {
+                rec |= REC_ERR;
+            }
         } else {
             rec |= REC_ERR;
         }
@@ -43,50 +42,58 @@ int main(int argc, char *argv[]) {
     FILE *fp;
     if ((rec & REC_ERR) != 0 || (rec & REC_OPN) == 0 || (fp = fopen(filename, "rb")) == NULL) {
         fprintf(stderr, "Description: Terminal-based Hex Viewer\n");
-        fprintf(stderr, "Usage: %s [-e | -b N] FILENAME\n", argv[0]);
+        fprintf(stderr, "Usage: %s [-e N | -b N] FILENAME\n", argv[0]);
         fprintf(stderr, "Options:\n");
-        fprintf(stderr, "  -e  start at the end of the file\n");
-        fprintf(stderr, "  -b  start at the Nth byte of the file\n");
+        fprintf(stderr, "  -e  start at the Nth byte from the end of the file\n");
+        fprintf(stderr, "  -b  start at the Nth byte from the beginning of the file\n");
         return 1;
     }
     fseek(fp, 0, SEEK_END);
-    ssize_t len = ftell(fp);
-    if ((rec & REC_END) != 0) {
-        beg = len;
+    ssize_t len = ftell(fp), itr;
+    if ((rec & (REC_BEG | REC_END)) == 0) {
+        itr = 0;
+    } else if ((rec & REC_END) != 0) {
+        itr = len - end;
+    } else if ((rec & REC_BEG) != 0) {
+        itr = beg;
     }
     initscr();
     curs_set(0);
     noecho();
     start_color();
     use_default_colors();
-    init_pair(2, COLOR_RED, COLOR_WHITE);
+    init_pair(2, COLOR_RED, -1);
     int w, h;
 _INIT:
-    w = (COLS - 10) / 4;
+    w = (COLS  - 9) / 4;
     h = (LINES - 1) / 1;
     clear();
 _DRAW:
-    if (beg > len) {
-        beg = len;
-    } else if (beg < 0) {
-        beg = 0;
+    if (itr > len) {
+        itr = len;
+    } else if (itr < 0) {
+        itr = 0;
     }
+    move(0, 0);
     attron(A_BOLD | A_REVERSE);
-    mvprintw(0, 0, "          ");
+    printw("         ");
     for (int j = 0; j < w; j++) {
-        printw("%02X", j & 0xff);
         addch(' ');
+        printw("%02X", j & 0xff);
     }
+    addch(' ');
     for (int j = 0; j < w; j++) {
         addch(' ');
     }
     attroff(A_BOLD | A_REVERSE);
-    fseek(fp, beg, SEEK_SET);
+    fseek(fp, itr, SEEK_SET);
     for (int i = 0; i < h; i++) {
+        move(i + 1, 0);
         attron(A_BOLD);
-        mvprintw(i + 1, 0, "%08X: ", beg + i * w & 0xffffffff);
+        printw("%08X", itr + i * w & 0xffffffff);
         attroff(A_BOLD);
         for (int j = 0; j < w; j++) {
+            addch(' ');
             int c = fgetc(fp);
             switch (c) {
             case EOF:
@@ -100,10 +107,9 @@ _DRAW:
                 printw("%02X", c);
                 attroff(COLOR_PAIR(2));
             }
-            addch(' ');
         }
     }
-    fseek(fp, beg, SEEK_SET);
+    fseek(fp, itr, SEEK_SET);
     for (int i = 0; i < h; i++) {
         move(i + 1, w * 3 + 10);
         for (int j = 0; j < w; j++) {
@@ -117,28 +123,28 @@ _READ:
     case 'r':
         goto _INIT;
     case 'w':
-        beg -= w;
+        itr -= w;
         goto _DRAW;
     case 's':
-        beg += w;
+        itr += w;
         goto _DRAW;
     case 'a':
-        beg--;
+        itr--;
         goto _DRAW;
     case 'd':
-        beg++;
+        itr++;
         goto _DRAW;
     case ',':
-        beg -= w * h;
+        itr -= w * h;
         goto _DRAW;
     case '.':
-        beg += w * h;
+        itr += w * h;
         goto _DRAW;
     case 'h':
-        beg = 0;
+        itr = 0;
         goto _DRAW;
     case 'e':
-        beg = len;
+        itr = len;
         goto _DRAW;
     case 'q':
         goto _QUIT;
