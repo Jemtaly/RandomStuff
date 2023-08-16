@@ -199,7 +199,7 @@ public:
         }
     }
     bool get_mode() const {
-        return current.bound;
+        return (bool)current.bound;
     }
     void switch_cell() {
         copy_generation(false);
@@ -277,8 +277,7 @@ public:
         if (file.fail()) {
             return 0;
         }
-        file << get_rule() << std::endl;
-        file << height << 'x' << width << ' ' << (current.bound ? '1' : '0') << std::endl;
+        file << height << ' ' << width << ' ' << get_mode() << ' ' << get_rule() << std::endl;
         for (uint16_t i = 0; i < height; i++) {
             for (uint16_t j = 0; j < width; j++) {
                 file << get_ref_cell(i, j);
@@ -292,10 +291,10 @@ public:
         if (file.fail()) {
             return 0;
         }
-        std::string rule_str;
         int h, w;
-        char c, b;
-        file >> rule_str >> h >> c >> w >> b;
+        char b;
+        std::string rule_str;
+        file >> h >> w >> b >> rule_str;
         set_mode(b == '1');
         set_rule(rule_str);
         resize_space(h, w);
@@ -329,7 +328,7 @@ void game(CellAuto const &ca, uint64_t interval, bool rand, bool play) {
     wattron(space, COLOR_PAIR(3));
     for (uint16_t i = 0; i < ca.get_height(); i++) {
         for (uint16_t j = 0; j < ca.get_width(); j++) {
-            mvwaddch(space, i + 1, j * 2 + 2, ca.get_ref_cell(i, j) ? (population++, '*') : ' ');
+            mvwaddch(space, i + 1, j * 2 + 2, ca.get_ref_cell(i, j) ? (population++, '+') : ' ');
         }
     }
     wattroff(space, COLOR_PAIR(3));
