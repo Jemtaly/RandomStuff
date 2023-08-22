@@ -14,7 +14,7 @@ for arg in "$@"; do
         ;;
     esac
 done
-if [ $# -lt 2 ]; then
+if [ $# -lt 1 ]; then
     echo "Usage: $0 [-t] [-s] <sed command> <file>..."
     exit 1
 fi
