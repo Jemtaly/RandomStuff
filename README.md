@@ -10,7 +10,7 @@ Some utility/experimental/fun little projects I've written myself.
 
 **[HexViewer](C/HexViewer):** Command-line binary viewer for windows and linux.
 
-**[WinUtils](C/WinUtils):** Windows Utilities. Including a tool to prevent Windows from turning off your screen / sleeping for a while, and a tool to simulate the middle and right mouse buttons using keyboard keys.
+**[WinUtils](C/WinUtils):** Windows Utilities. Including a tool to prevent Windows from turning off your screen / sleeping for a while, and a tool to simulate the mouse buttons using keyboard keys.
 
 **[Bash Tools](Bash):** Some useful tools written in bash, including unix2dos, dos2unix, sedmv (a tool to perform batch renaming of files with sed command).
 

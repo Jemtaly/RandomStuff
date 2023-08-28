@@ -27,4 +27,4 @@ Options:
 
 ## HotKey
 
-Use Ctrl+ALt+Z and Ctrl+Alt+X on your keyboard to simulate the middle and right mouse buttons respectively. Which is useful when you are using the touchpad and want to perform a "press centre button or right button drag and drop" operation.
+Use Alt+F1, Alt+F2 and Alt+F3 on your keyboard to simulate the left, middle and right mouse buttons respectively. Which is useful when you are using the touchpad and want to perform a "press centre button or right button drag and drop" operation.
