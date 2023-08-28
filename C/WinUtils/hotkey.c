@@ -11,6 +11,7 @@ int main() {
     MSG msg = {0};
     for (;;) {
         if (b1_rec || b2_rec || b3_rec) {
+            // using GetAsyncKeyState when at least one button is pressed to avoid missing release events
             BOOL menu = GetAsyncKeyState(VK_MENU) < 0;
             BOOL b1_cur = menu && GetAsyncKeyState(VK_F1) < 0;
             BOOL b2_cur = menu && GetAsyncKeyState(VK_F2) < 0;
@@ -55,26 +56,28 @@ int main() {
                 }
             }
         } else {
+            // empty the message queue accumulated while the buttons were pressed
             while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE) != 0) {
                 TranslateMessage(&msg);
                 DispatchMessage(&msg);
             }
+            // using GetMessage when no button is pressed to avoid busy waiting
             if (GetMessage(&msg, NULL, 0, 0) != 0 && msg.message == WM_HOTKEY) {
                 switch (msg.wParam) {
                 case 1:
                     mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
                     b1_rec = TRUE;
-                    PDEBUG("Pressed L (WM_HOTKEY)\n");
+                    PDEBUG("Pressed L (GetMessage)\n");
                     break;
                 case 2:
                     mouse_event(MOUSEEVENTF_MIDDLEDOWN, 0, 0, 0, 0);
                     b2_rec = TRUE;
-                    PDEBUG("Pressed M (WM_HOTKEY)\n");
+                    PDEBUG("Pressed M (GetMessage)\n");
                     break;
                 case 3:
                     mouse_event(MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, 0);
                     b3_rec = TRUE;
-                    PDEBUG("Pressed R (WM_HOTKEY)\n");
+                    PDEBUG("Pressed R (GetMessage)\n");
                     break;
                 }
             }
