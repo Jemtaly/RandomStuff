@@ -7,13 +7,11 @@
 #include <iostream>
 #include <stack>
 #include "curses.h"
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MIN_HEIGHT 4
 #define MIN_WIDTH 16
 #define MAX_HEIGHT 1024
 #define MAX_WIDTH 1024
-#define STD_HEIGHT (LINES - 6)
+#define STD_HEIGHT ((LINES - 6) / 1)
 #define STD_WIDTH ((COLS - 3) / 2)
 #define REC_MOD 1
 #define REC_RUL 2
@@ -309,7 +307,8 @@ public:
     }
 };
 void game(CellAuto const &ca, uint64_t interval, bool rand, bool play) {
-    uint16_t top = MAX((STD_HEIGHT - ca.get_height()) / 2, 0), left = MAX(STD_WIDTH - ca.get_width(), 0);
+    uint16_t top = std::max<int16_t>((STD_HEIGHT - ca.get_height()) / 2, 0);
+    uint16_t left = std::max<int16_t>((STD_WIDTH - ca.get_width()) / 1, 0);
     uint32_t population = 0;
     WINDOW *info = newwin(3, 2 * ca.get_width() - 3, top, left);
     WINDOW *state = newwin(3, 6, top, 2 * ca.get_width() - 3 + left);
@@ -362,7 +361,8 @@ void game(CellAuto const &ca, uint64_t interval, bool rand, bool play) {
     delwin(gen);
 }
 void menu(bool quit) {
-    uint16_t top = MAX((LINES - 10) / 2, 0), left = MAX((COLS - 18) / 2, 0);
+    uint16_t top = std::max<int16_t>((LINES - 10) / 2, 0);
+    uint16_t left = std::max<int16_t>((COLS - 18) / 2, 0);
     WINDOW *menu = newwin(10, 18, top, left);
     box(menu, ACS_VLINE, ACS_HLINE);
     mvwaddstr(menu, 0, 6, " Menu ");
@@ -449,16 +449,16 @@ int main(int argc, char *argv[]) {
     init_pair(1, COLOR_RED, -1);
     init_pair(2, COLOR_GREEN, -1);
     init_pair(3, COLOR_YELLOW, -1);
-    uint64_t interval = 1024, recd;
+    uint64_t interval = 1024, recd, next;
 GAME_INIT:
     game(ca, interval, 0, 0);
 GAME_REPT:
     switch (auto c = getch(); c) {
     case '-':
-        interval = MIN(interval * 2, 4096);
+        interval = std::min<uint64_t>(interval * 2, 4096);
         goto GAME_INIT;
     case '=':
-        interval = MAX(interval / 2, 1);
+        interval = std::max<uint64_t>(interval / 2, 1);
         goto GAME_INIT;
     case 'b':
         ca.switch_mode();
@@ -472,10 +472,10 @@ GAME_REPT:
     case '.':
         ca.redo();
         goto GAME_INIT;
-    case 'h':
+    case '<':
         while (ca.undo()) {}
         goto GAME_INIT;
-    case 'e':
+    case '>':
         while (ca.redo()) {}
         goto GAME_INIT;
     case 'c':
@@ -543,7 +543,20 @@ RAND_REPT:
 PLAY_INIT:
     game(ca, interval, 0, 1);
 PLAY_REPT:
-    switch (auto time = msec(), next = recd + interval; timeout(time > next ? 0 : next - time), getch()) {
+    timeout(std::max<int64_t>((next = recd + interval) - msec(), 0));
+    switch (auto c = getch(); c) {
+    case '-':
+        interval = std::min<uint64_t>(interval * 2, 4096);
+        goto PLAY_INIT;
+    case '=':
+        interval = std::max<uint64_t>(interval / 2, 1);
+        goto PLAY_INIT;
+    case 'W':
+    case 'A':
+    case 'S':
+    case 'D':
+        ca.move_reference(c + 32);
+        goto PLAY_INIT;
     case ' ':
         timeout(-1);
         goto GAME_INIT;
