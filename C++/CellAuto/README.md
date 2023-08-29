@@ -18,8 +18,8 @@ cellauto [-b] [-r RULE] [-n H W] or cellauto FILENAME
 | <kbd>`</kbd> | Next Generation |
 | <kbd>,</kbd> | Undo |
 | <kbd>.</kbd> | Redo |
-| <kbd>h</kbd> | Back to the first generation |
-| <kbd>e</kbd> | Go to the last generation |
+| <kbd><</kbd> | Back to the first generation |
+| <kbd>></kbd> | Go to the last generation |
 | <kbd>b</kbd> | Set/Unset Bound |
 | <kbd>w</kbd> <kbd>a</kbd> <kbd>s</kbd> <kbd>d</kbd> | move current loction |
 | <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> | move space (disabled when bound is setted) |
