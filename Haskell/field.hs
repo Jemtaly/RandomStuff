@@ -53,11 +53,11 @@ instance SemiGroup ECC where
     add (ECC a b q) (Point s t) (Point z w)
         | s == z && (t + w) `mod` q == 0 = Inf
         | otherwise = Point x y where
-            lmd = if s == z
+            tan = if s == z
                 then inv (t + w) * (s * z * 3 + a)
                 else inv (z - s) * (w - t)
-            x = (lmd * lmd - s - z) `mod` q
-            y = (lmd * (s - x) - t) `mod` q
+            x = (tan * tan - s - z) `mod` q
+            y = (tan * (s - x) - t) `mod` q
             inv = snd . snd . exgcd q
 instance MonoId ECC where
     rei (ECC a b q) = Inf
