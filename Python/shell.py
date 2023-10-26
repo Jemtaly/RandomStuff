@@ -1,5 +1,5 @@
 #!/usr/bin/python3 -i
-import os
+import os, hashlib
 def pwd():
     return os.getcwd()
 def mkdir(dirname):
@@ -7,18 +7,16 @@ def mkdir(dirname):
 def cd(dirname = '.'):
     os.chdir(dirname)
 def ls(dirname = '.', recursive = False, dirs = True, files = True):
-    result = []
     for item in os.listdir(dirname):
         item = os.path.join(dirname, item)
         if os.path.isdir(item):
             if recursive:
-                result.extend(ls(item, recursive, dirs, files))
+                yield from ls(item, recursive, dirs, files)
             if dirs:
-                result.append(item)
+                yield item
         else:
             if files:
-                result.append(item)
-    return result
+                yield item
 def mkfile(filename, content = b'', append = False):
     mode = 'a' if append else 'w'
     if isinstance(content, bytes):
@@ -31,6 +29,12 @@ def cat(filename, binary = True):
         mode += 'b'
     with open(filename, mode) as f:
         return f.read()
+def hash(filename, algorithm = 'md5', size = 65536):
+    with open(filename, 'rb') as f:
+        hasher = hashlib.new(algorithm)
+        while chunk := f.read(size):
+            hasher.update(chunk)
+        return hasher.hexdigest()
 def mv(src, dest):
     os.rename(src, dest)
 def cp(src, dest):
