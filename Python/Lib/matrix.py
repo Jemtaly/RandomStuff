@@ -8,13 +8,13 @@ def gcd(l):
 def lcm(l):
     return 1 if len(l) == 0 else l[0] if len(l) == 1 else (lambda x, y: x * y // exgcd(x, y)[0])(lcm(l[::2]), lcm(l[1::2]))
 def crt(D):
-    A, M = 0, 1
-    for a, m in D:
-        d, (r, _) = exgcd(M, m)
-        assert (a - A) % d == 0
-        A += (a - A) // d * r * M
+    R, M = 0, 1
+    for r, m in D:
+        d, (N, n) = exgcd(M, m)
+        assert (r - R) % d == 0
+        R += (r - R) // d * N * M
         M *= m // d
-    return A, M
+    return R, M
 def moddiv(a, b, m):
     d, (r, _) = exgcd(b, m)
     assert a % d == 0
@@ -23,18 +23,14 @@ def reduce(l):
     q = gcd(l)
     return type(l)((i // q for i in l) if q else (0 for _ in l))
 def rref(m, h, w): # reduced row echelon form
-    r = set()
-    for j in range(w):
-        for i in range(h):
-            if m[i][j] != 0 and i not in r:
-                break
-        else:
+    for J in range(w):
+        I = next((I for I in range(h) if all(m[I][j] == 0 for j in range(J)) and m[I][J] != 0), None)
+        if I is None:
             continue
-        r.add(i) # pivot
-        for x in range(h):
-            if x == i:
+        for i in range(h):
+            if i == I:
                 continue
-            mrecord = m[x][j]
-            for y in range(w):
-                m[x][y] = m[x][y] * m[i][j] - m[i][y] * mrecord
-            m[x] = reduce(m[x]) # optional
+            mrecord = m[i][J]
+            for j in range(J, w):
+                m[i][j] = m[i][j] * m[I][J] - m[I][j] * mrecord
+            m[i] = reduce(m[i]) # optional
