@@ -51,8 +51,8 @@ class Quaternion:
             [self.y * +1. + self.x * -1j, self.w * +1. + self.z * +1j],
         ])
     def euler(self):
-        scal = abs(self)
-        unit = (self / scal) if scal else Quaternion(1, 0, 0, 0)
+        absv = abs(self)
+        unit = (self / absv) if absv else Quaternion(1, 0, 0, 0)
         s, h = (1 - unit.w ** 2) ** 0.5, np.arccos(unit.w)
         x, y, z = (unit.x / s, unit.y / s, unit.z / s) if s else (0, 0, 0)
         H = h * 2
@@ -61,4 +61,4 @@ class Quaternion:
             [x * x * (1 - C) + 1 * C, x * y * (1 - C) + z * S, x * z * (1 - C) - y * S],
             [y * x * (1 - C) - z * S, y * y * (1 - C) + 1 * C, y * z * (1 - C) + x * S],
             [z * x * (1 - C) + y * S, z * y * (1 - C) - x * S, z * z * (1 - C) + 1 * C],
-        ]) * scal
+        ]) * absv
