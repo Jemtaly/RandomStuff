@@ -1,4 +1,3 @@
-import math
 class State:
     def __init__(self, enter = '', exit = ''):
         self.enter = enter
@@ -78,14 +77,6 @@ class RGB:
         return '#{:02x}{:02x}{:02x}'.format(self.r, self.g, self.b)
     def __invert__(self):
         return RGB(255 - self.r, 255 - self.g, 255 - self.b)
-    def rainbow(theta, brightness = 0, saturation = math.inf):
-        S = (math.exp(+saturation) - math.exp(-saturation)) / (math.exp(+saturation) + math.exp(-saturation))
-        H = 1 / (1 + math.exp(-brightness))
-        R = S / (1 + math.exp(-brightness) + math.exp(+brightness))
-        r = min(255, math.floor(256 * (H + R * math.cos(theta))))
-        g = min(255, math.floor(256 * (H + R * math.cos(theta - math.tau / 3))))
-        b = min(255, math.floor(256 * (H + R * math.cos(theta + math.tau / 3))))
-        return RGB(r, g, b)
 def SGR(*style, fgc = None, bgc = None): # Select Graphic Rendition
     n = [Styles[s.lower()] for s in style]
     for i, c in (30, fgc), (40, bgc):
