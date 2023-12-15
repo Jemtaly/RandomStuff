@@ -1,6 +1,7 @@
+#!/usr/bin/python3
 import random
 import util
-Q = util.genPrime(1024)
+Q = util.genPrime(16)
 def generateShares(k, n, secret):
     coeffs = [secret]
     for _ in range(1, k):
@@ -13,11 +14,14 @@ def generateShares(k, n, secret):
 def reconstructSecret(shares):
     secret = 0
     for xj, yj in shares:
-        prod = 1
+        dj = 1
+        nj = 1
         for xm, ym in shares:
             if xm != xj:
-                prod = prod * xm * pow(xm - xj, -1, Q) % Q
-        secret = (secret + yj * prod) % Q
+                dj = dj * (xm - xj) % Q
+                nj = nj * xm % Q
+        rj = util.modinv(dj, Q)
+        secret = (secret + yj * nj * rj) % Q
     return secret
 if __name__ == '__main__':
     print('GF({})'.format(Q))

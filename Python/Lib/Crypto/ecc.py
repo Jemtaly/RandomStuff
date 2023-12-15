@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import random
 import sys
 sys.setrecursionlimit(0x10000)

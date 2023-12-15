@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import random
 import util
 def RSAGenKey(l):
@@ -7,7 +8,7 @@ def RSAGenKey(l):
     while True:
         e = random.randrange(0, phi)
         try:
-            d = util.inv(e, phi)
+            d = util.modinv(e, phi)
             return p, q, e, d
         except AssertionError:
             pass
