@@ -10,16 +10,18 @@ def generateShares(k, n, secret):
     return [(x, sum(c * x ** i for i, c in enumerate(coeffs)) % Q) for x in util.choice(1, Q, n)]
 def reconstructSecret(shares):
     secret = 0
-    for xj, yj in shares:
+    prod = 1
+    for x, _ in shares:
+        prod = prod * x % Q
+    for j, (xj, yj) in enumerate(shares):
         dj = 1
-        nj = 1
-        for xm, ym in shares:
-            if xm != xj:
+        for m, (xm, ym) in enumerate(shares):
+            if m != j:
                 dj = dj * (xm - xj) % Q
-                nj = nj * xm % Q
-        rj = util.modinv(dj, Q)
-        secret = (secret + yj * nj * rj) % Q
-    return secret
+        qj = util.modinv(dj, Q)
+        rj = util.modinv(xj, Q)
+        secret = (secret + yj * qj * rj) % Q
+    return secret * prod % Q
 if __name__ == '__main__':
     print('GF({})'.format(Q))
     K, N = 3, 5

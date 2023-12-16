@@ -32,16 +32,22 @@ def crt(D):
 def generate(coeffs, x, q):
     return sum(c * x ** i for i, c in enumerate(coeffs)) % q
 def lagrange(points, q):
-    coeffs = [0 for _ in range(len(points))]
-    for xj, yj in points:
+    n = len(points)
+    coeffs = [0 for _ in range(n)]
+    prod = [1]
+    for x, _ in points:
+        prod = [(v - x * u) % q for u, v in zip(prod + [0], [0] + prod)]
+    for j, (xj, yj) in enumerate(points):
         dj = 1
-        nj = [1]
-        for xm, ym in points:
-            if xm != xj:
-                dj = dj * (xm - xj) % q
-                nj = [(xm * vj - uj) % q for uj, vj in zip([0] + nj, nj + [0])]
-        rj = modinv(dj, q)
-        coeffs = [(coeff + yj * tj * rj) % q for coeff, tj in zip(coeffs, nj)]
+        for m, (xm, ym) in enumerate(points):
+            if m != j:
+                dj = dj * (xj - xm) % q
+        qj = modinv(dj, q)
+        rj = modinv(xj, q)
+        temp = 0
+        for i in range(n):
+            temp = (temp - prod[i]) * rj % q
+            coeffs[i] = (coeffs[i] + yj * qj * temp) % q
     return coeffs
 def polyadd(a, b, m):
     res = [0] * max(len(a), len(b))
