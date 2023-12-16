@@ -28,7 +28,7 @@ def crt(D):
         assert (r - R) % d == 0
         R += (r - R) // d * N * M
         M *= m // d
-    return R, M
+    return R % M, M
 def generate(coeffs, x, q):
     return sum(c * x ** i for i, c in enumerate(coeffs)) % q
 def lagrange(points, q):
