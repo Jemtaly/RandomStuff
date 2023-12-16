@@ -4,13 +4,10 @@ import util
 Q = util.genPrime(16)
 def generateShares(k, n, secret):
     coeffs = [secret]
-    for _ in range(1, k):
+    for _ in range(1, k - 1):
         coeffs.append(random.randrange(0, Q))
-    shares = set()
-    while len(shares) < n:
-        x = random.randrange(0, Q)
-        shares.add((x, sum(c * x ** i for i, c in enumerate(coeffs)) % Q))
-    return list(shares)
+    coeffs.append(random.randrange(1, Q))
+    return [(x, sum(c * x ** i for i, c in enumerate(coeffs)) % Q) for x in util.choice(1, Q, n)]
 def reconstructSecret(shares):
     secret = 0
     for xj, yj in shares:

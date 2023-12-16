@@ -16,6 +16,11 @@ def moddiv(a, b, m):
     assert a % d == 0
     n = m // d
     return a // d * r % n, n
+def choice(a, b, n):
+    res = set()
+    while len(res) < n:
+        res.add(random.randrange(a, b))
+    return res
 def crt(D):
     R, M = 0, 1
     for r, m in D:
@@ -24,8 +29,8 @@ def crt(D):
         R += (r - R) // d * N * M
         M *= m // d
     return R, M
-def generate(coeffs, xs, q):
-    return [(x, sum(c * x ** i for i, c in enumerate(coeffs)) % q) for x in xs]
+def generate(coeffs, x, q):
+    return sum(c * x ** i for i, c in enumerate(coeffs)) % q
 def lagrange(points, q):
     coeffs = [0 for _ in range(len(points))]
     for xj, yj in points:
