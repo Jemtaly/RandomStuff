@@ -7,6 +7,10 @@ def exgcd(a, b):
         return abs(a), ((a > 0) - (a < 0), 0)
     d, (x, y) = exgcd(b, a % b)
     return d, (y, x - a // b * y)
+def counter(start = 0, step = 1):
+    while True:
+        yield start
+        start += step
 def modinv(a, m):
     d, (r, _) = exgcd(a, m)
     assert d == 1
