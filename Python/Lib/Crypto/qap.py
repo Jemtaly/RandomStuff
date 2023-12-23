@@ -11,96 +11,97 @@ def gen(R1CS, ns): # time = k * len(gates) ** 2 * len(witness)
     return [util.lagrange(list(zip(ns, ys)), Q) for ys in zip(*R1CS)]
 def dot(QAP, s):
     return [sum(i * j for i, j in zip(u, s)) % Q for u in zip(*QAP)]
-class Asseter:
+class QAP:
     def __init__(self):
-        self.counter = util.counter()
-        self.witfunc = {}
+        self.gatereg = []
+        self.funcreg = []
         self.asserts = []
-        self.gateset = []
+    def funcregnew(self, fun):
+        i = len(self.funcreg)
+        self.funcreg.append(fun)
+        return i
     def compile(self):
-        count = len(self.witfunc)
-        gates = []
-        for a, b, c in self.gateset:
-            gate = [[0 for _ in range(count)] for _ in range(3)]
-            for j, n in a:
-                gate[0][j] += n
-            for j, n in b:
-                gate[1][j] += n
-            for j, n in c:
-                gate[2][j] += n
-            gates.append(gate)
+        gaten = len(self.gatereg)
+        funcn = len(self.funcreg)
+        gates = [[[0 for _ in range(funcn)] for _ in range(3)] for _ in range(gaten)]
+        for i, reg in enumerate(self.gatereg):
+            xs, ys, zs = reg
+            for x, m in xs:
+                gates[i][0][x] += m
+            for y, n in ys:
+                gates[i][1][y] += n
+            for z, o in zs:
+                gates[i][2][z] += o
         return gates
     def witness(self, **kwargs):
-        count = len(self.witfunc)
-        witness = [0 for _ in range(count)]
-        for i, f in self.witfunc.items():
-            witness[i] = f(witness, **kwargs)
-        for f in self.asserts:
-            assert f(witness, **kwargs)
+        funcn = len(self.funcreg)
+        witness = [0 for _ in range(funcn)]
+        for i, fun in enumerate(self.funcreg):
+            witness[i] = fun(witness, **kwargs)
+        for fun in self.asserts:
+            assert fun(witness, **kwargs)
         return witness
-    def VAR(self, name):
-        c = next(self.counter)
-        self.witfunc[c] = lambda witness, **kwargs: kwargs[name]
-        return c
-    def VMUL(self, xs, ys, zs = [], N = 1):
-        s = next(self.counter)
-        self.witfunc[s] = lambda witness, **kwargs: (pow(sum(witness[x] * m for x, m in xs), +1, Q) * pow(sum(witness[y] * n for y, n in ys), +1, Q) - sum(witness[z] * o for z, o in zs)) * pow(N, -1, Q) % Q
-        self.gateset.append((xs, ys, zs + [(s, N)]))
-        return s
-    def VDIV(self, zs, xs, ys = [], N = 1):
-        s = next(self.counter)
-        self.witfunc[s] = lambda witness, **kwargs: (pow(sum(witness[z] * o for z, o in zs), +1, Q) * pow(sum(witness[x] * m for x, m in xs), -1, Q) - sum(witness[y] * n for y, n in ys)) * pow(N, -1, Q) % Q
-        self.gateset.append((xs, ys + [(s, N)], zs))
-        return s
-    def MUL(self, a, b):
+    def VAR(self, name): # return new variable
+        o = self.funcregnew(lambda witness, **kwargs: kwargs[name])
+        return o
+    def VMUL(self, xs, ys, zs = [], N = 1): # return (sum(xs) * sum(ys) - sum(zs)) / N (mod Q)
+        o = self.funcregnew(lambda witness, **kwargs: (sum(witness[x] * m for x, m in xs) * pow(sum(witness[y] * n for y, n in ys), +1, Q) - sum(witness[z] * o for z, o in zs)) * pow(N, -1, Q) % Q)
+        self.gatereg.append((xs, ys, zs + [(o, N)]))
+        return o
+    def VDIV(self, zs, ys, xs = [], N = 1): # return (sum(xs) / sum(ys) - sum(zs)) / N (mod Q)
+        o = self.funcregnew(lambda witness, **kwargs: (sum(witness[z] * o for z, o in zs) * pow(sum(witness[y] * n for y, n in ys), -1, Q) - sum(witness[x] * m for x, m in xs)) * pow(N, -1, Q) % Q)
+        self.gatereg.append((xs + [(o, N)], ys, zs))
+        return o
+    def MUL(self, a, b): # return a * b (mod Q)
         return self.VMUL([(a, 1)], [(b, 1)])
-    def DIV(self, c, b):
+    def DIV(self, c, b): # return c / b (mod Q)
         return self.VDIV([(c, 1)], [(b, 1)])
-    def POW(self, e, a, N):
+    def POW(self, e, a, N): # return a ** N (mod Q)
         if N < 0:
             N = -N
             a = self.DIV(e, a)
-        p = a if N & 1 else e
+        if N & 1:
+            e = a
         N >>= 1
         while N:
             a = self.MUL(a, a)
             if N & 1:
-                p = self.MUL(p, a)
+                e = self.MUL(e, a)
             N >>= 1
-        return p
-    def BOOL(self, xs):
-        r = next(self.counter)
-        y = next(self.counter)
-        self.witfunc[r] = lambda witness, **kwargs: pow(sum(witness[x] * m for x, m in xs), Q - 2, Q)
-        self.witfunc[y] = lambda witness, **kwargs: pow(sum(witness[x] * m for x, m in xs), Q - 1, Q)
-        self.gateset.append((xs, [(y, 1)], xs))
-        self.gateset.append((xs, [(r, 1)], [(y, 1)]))
-        return y
-    def COND(self, e, c, a, b):
-        x = self.VMUL([(a, 1)], [(c, 1)])
-        y = self.VMUL([(b, 1)], [(c, 1), (e, -1)])
-        r = self.VMUL([(e, 1)], [(x, 1), (y, -1)])
+        return e
+    def BOOL(self, xs): # return sum(xs) != 0 (0 or 1)
+        i = self.funcregnew(lambda witness, **kwargs: pow(sum(witness[x] * m for x, m in xs), Q - 2, Q))
+        o = self.funcregnew(lambda witness, **kwargs: pow(sum(witness[x] * m for x, m in xs), Q - 1, Q))
+        self.gatereg.append((xs, [(o, 1)], xs))
+        self.gatereg.append((xs, [(i, 1)], [(o, 1)]))
+        return o
+    def COND(self, e, c, t, f): # return c ? t : f
+        t = self.VMUL([(t, 1)], [(c, 1)])
+        f = self.VMUL([(f, 1)], [(c, 1), (e, -1)])
+        r = self.VMUL([(e, 1)], [(t, 1), (f, -1)])
         return r
-    def ASSERT_BOOL(self, x):
+    def ASSERT_BOOL(self, x): # assert x == 0 or x == 1
         self.asserts.append(lambda witness, **kwargs: witness[x] ** 2 % Q == witness[x])
-        self.gateset.append(([(x, 1)], [(x, 1)], [(x, 1)]))
-    def ASSERT_NONZ(self, e, x):
-        y = next(self.counter)
-        self.witfunc[y] = lambda witness, **kwargs: pow(witness[x], Q - 2, Q)
-        self.asserts.append(lambda witness, **kwargs: witness[x] * witness[y] % Q == 1)
-        self.gateset.append(([(x, 1)], [(y, 1)], [(e, 1)]))
+        self.gatereg.append(([(x, 1)], [(x, 1)], [(x, 1)]))
+    def ASSERT_ZERO(self, e, xs): # assert sum(xs) == 0 (mod Q)
+        self.asserts.append(lambda witness, **kwargs: (sum(witness[x] * m for x, m in xs) + witness[e]) * witness[e] % Q == witness[e])
+        self.gatereg.append((xs + [(e, 1)], [(e, 1)], [(e, 1)]))
+    def ASSERT_NONZ(self, e, xs): # assert sum(xs) != 0 (mod Q)
+        i = self.funcregnew(lambda witness, **kwargs: pow(sum(witness[x] * m for x, m in xs), Q - 2, Q) * witness[e] % Q)
+        self.asserts.append(lambda witness, **kwargs: pow(sum(witness[x] * m for x, m in xs), Q - 1, Q) * witness[e] % Q == witness[e])
+        self.gatereg.append((xs, [(i, 1)], [(e, 1)]))
 if __name__ == '__main__':
     print('GF({})'.format(Q))
-    asseter = Asseter()
+    qap = QAP()
     # Variables
-    x = asseter.VAR('x')
-    e = asseter.VAR('e')
+    x = qap.VAR('x')
+    e = qap.VAR('e')
     # Gates
-    y = asseter.MUL(x, x)
-    z = asseter.VMUL([(y, 1), (e, 1)], [(x, 1)])
-    w = asseter.VMUL([(z, 1), (e, 5)], [(e, 1)])
+    y = qap.MUL(x, x)
+    z = qap.VMUL([(y, 1), (e, 1)], [(x, 1)])
+    w = qap.VMUL([(z, 1), (e, 5)], [(e, 1)])
     # Compile
-    gates = asseter.compile()
+    gates = qap.compile()
     A, B, C = zip(*gates) # R1CS
     ns = list(util.choice(0, Q, len(gates)))
     A = gen(A, ns)
@@ -109,7 +110,7 @@ if __name__ == '__main__':
     Z = poly(ns)
     print('Z =', Z)
     # Prove
-    s = asseter.witness(x = 3, e = 1)
+    s = qap.witness(x = 3, e = 1)
     print('s =', s)
     a = dot(A, s)
     b = dot(B, s)
