@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 import util
-import time
+import ecc
 Q = util.genPrime(16)
 def poly(ns):
     Z = [1]
@@ -104,10 +104,10 @@ if __name__ == '__main__':
     gates = qap.compile()
     A, B, C = zip(*gates) # R1CS
     ns = list(util.choice(0, Q, len(gates)))
+    Z = poly(ns) # QAP
     A = gen(A, ns)
     B = gen(B, ns)
     C = gen(C, ns)
-    Z = poly(ns)
     print('Z =', Z)
     # Prove
     s = qap.witness(x = 3, e = 1)

@@ -7,10 +7,6 @@ def exgcd(a, b):
         return abs(a), ((a > 0) - (a < 0), 0)
     d, (x, y) = exgcd(b, a % b)
     return d, (y, x - a // b * y)
-def counter(start = 0, step = 1):
-    while True:
-        yield start
-        start += step
 def modinv(a, m):
     d, (r, _) = exgcd(a, m)
     assert d == 1
@@ -84,15 +80,6 @@ def polydm(a, b, m):
         q.append(t)
         r.pop(0)
     return q[::-1], r[::-1]
-def nsqrt(n):
-    amin, amax = 0, n + 1
-    while amax - amin > 1:
-        a = (amax + amin) // 2
-        if a * a > n:
-            amax = a
-        else:
-            amin = a
-    return amin
 def chkPrime(n):
     if n == 2:
         return True
@@ -118,6 +105,42 @@ def genPrime(l):
         r = random.randrange(1 << l - 1, 1 << l)
         if chkPrime(r):
             return r
+def nsqrt(n):
+    amin, amax = 0, n + 1
+    while amax - amin > 1:
+        a = (amax + amin) // 2
+        if a * a > n:
+            amax = a
+        else:
+            amin = a
+    return amin
 def legendre(a, p):
     assert chkPrime(p) and p != 2
     return (pow(a, (p - 1) // 2, p) + 1) % p - 1
+def tonelli(n, p):
+    assert chkPrime(p) and p != 2
+    assert (pow(n, (p - 1) // 2, p) + 1) % p - 1 >= 0
+    q, s = p - 1, 0
+    while q & 1 == 0:
+        q, s = q >> 1, s + 1
+    if s == 1:
+        return pow(n, (p + 1) // 4, p)
+    z = 2
+    while (pow(z, (p - 1) // 2, p) + 1) % p - 1 >= 0:
+        z += 1
+    m = s
+    c = pow(z, q, p)
+    t = pow(n, q, p)
+    r = pow(n, (q + 1) // 2, p)
+    while t != 1:
+        u = t * t % p
+        for i in range(1, m):
+            if u == 1:
+                break
+            u = u * u % p
+        b = pow(c, 1 << m - i - 1, p)
+        m = i
+        c = b * b % p
+        t = t * c % p
+        r = r * b % p
+    return r
