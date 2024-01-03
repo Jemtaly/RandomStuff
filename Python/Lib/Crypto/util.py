@@ -80,6 +80,15 @@ def polydm(a, b, m):
         q.append(t)
         r.pop(0)
     return q[::-1], r[::-1]
+def nsqrt(n):
+    l, r = 0, n + 1
+    while r - l > 1:
+        m = (r + l) // 2
+        if m * m > n:
+            r = m
+        else:
+            l = m
+    return l
 def chkPrime(n):
     if n == 2:
         return True
@@ -105,29 +114,20 @@ def genPrime(l):
         r = random.randrange(1 << l - 1, 1 << l)
         if chkPrime(r):
             return r
-def nsqrt(n):
-    amin, amax = 0, n + 1
-    while amax - amin > 1:
-        a = (amax + amin) // 2
-        if a * a > n:
-            amax = a
-        else:
-            amin = a
-    return amin
 def legendre(a, p):
     assert chkPrime(p) and p != 2
     return (pow(a, (p - 1) // 2, p) + 1) % p - 1
 def tonelli(n, p):
     assert chkPrime(p) and p != 2
-    assert (pow(n, (p - 1) // 2, p) + 1) % p - 1 >= 0
+    assert (pow(n, (p - 1) // 2, p) + 1) % p - 1 != -1
     q, s = p - 1, 0
     while q & 1 == 0:
         q, s = q >> 1, s + 1
     if s == 1:
         return pow(n, (p + 1) // 4, p)
-    z = 2
-    while (pow(z, (p - 1) // 2, p) + 1) % p - 1 >= 0:
-        z += 1
+    for z in range(2, p):
+        if (pow(z, (p - 1) // 2, p) + 1) % p - 1 == -1:
+            break
     m = s
     c = pow(z, q, p)
     t = pow(n, q, p)
