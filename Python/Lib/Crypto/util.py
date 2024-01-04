@@ -16,10 +16,15 @@ def moddiv(a, b, m):
     assert a % d == 0
     n = m // d
     return a // d * r % n, n
-def choice(a, b, n):
+def sample(a, b, n): # take n elements from [a, b) distinctively
     res = set()
     while len(res) < n:
         res.add(random.randrange(a, b))
+    return res
+def choice(a, b, n): # take n elements from [a, b) independently
+    res = []
+    while len(res) < n:
+        res.append(random.randrange(a, b))
     return res
 def crt(D):
     R, M = 0, 1
@@ -29,13 +34,24 @@ def crt(D):
         R += (r - R) // d * N * M
         M *= m // d
     return R % M, M
-def generate(coeffs, x, q):
+def polyval(coeffs, x, q):
     return sum(c * x ** i for i, c in enumerate(coeffs)) % q
+def rref(m, h, w, q): # reduced row echelon form
+    for J in range(w):
+        I = next((I for I in range(h) if all(m[I][j] == 0 for j in range(J)) and m[I][J] != 0), None)
+        if I is None:
+            continue
+        for i in range(h):
+            if i == I:
+                continue
+            mrecord = m[i][J]
+            for j in range(J, w):
+                m[i][j] = (m[i][j] * m[I][J] - m[I][j] * mrecord) % q
 def lagrange(points, q):
     n = len(points)
     coeffs = [0 for _ in range(n)]
     prod = [1]
-    for x, _ in points:
+    for x, y in points:
         prod = [(v - x * u) % q for u, v in zip(prod + [0], [0] + prod)]
     for j, (xj, yj) in enumerate(points):
         dj = 1

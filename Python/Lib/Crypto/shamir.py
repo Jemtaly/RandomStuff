@@ -7,11 +7,11 @@ def generateShares(k, n, secret):
     for _ in range(1, k - 1):
         coeffs.append(random.randrange(0, Q))
     coeffs.append(random.randrange(1, Q))
-    return [(x, sum(c * x ** i for i, c in enumerate(coeffs)) % Q) for x in util.choice(1, Q, n)]
+    return [(x, sum(c * x ** i for i, c in enumerate(coeffs)) % Q) for x in util.sample(1, Q, n)]
 def reconstructSecret(shares):
     secret = 0
     prod = 1
-    for x, _ in shares:
+    for x, y in shares:
         prod = prod * x % Q
     for j, (xj, yj) in enumerate(shares):
         dj = 1
