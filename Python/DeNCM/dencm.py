@@ -23,7 +23,7 @@ def dump(ncm_path):
         meta_raw = bytes(i ^ 0x63 for i in ncm_file.read(meta_size)) # '163 key(Don't modify):' + base64
         meta_enc = base64.b64decode(meta_raw[22:])
         meta_dec = Padding.unpad(meta_cryptor.decrypt(meta_enc), 16) # 'music:' + json
-        meta_info = json.loads(meta_dec.decode('utf-8')[6:])
+        meta_info = json.loads(meta_dec[6:])
         print(json.dumps(meta_info, indent = 4, ensure_ascii = False))
         os.makedirs(meta_info['album'], exist_ok = True)
         checksum = struct.unpack('<I', bytes(ncm_file.read(4)))[0]
@@ -55,7 +55,7 @@ def main():
     import argparse
     import glob
     parser = argparse.ArgumentParser(description = 'NCM file decryptor')
-    parser.add_argument('ncm_path', nargs = '*', help = 'NCM file path')
+    parser.add_argument('ncm_path', nargs = '*', help = 'NCM file path (if not specified, all NCM files in current directory will be processed)')
     args = parser.parse_args()
     if args.ncm_path:
         for ncm_path in args.ncm_path:
