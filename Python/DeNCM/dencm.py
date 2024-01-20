@@ -1,10 +1,11 @@
 #!/usr/bin/python3
 import Crypto.Cipher.AES as AES
 import Crypto.Util.Padding as Padding
-import os
+import Crypto.Util.strxor as strxor
 import base64
-import json
 import struct
+import json
+import os
 core_key = bytes.fromhex('687A4852416D736F356B496E62617857')
 meta_key = bytes.fromhex('2331346C6A6B5F215C5D2630553C2728')
 core_cryptor = AES.new(core_key, AES.MODE_ECB)
@@ -17,10 +18,10 @@ def dump(ncm_path):
             return
         ncm_file.seek(2, 1)
         core_size = struct.unpack('<I', bytes(ncm_file.read(4)))[0]
-        core_enc = bytes(i ^ 0x64 for i in ncm_file.read(core_size))
+        core_enc = strxor.strxor_c(ncm_file.read(core_size), 0x64)
         core_dec = Padding.unpad(core_cryptor.decrypt(core_enc), 16) # 'neteasecloudmusic' + key
         meta_size = struct.unpack('<I', bytes(ncm_file.read(4)))[0]
-        meta_raw = bytes(i ^ 0x63 for i in ncm_file.read(meta_size)) # '163 key(Don't modify):' + base64
+        meta_raw = strxor.strxor_c(ncm_file.read(meta_size), 0x63) # '163 key(Don't modify):' + base64
         meta_enc = base64.b64decode(meta_raw[22:])
         meta_dec = Padding.unpad(meta_cryptor.decrypt(meta_enc), 16) # 'music:' + json
         meta_info = json.loads(meta_dec[6:])
@@ -34,7 +35,7 @@ def dump(ncm_path):
             img_file.write(ncm_file.read(img_size))
         mp3_path = os.path.join(meta_info['album'], '{musicName}.{format}'.format(**meta_info))
         with open(mp3_path, 'wb') as mp3_file:
-            # An less secure variant of RC4 that is actually equivalent to a 256-byte Vigenère cipher
+            # A less secure variant of RC4, which is actually equivalent to a 256-byte Vigenère cipher
             k = core_dec[17:]
             n = len(k)
             S = bytearray(range(256))
@@ -44,12 +45,14 @@ def dump(ncm_path):
                 c = c + swap + k[i % n] & 0xff
                 S[i] = S[c]
                 S[c] = swap
-            K = bytes(S[S[i] + S[S[i] + i & 0xff] & 0xff] for i in range(256))
-            i = 0
+            N = 65536 # Size of the chunk, must be a multiple of 256
+            K = bytes(S[S[i & 0xff] + S[S[i & 0xff] + i & 0xff] & 0xff] for i in range(1, 257)) * (N // 256) # Expanded key stream
             while True:
-                chunk = ncm_file.read(0x10000)
-                mp3_file.write(bytes(a ^ K[i := i + 1 & 0xff] for a in chunk))
-                if len(chunk) < 0x10000:
+                chunk = ncm_file.read(N)
+                if len(chunk) == N:
+                    mp3_file.write(strxor.strxor(chunk, K))
+                else:
+                    mp3_file.write(strxor.strxor(chunk, K[:len(chunk)]))
                     break
 def main():
     import argparse
