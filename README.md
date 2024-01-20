@@ -4,9 +4,11 @@ Some utility/experimental/fun little projects I've written myself.
 
 ## Catalogue
 
-**[CellAuto](C++/CellAuto):** A cellular automata written in C++.
-
 **[IMFTP](Python/IMFTP):** A file transfer tool and an instant messager.
+
+**[DeNCM](Python/DeNCM):** A tool to decrypt Netease Cloud Music NCM files.
+
+**[CellAuto](C++/CellAuto):** A cellular automata written in C++.
 
 **[HexViewer](C/HexViewer):** Command-line binary viewer for windows and linux.
 
@@ -14,7 +16,7 @@ Some utility/experimental/fun little projects I've written myself.
 
 **[Bash Tools](Bash):** Some useful tools written in bash, including unix2dos, dos2unix, sedmv (a tool to perform batch renaming of files with sed command).
 
-**[BashBF](Bash/Brainfuck):** A BF language ~interpreter~ translator written in bash.
+**[BashBF](Bash/Brainfuck):** A BF language interpreter written in bash.
 
 **[Imcat](Python/ANSI):** Image Viewer for ANSI Terminal.
 
