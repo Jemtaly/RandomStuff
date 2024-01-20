@@ -11,7 +11,7 @@ def krawl(url, exclude, include, dir = None):
     if not os.path.exists(dir):
         os.mkdir(dir)
     href_set = set()
-    for div in soup.find_all('div', class_='post__thumbnail') + soup.find_all('li', class_='post__attachment'):
+    for div in soup.find_all('div', class_ = 'post__thumbnail') + soup.find_all('li', class_ = 'post__attachment'):
         href_set.add(urljoin(url, div.a.get('href')))
     for href in href_set:
         name = unquote(parse_qs(urlparse(href).query)['f'][0])
@@ -32,7 +32,7 @@ def index(url):
     soup = bs4.BeautifulSoup(r.text, 'html.parser')
     if not os.path.exists(dir):
         os.mkdir(dir)
-    for i, div in enumerate(soup.find_all('div', class_='post__thumbnail')):
+    for i, div in enumerate(soup.find_all('div', class_ = 'post__thumbnail')):
         href = urljoin(url, div.a.get('href'))
         name = unquote(parse_qs(urlparse(href).query)['f'][0])
         name = '{:02}{}'.format(i, os.path.splitext(name)[1])
