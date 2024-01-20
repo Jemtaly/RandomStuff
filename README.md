@@ -6,12 +6,12 @@ Some small, personal projects that are hard to categorize, including some toyish
 
 ## Projects List / 项目列表
 
++ **[DeNCM](Python/DeNCM):**
+  + A tool to decrypt Netease Cloud Music NCM files.
+  + 网易云音乐 NCM 文件解密工具。
 + **[IMFTP](Python/IMFTP):** 
   + A file transfer tool and an instant messager.
   + 使用 Python 实现的文件传输和即时通讯工具。
-+ **[DeNCM](Python/DeNCM):**
-  + A tool to decrypt Netease Cloud Music NCM files.
-  + 用于解密网易云音乐 NCM 文件的工具。
 + **[CellAuto](C++/CellAuto):**
   + A cellular automata written in C++.
   + 使用 C++ 实现的元胞自动机。
