@@ -46,7 +46,7 @@ def dump(ncm_path):
                 S[i] = S[c]
                 S[c] = swap
             N = 65536 # Size of the chunk, must be a multiple of 256
-            K = bytes(S[S[i & 0xff] + S[S[i & 0xff] + i & 0xff] & 0xff] for i in range(1, 257)) * (N // 256) # Expanded key stream
+            K = bytes(S[S[S[i & 0xff] + i & 0xff] + S[i & 0xff] & 0xff] for i in range(1, 257)) * (N // 256) # Expanded key stream
             while True:
                 chunk = ncm_file.read(N)
                 if len(chunk) == N:
@@ -58,15 +58,15 @@ def main():
     import argparse
     import glob
     parser = argparse.ArgumentParser(description = 'NCM file decryptor')
-    parser.add_argument('ncm_path', nargs = '*', help = 'NCM file path (if not specified, all NCM files in current directory will be processed)')
+    parser.add_argument('pathlist', metavar = 'NCM', nargs = '*', help = 'NCM file path (if not specified, all .ncm files in current directory will be processed)')
     args = parser.parse_args()
-    if args.ncm_path:
-        for ncm_path in args.ncm_path:
-            for ncm_file in glob.glob(ncm_path):
-                dump(ncm_file)
+    if args.pathlist:
+        for pathname in args.pathlist:
+            for ncm_path in glob.glob(pathname):
+                dump(ncm_path)
     else:
-        for ncm_file in os.listdir():
-            if os.path.splitext(ncm_file)[1] == '.ncm':
-                dump(ncm_file)
+        for ncm_path in os.listdir():
+            if os.path.splitext(ncm_path)[1] == '.ncm':
+                dump(ncm_path)
 if __name__ == '__main__':
     main()
