@@ -15,63 +15,52 @@ class TCPClientWrapper:
     def peername(self):
         return self.client.getpeername()
     def send(self, data):
-        return self.client.send(self.enc(data))
-    def recv(self, size):
-        return self.dec(self.client.recv(size))
-    def sendall(self, data):
         self.client.sendall(self.enc(data))
-    def recvall(self, size):
+    def recv(self, size):
         return self.dec(self.client.recv(size, socket.MSG_WAITALL))
     def genkey(self):
-        self.sendall(b'GK')
+        self.send(b'GK')
         assert self.recv(2) == b'GK', 'peer is not in key generation mode'
         sockecck = ECC.generate(curve = 'nistp256')
         sockexpk = sockecck.public_key().export_key(format = 'SEC1')
-        self.sendall(sockexpk)
-        peerexpk = self.recvall(65)
+        self.send(sockexpk)
+        peerexpk = self.recv(65)
         peerecck = ECC.import_key(peerexpk, curve_name = 'nistp256')
         key = DH.key_agreement(static_priv = sockecck, static_pub = peerecck, kdf = lambda x: x)
         sockaesk = hashlib.sha256(sockexpk + key).digest()
         peeraesk = hashlib.sha256(peerexpk + key).digest()
         self.enc = AES.new(sockaesk[:16], AES.MODE_CTR, nonce = sockaesk[24:]).encrypt
         self.dec = AES.new(peeraesk[:16], AES.MODE_CTR, nonce = peeraesk[24:]).decrypt
-    def sendstream(self, istream, rec):
-        self.sendall(b'SS')
+    def sendstream(self, istream, r):
+        self.send(b'SS')
         assert self.recv(2) == b'RS', 'peer is not in receiving mode'
-        datasize = 4094
-        while datasize == 4094:
-            data = istream.read(rec[0] if 0 <= rec[0] < 4094 else 4094)
-            datasize = len(data)
-            self.sendall(datasize.to_bytes(2, 'big') + data)
-            rec[0] -= datasize
-    def recvstream(self, ostream, rec):
-        self.sendall(b'RS')
+        size = 4094
+        while size == 4094:
+            data = istream.read(r[0] if 0 <= r[0] < 4094 else 4094)
+            size = len(data)
+            self.send(size.to_bytes(2, 'big') + data)
+            r[0] -= size
+    def recvstream(self, ostream, r):
+        self.send(b'RS')
         assert self.recv(2) == b'SS', 'peer is not in sending mode'
-        datasize = int.from_bytes(self.recvall(2), 'big')
-        while datasize == 4094:
-            temp = self.recvall(4096)
-            rec[0] += ostream.write(temp[:4094])
-            datasize = int.from_bytes(temp[4094:], 'big')
-        rec[0] += ostream.write(self.recvall(datasize))
+        size = int.from_bytes(self.recv(2), 'big')
+        while size == 4094:
+            temp = self.recv(4096)
+            r[0] += ostream.write(temp[:4094])
+            size = int.from_bytes(temp[4094:], 'big')
+        r[0] += ostream.write(self.recv(size))
     def __sending(self):
         data = b'\n'
         while data and data[-1] == 10:
             data = sys.stdin.readline().encode()
-            temp = len(data).to_bytes(2, 'big') + data
-            while temp:
-                temp = temp[self.send(temp[:4096]):]
+            self.send(len(data).to_bytes(2, 'big') + data)
     def __recving(self):
         data = b'\n'
         while data and data[-1] == 10:
-            data = bytes()
-            size = int.from_bytes(self.recvall(2), 'big')
-            while size:
-                temp = self.recv(min(4096, size))
-                data += temp
-                size -= len(temp)
+            data = self.recv(int.from_bytes(self.recv(2), 'big'))
             sys.stdout.write(data.decode())
     def talk(self):
-        self.sendall(b'IM')
+        self.send(b'IM')
         assert self.recv(2) == b'IM', 'peer is not in instant messager mode'
         sending = threading.Thread(target = self.__sending)
         recving = threading.Thread(target = self.__recving)
@@ -79,11 +68,13 @@ class TCPClientWrapper:
         recving.start()
         sending.join()
         recving.join()
-def run(client, recv, send, size, enc):
+def run(client, recv, send, talk, size, enc):
     C = TCPClientWrapper(client)
     if enc:
         C.genkey()
-    if recv:
+    if talk:
+        C.talk()
+    elif recv:
         rec = [0 if size == None else size]
         C.recvstream(recv, rec)
         print(rec[0])
@@ -91,8 +82,6 @@ def run(client, recv, send, size, enc):
         rec = [-1 if size == None else size]
         C.sendstream(send, rec)
         print(rec[0])
-    else:
-        C.talk()
 def main():
     import argparse
     parser = argparse.ArgumentParser(description = "Instant Messager and File Transfer")
@@ -111,7 +100,7 @@ def main():
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client.connect((args.client, args.port))
         with client:
-            run(client, args.recv, args.send, args.size, args.enc)
+            run(client, args.recv, args.send, args.talk, args.size, args.enc)
     else:
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.bind((args.server, args.port))
@@ -119,6 +108,6 @@ def main():
             server.listen(1)
             client, addr = server.accept()
             with client:
-                run(client, args.recv, args.send, args.size, args.enc)
+                run(client, args.recv, args.send, args.talk, args.size, args.enc)
 if __name__ == '__main__':
     main()
