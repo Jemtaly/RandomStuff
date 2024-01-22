@@ -10,8 +10,8 @@ Some small, personal projects that are hard to categorize, including some toyish
   + A tool to decrypt Netease Cloud Music NCM files.
   + 网易云音乐 NCM 文件解密工具。
 + **[IMFTP](Python/IMFTP):** 
-  + A file transfer tool and an instant messager.
-  + 使用 Python 实现的文件传输和即时通讯工具。
+  + A file transfer tool and an instant messager written in Python, supporting Diffie-Hellman key exchange and AES-CTR encryption.
+  + 使用 Python 实现的文件传输和即时通讯工具，支持使用 Diffie-Hellman 密钥交换协议及 AES-CTR 来加密连接。
 + **[CellAuto](C++/CellAuto):**
   + A cellular automata written in C++.
   + 使用 C++ 实现的元胞自动机。
