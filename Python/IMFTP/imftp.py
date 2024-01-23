@@ -1,12 +1,12 @@
 #!/usr/bin/python3
-import sys, io, socket, threading, queue, tkinter
-from tkinter import filedialog, messagebox
-from datetime import datetime
-from PIL import Image, ImageTk
+import os, sys, io, socket, threading, queue, tkinter
 import Crypto.PublicKey.ECC as ECC
 import Crypto.Protocol.DH as DH
 import Crypto.Cipher.AES as AES
 import Crypto.Hash.SHA224 as SHA224
+from tkinter import filedialog, messagebox
+from datetime import datetime
+from PIL import Image, ImageTk
 class TCPClientWrapper:
     def __init__(self, client):
         self.client = client
@@ -64,42 +64,58 @@ class TCPClientWrapper:
             data = cont.encode()
             size = len(data)
             if size > 16777215:
-                tkinter.messagebox.showerror('Error', 'Message too long')
+                tkinter.messagebox.showerror('Error', 'Message too long, should be less than 16777215 bytes')
                 return
             time = datetime.now()
             self.sendall(int(time.timestamp()).to_bytes(4, 'big') + b'\1' + size.to_bytes(3, 'big') + data)
             text.config(state = tkinter.NORMAL)
-            text.insert(tkinter.END, time.strftime('%Y-%m-%d %H:%M:%S - Local:'), 'Local')
+            text.insert(tkinter.END, time.strftime('%Y-%m-%d %H:%M:%S - Local: '), 'Local')
             text.insert(tkinter.END, '\n')
             text.insert(tkinter.END, cont)
             text.insert(tkinter.END, '\n')
             text.see(tkinter.END)
             text.config(state = tkinter.DISABLED)
             line.delete(0, tkinter.END)
-        def on_file(event = None):
+        def on_imag(event = None):
             path = filedialog.askopenfilename()
             if not path:
                 return
+            data = open(path, 'rb').read()
             try:
-                imgtk = ImageTk.PhotoImage(Image.open(path))
+                imgtk = ImageTk.PhotoImage(Image.open(io.BytesIO(data)))
             except:
                 messagebox.showerror('Error', 'Invalid image')
                 return
-            data = open(path, 'rb').read()
             size = len(data)
             if size > 16777215:
-                messagebox.showerror('Error', 'Image too large')
+                messagebox.showerror('Error', 'Image too large, should be less than 16 MiB')
                 return
             time = datetime.now()
             self.sendall(int(time.timestamp()).to_bytes(4, 'big') + b'\2' + size.to_bytes(3, 'big') + data)
             text.config(state = tkinter.NORMAL)
-            text.insert(tkinter.END, time.strftime('%Y-%m-%d %H:%M:%S - Local:'), 'Local')
+            text.insert(tkinter.END, time.strftime('%Y-%m-%d %H:%M:%S - Local: '), 'Local')
             text.insert(tkinter.END, '\n')
             text.image_create(tkinter.END, image = imgtk)
             text.insert(tkinter.END, '\n')
             text.see(tkinter.END)
             text.config(state = tkinter.DISABLED)
             imgs.append(imgtk)
+        def on_file(event = None):
+            path = filedialog.askopenfilename()
+            if not path:
+                return
+            data = os.path.basename(path).encode() + b'\0' + open(path, 'rb').read()
+            size = len(data)
+            if size > 16777215:
+                messagebox.showerror('Error', 'File too large, should be less than 16 MiB')
+                return
+            time = datetime.now()
+            self.sendall(int(time.timestamp()).to_bytes(4, 'big') + b'\3' + size.to_bytes(3, 'big') + data)
+            text.config(state = tkinter.NORMAL)
+            text.insert(tkinter.END, time.strftime('%Y-%m-%d %H:%M:%S - Sent file: ') + path, 'Local')
+            text.insert(tkinter.END, '\n')
+            text.see(tkinter.END)
+            text.config(state = tkinter.DISABLED)
         def recvloop():
             while True:
                 head = self.recvall(8)
@@ -129,27 +145,46 @@ class TCPClientWrapper:
                     text.image_create(tkinter.END, image = imgtk)
                     text.insert(tkinter.END, '\n')
                     imgs.append(imgtk)
+                elif mode == 3:
+                    name, data = data.split(b'\0', 1)
+                    base = name.decode()
+                    def save(event, base = base, data = data):
+                        path = filedialog.asksaveasfilename(initialfile = base)
+                        if path:
+                            open(path, 'wb').write(data)
+                    text.insert(tkinter.END, time.strftime('%Y-%m-%d %H:%M:%S - Received file: '), 'Remote')
+                    link = tkinter.Label(text, text = base, fg = 'blue', cursor = 'hand2', font = TXTF, bg = 'white')
+                    link.bind('<Enter>', lambda event, link = link: link.config(font = URLF))
+                    link.bind('<Leave>', lambda event, link = link: link.config(font = TXTF))
+                    link.bind('<Button-1>', save)
+                    text.window_create(tkinter.END, window = link)
+                    text.insert(tkinter.END, '\n')
                 text.see(tkinter.END)
                 text.config(state = tkinter.DISABLED)
             root.after(1, update)
-        imgs = []
+        TXTF = ('Consolas', 10)
+        BTNF = ('Consolas', 10)
+        URLF = ('Consolas', 10, 'underline')
+        imgs = [] # prevent garbage collection
         root = tkinter.Tk()
         root.title('Chat')
         root.minsize(640, 480)
         root.protocol('WM_DELETE_WINDOW', on_quit)
-        text = tkinter.Text(root, state = tkinter.DISABLED)
-        text.tag_config('Local', foreground = 'red')
-        text.tag_config('Remote', foreground = 'blue')
+        text = tkinter.Text(root, state = tkinter.DISABLED, font = TXTF, height = 10, bg = 'white')
+        text.tag_config('Local', foreground = 'blue')
+        text.tag_config('Remote', foreground = 'red')
         down = tkinter.Frame(root)
-        line = tkinter.Entry(down)
+        line = tkinter.Entry(down, font = TXTF)
         line.bind('<Return>', on_send)
-        send = tkinter.Button(down, text = 'Send', command = on_send)
-        file = tkinter.Button(down, text = 'File', command = on_file)
+        send = tkinter.Button(down, text = 'Send', command = on_send, font = BTNF)
+        imag = tkinter.Button(down, text = 'Image', command = on_imag, font = BTNF)
+        file = tkinter.Button(down, text = 'File', command = on_file, font = BTNF)
         text.pack(fill = tkinter.BOTH, side = tkinter.TOP, expand = True)
         down.pack(fill = tkinter.X, side = tkinter.BOTTOM)
         line.pack(fill = tkinter.X, side = tkinter.LEFT, expand = True)
-        send.pack(fill = tkinter.X, side = tkinter.RIGHT)
-        file.pack(fill = tkinter.X, side = tkinter.RIGHT)
+        send.pack(fill = tkinter.X, side = tkinter.LEFT)
+        imag.pack(fill = tkinter.X, side = tkinter.LEFT)
+        file.pack(fill = tkinter.X, side = tkinter.LEFT)
         fifo = queue.Queue()
         recv = threading.Thread(target = recvloop)
         recv.start()
