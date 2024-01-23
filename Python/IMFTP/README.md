@@ -1,19 +1,23 @@
 # IMFTP
 
-A file transfer tool and an instant messager, supporting Diffie-Hellman Key Exchange Protocol and AES-CTR encryption.
+![Alt text](image.png)
+
+A file transfer and instant messager program based on TCP/IP, supporting encryption with DHKE and AES-CTR.
 
 ## Requirements
 
 - Python 3.6+
 - PyCryptodome
+- tkinter
+- Pillow
 
 ## Usage
 
 ```
 usage: imftp.py [-h] [--server [IP] | --client IP] [--port PORT]
-                (--send [FILENAME] | --recv [FILENAME] | --talk) [--size SIZE] [--enc]
+                (--send [FILENAME] | --recv [FILENAME] | --chat) [--size SIZE] [--enc]
 
-Instant Messager and File Transfer
+Chat and transfer files over TCP/IP
 
 options:
   -h, --help         show this help message and exit
@@ -22,8 +26,8 @@ options:
   --port PORT        port number of the server (4096 by default)
   --send [FILENAME]  send file
   --recv [FILENAME]  receive file
-  --talk             instant messager
-  --size SIZE        set size limit (unlimited by default, ignored in the instant messager mode)
+  --chat             start a chat session
+  --size SIZE        set size limit (unlimited by default, ignored in the chat mode)
   --enc              encrypt the connection with DHKE and AES-CTR (cannot be set on one side only)
 ```
 
