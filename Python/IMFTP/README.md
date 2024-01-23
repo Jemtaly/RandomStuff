@@ -49,10 +49,10 @@ Send the first 1024 bytes of `server_test.txt` from the server to the client and
 
 ```shell
 # Server
-$ python3 imftp.py --server --talk --enc
+$ python3 imftp.py --server --chat --enc
 
 # Client
-$ python3 imftp.py --client $SERVER_IP --talk --enc
+$ python3 imftp.py --client $SERVER_IP --chat --enc
 ```
 
 Start an instant messager between the server and the client, encrypting the connection with DHKE and AES-CTR.
