@@ -171,6 +171,7 @@ class TCPClientWrapper:
                     text.insert(tkinter.END, '\n')
                 text.see(tkinter.END)
                 text.config(state = tkinter.DISABLED)
+                root.deiconify()
             root.after(1, update)
         TXTF = ('Consolas', 10)
         BTNF = ('Consolas', 10)
