@@ -61,7 +61,11 @@ class TCPClientWrapper:
             root.destroy()
         def on_enter(event = None):
             cont = entr.get()
-            data = cont.encode()
+            try:
+                data = cont.encode()
+            except:
+                messagebox.showerror('Error', 'Encoding error, invalid character(s) in the message')
+                return
             size = len(data)
             if size > 16777215:
                 tkinter.messagebox.showerror('Error', 'Message too long, should be less than 16777215 bytes')
@@ -80,9 +84,10 @@ class TCPClientWrapper:
             path = filedialog.askopenfilename()
             if not path:
                 return
-            data = open(path, 'rb').read()
             try:
-                imgtk = ImageTk.PhotoImage(data = data)
+                data = open(path, 'rb').read()
+                image = Image.open(io.BytesIO(data))
+                imgtk = ImageTk.PhotoImage(image)
             except:
                 messagebox.showerror('Error', 'Invalid image')
                 return
@@ -104,7 +109,11 @@ class TCPClientWrapper:
             path = filedialog.askopenfilename()
             if not path:
                 return
-            data = os.path.basename(path).encode() + b'\0' + open(path, 'rb').read()
+            try:
+                data = os.path.basename(path).encode() + b'\0' + open(path, 'rb').read()
+            except:
+                messagebox.showerror('Error', 'Invalid file')
+                return
             size = len(data)
             if size > 16777215:
                 messagebox.showerror('Error', 'File too large, should be less than 16 MiB')
@@ -139,7 +148,8 @@ class TCPClientWrapper:
                     text.insert(tkinter.END, cont)
                     text.insert(tkinter.END, '\n')
                 elif mode == 2:
-                    imgtk = ImageTk.PhotoImage(data = data)
+                    image = Image.open(io.BytesIO(data))
+                    imgtk = ImageTk.PhotoImage(image)
                     text.insert(tkinter.END, time.strftime('%Y-%m-%d %H:%M:%S - Remote:'), 'Remote')
                     text.insert(tkinter.END, '\n')
                     text.image_create(tkinter.END, image = imgtk)
