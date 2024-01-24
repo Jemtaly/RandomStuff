@@ -20,9 +20,9 @@ class TCPClientWrapper:
         self.client.sendall(self.enc(data))
     def recvall(self, size):
         return self.dec(self.client.recv(size, socket.MSG_WAITALL))
-    def genkey(self):
-        self.sendall(b'GK')
-        assert self.recvall(2) == b'GK', 'peer is not in key generation mode'
+    def keyexchange(self):
+        self.sendall(b'KEYX')
+        assert self.recvall(4) == b'KEYX', 'peer is not in key generation mode'
         sockecck = ECC.generate(curve = 'nistp256')
         sockexpk = sockecck.public_key().export_key(format = 'SEC1')
         self.sendall(sockexpk)
@@ -34,8 +34,8 @@ class TCPClientWrapper:
         self.enc = AES.new(sockaesk[:16], AES.MODE_CTR, nonce = sockaesk[16:]).encrypt
         self.dec = AES.new(peeraesk[:16], AES.MODE_CTR, nonce = peeraesk[16:]).decrypt
     def sendstream(self, istream, r):
-        self.sendall(b'SS')
-        assert self.recvall(2) == b'RS', 'peer is not in receiving mode'
+        self.sendall(b'SBDS')
+        assert self.recvall(4) == b'RBDS', 'peer is not in receiving mode'
         size = 4094
         while size == 4094:
             data = istream.read(r[0] if 0 <= r[0] < 4094 else 4094)
@@ -43,8 +43,8 @@ class TCPClientWrapper:
             self.sendall(size.to_bytes(2, 'big') + data)
             r[0] -= size
     def recvstream(self, ostream, r):
-        self.sendall(b'RS')
-        assert self.recvall(2) == b'SS', 'peer is not in sending mode'
+        self.sendall(b'RBDS')
+        assert self.recvall(4) == b'SBDS', 'peer is not in sending mode'
         size = int.from_bytes(self.recvall(2), 'big')
         while size == 4094:
             temp = self.recvall(4096)
@@ -53,14 +53,14 @@ class TCPClientWrapper:
         data = self.recvall(size)
         r[0] += ostream.write(data)
     def chat(self):
-        self.sendall(b'CH')
-        assert self.recvall(2) == b'CH', 'peer is not in chat mode'
+        self.sendall(b'CHAT')
+        assert self.recvall(4) == b'CHAT', 'peer is not in chat mode'
         def on_quit(event = None):
             time = datetime.now()
             self.sendall(int(time.timestamp()).to_bytes(4, 'big') + b'\0\0\0\0')
             root.destroy()
-        def on_send(event = None):
-            cont = line.get()
+        def on_enter(event = None):
+            cont = entr.get()
             data = cont.encode()
             size = len(data)
             if size > 16777215:
@@ -75,14 +75,14 @@ class TCPClientWrapper:
             text.insert(tkinter.END, '\n')
             text.see(tkinter.END)
             text.config(state = tkinter.DISABLED)
-            line.delete(0, tkinter.END)
-        def on_imag(event = None):
+            entr.delete(0, tkinter.END)
+        def on_image(event = None):
             path = filedialog.askopenfilename()
             if not path:
                 return
             data = open(path, 'rb').read()
             try:
-                imgtk = ImageTk.PhotoImage(Image.open(io.BytesIO(data)))
+                imgtk = ImageTk.PhotoImage(data = data)
             except:
                 messagebox.showerror('Error', 'Invalid image')
                 return
@@ -122,12 +122,12 @@ class TCPClientWrapper:
                 time = datetime.fromtimestamp(int.from_bytes(head[:4], 'big'))
                 mode = head[4]
                 data = self.recvall(int.from_bytes(head[5:], 'big'))
-                fifo.put((time, mode, data))
+                rque.put((time, mode, data))
                 if mode == 0:
                     break
         def update():
-            while not fifo.empty():
-                time, mode, data = fifo.get()
+            while not rque.empty():
+                time, mode, data = rque.get()
                 text.config(state = tkinter.NORMAL)
                 if mode == 0:
                     text.insert(tkinter.END, time.strftime('%Y-%m-%d %H:%M:%S - Remote left the chat'), 'Remote')
@@ -139,7 +139,7 @@ class TCPClientWrapper:
                     text.insert(tkinter.END, cont)
                     text.insert(tkinter.END, '\n')
                 elif mode == 2:
-                    imgtk = ImageTk.PhotoImage(Image.open(io.BytesIO(data)))
+                    imgtk = ImageTk.PhotoImage(data = data)
                     text.insert(tkinter.END, time.strftime('%Y-%m-%d %H:%M:%S - Remote:'), 'Remote')
                     text.insert(tkinter.END, '\n')
                     text.image_create(tkinter.END, image = imgtk)
@@ -170,31 +170,36 @@ class TCPClientWrapper:
         root.title('Chat')
         root.minsize(640, 480)
         root.protocol('WM_DELETE_WINDOW', on_quit)
-        text = tkinter.Text(root, state = tkinter.DISABLED, font = TXTF, height = 10, bg = 'white')
+        topf = tkinter.Frame(root)
+        text = tkinter.Text(topf, state = tkinter.DISABLED, font = TXTF, height = 10, bg = 'white')
+        scrl = tkinter.Scrollbar(topf, command = text.yview)
         text.tag_config('Local', foreground = 'blue')
         text.tag_config('Remote', foreground = 'red')
-        down = tkinter.Frame(root)
-        line = tkinter.Entry(down, font = TXTF)
-        line.bind('<Return>', on_send)
-        send = tkinter.Button(down, text = 'Send', command = on_send, font = BTNF)
-        imag = tkinter.Button(down, text = 'Image', command = on_imag, font = BTNF)
-        file = tkinter.Button(down, text = 'File', command = on_file, font = BTNF)
-        text.pack(fill = tkinter.BOTH, side = tkinter.TOP, expand = True)
-        down.pack(fill = tkinter.X, side = tkinter.BOTTOM)
-        line.pack(fill = tkinter.X, side = tkinter.LEFT, expand = True)
-        send.pack(fill = tkinter.X, side = tkinter.LEFT)
-        imag.pack(fill = tkinter.X, side = tkinter.LEFT)
-        file.pack(fill = tkinter.X, side = tkinter.LEFT)
-        fifo = queue.Queue()
-        recv = threading.Thread(target = recvloop)
-        recv.start()
+        text.config(yscrollcommand = scrl.set)
+        botf = tkinter.Frame(root)
+        entr = tkinter.Entry(botf, font = TXTF)
+        entb = tkinter.Button(botf, text = 'Enter', command = on_enter, font = BTNF)
+        imgb = tkinter.Button(botf, text = 'Image', command = on_image, font = BTNF)
+        opnb = tkinter.Button(botf, text = 'File', command = on_file, font = BTNF)
+        entr.bind('<Return>', on_enter)
+        topf.pack(fill = tkinter.BOTH, side = tkinter.TOP, expand = True)
+        text.pack(fill = tkinter.BOTH, side = tkinter.LEFT, expand = True)
+        scrl.pack(fill = tkinter.Y, side = tkinter.RIGHT)
+        botf.pack(fill = tkinter.X, side = tkinter.BOTTOM)
+        entr.pack(fill = tkinter.X, side = tkinter.LEFT, expand = True)
+        entb.pack(fill = tkinter.X, side = tkinter.LEFT)
+        imgb.pack(fill = tkinter.X, side = tkinter.LEFT)
+        opnb.pack(fill = tkinter.X, side = tkinter.LEFT)
+        rque = queue.Queue()
+        thrd = threading.Thread(target = recvloop)
+        thrd.start()
         root.after(1, update)
         root.mainloop()
-        recv.join()
+        thrd.join()
 def run(client, recv, send, chat, size, enc):
     C = TCPClientWrapper(client)
     if enc:
-        C.genkey()
+        C.keyexchange()
     if chat:
         C.chat()
     elif recv:
