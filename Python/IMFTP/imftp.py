@@ -40,26 +40,32 @@ class TCPClientWrapper:
         peeraesk = SHA224.new(peerexpk + key).digest()
         self.enc = AES.new(sockaesk[:16], AES.MODE_CTR, nonce = sockaesk[16:]).encrypt
         self.dec = AES.new(peeraesk[:16], AES.MODE_CTR, nonce = peeraesk[16:]).decrypt
-    def sendstream(self, istream, recd):
+    def sendstream(self, ibstream, buff = sys.stderr):
         self.sendall(b'SBDS')
         assert self.recvall(4) == b'RBDS', 'peer is not in receiving mode'
+        recd = 0
         while True:
-            data = istream.read(recd.v if 0x0000 <= recd.v < 0x0ffe else 0x0ffe)
+            data = ibstream.read(0x0ffe)
             size = len(data)
             self.sendall(size.to_bytes(2, 'big') + data)
-            recd -= size
+            buff.write('\r{} bytes sent'.format(recd := recd + size))
             if size < 0x0ffe:
                 break
-    def recvstream(self, ostream, recd):
+        buff.write('\n')
+    def recvstream(self, ostream, buff = sys.stderr):
         self.sendall(b'RBDS')
         assert self.recvall(4) == b'SBDS', 'peer is not in sending mode'
+        recd = 0
         size = int.from_bytes(self.recvall(2), 'big')
         while size == 0x0ffe:
             temp = self.recvall(0x1000)
-            recd += ostream.write(temp[:0x0ffe])
+            ostream.write(temp[:0x0ffe])
+            buff.write('\r{} bytes received'.format(recd := recd + size))
             size = int.from_bytes(temp[0x0ffe:], 'big')
         data = self.recvall(size)
-        recd += ostream.write(data)
+        ostream.write(data)
+        buff.write('\r{} bytes received'.format(recd := recd + size))
+        buff.write('\n')
     def chat(self):
         self.sendall(b'CHAT')
         assert self.recvall(4) == b'CHAT', 'peer is not in chat mode'
@@ -215,20 +221,16 @@ class TCPClientWrapper:
         root.after(1, update)
         root.mainloop()
         thrd.join()
-def run(client, recv, send, chat, size, enc):
+def run(client, recv, send, chat, enc, buff):
     C = TCPClientWrapper(client)
     if enc:
         C.keyexchange()
     if chat:
         C.chat()
     elif recv:
-        recd = Recorder(+0 if size == None else size)
-        C.recvstream(recv, recd)
-        print(recd.v)
+        C.recvstream(recv, buff)
     elif send:
-        recd = Recorder(~0 if size == None else size)
-        C.sendstream(send, recd)
-        print(recd.v)
+        C.sendstream(send, buff)
 def main():
     import argparse
     parser = argparse.ArgumentParser(description = "Chat and transfer files over TCP/IP")
@@ -240,14 +242,15 @@ def main():
     action.add_argument('--send', metavar = 'FILENAME', nargs = '?', type = argparse.FileType('rb'), const = sys.stdin.buffer, help = 'send file')
     action.add_argument('--recv', metavar = 'FILENAME', nargs = '?', type = argparse.FileType('wb'), const = sys.stdout.buffer, help = 'receive file')
     action.add_argument('--chat', action = 'store_true', help = 'start a chat session')
-    parser.add_argument('--size', type = int, help = 'set size limit (unlimited by default, ignored in the chat mode)')
     parser.add_argument('--enc', action = 'store_true', help = 'encrypt the connection with DHKE and AES-CTR (cannot be set on one side only)')
+    parser.add_argument('--log', action = 'store_true', help = 'show sending/receiving progress')
     args = parser.parse_args()
+    buff = sys.stderr if args.log else open(os.devnull, 'w')
     if args.client:
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client.connect((args.client, args.port))
         with client:
-            run(client, args.recv, args.send, args.chat, args.size, args.enc)
+            run(client, args.recv, args.send, args.chat, args.enc, buff)
     else:
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.bind((args.server, args.port))
@@ -255,6 +258,6 @@ def main():
             server.listen(1)
             client, addr = server.accept()
             with client:
-                run(client, args.recv, args.send, args.chat, args.size, args.enc)
+                run(client, args.recv, args.send, args.chat, args.enc, buff)
 if __name__ == '__main__':
     main()
