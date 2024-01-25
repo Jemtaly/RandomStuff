@@ -40,12 +40,12 @@ class TCPClientWrapper:
         peeraesk = SHA224.new(peerexpk + key).digest()
         self.enc = AES.new(sockaesk[:16], AES.MODE_CTR, nonce = sockaesk[16:]).encrypt
         self.dec = AES.new(peeraesk[:16], AES.MODE_CTR, nonce = peeraesk[16:]).decrypt
-    def sendstream(self, ibstream, buff = sys.stderr):
+    def sendstream(self, istream, buff = sys.stderr):
         self.sendall(b'SBDS')
         assert self.recvall(4) == b'RBDS', 'peer is not in receiving mode'
         recd = 0
         while True:
-            data = ibstream.read(0x0ffe)
+            data = istream.read(0x0ffe)
             size = len(data)
             self.sendall(size.to_bytes(2, 'big') + data)
             buff.write('\r{} bytes sent'.format(recd := recd + size))
