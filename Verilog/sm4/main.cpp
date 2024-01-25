@@ -2,16 +2,16 @@
 #include "Vsm4.h"
 #include "verilated.h"
 void setk(Vsm4 &vsm4, uint8_t *key, bool mode) {
-    vsm4.mode = mode;          // 模式
+    vsm4.mode = mode;          // set mode
     for (int i = 0; i < 16; i++)
-        vsm4.key[i] = key[i];  // 密钥
+        vsm4.key[i] = key[i];  // set key
 }
 void test(Vsm4 &vsm4, uint8_t *buf) {
     for (int i = 0; i < 16; i++)
-        vsm4.src[i] = buf[i];  // 输入
-    vsm4.eval();               // 仿真
+        vsm4.src[i] = buf[i];  // input
+    vsm4.eval();               // eval
     for (int i = 0; i < 16; i++)
-        buf[i] = vsm4.dst[i];  // 输出
+        buf[i] = vsm4.dst[i];  // output
 }
 void dump(const char *name, uint8_t *data) {
     printf("%s:", name);

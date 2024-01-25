@@ -7,7 +7,7 @@ void hexdump(uint8_t const *data, size_t len, size_t width = 16) {
         printf("%02X%c", data[i], (i + 1) % width == 0 || i + 1 == len ? '\n' : ' ');
 }
 void test(Vrc4 &vrc4, size_t keylen, uint8_t *key, size_t msglen, uint8_t *msg, uint8_t *buf) {
-    vrc4.rst = 1;  // 将 rst 置 1，开始输入密钥
+    vrc4.rst = 1;  // set rst to 1, start input key
     for (int i = 0; i < keylen; i++) {
         vrc4.in = key[i];
         vrc4.clk = 0;
@@ -15,7 +15,7 @@ void test(Vrc4 &vrc4, size_t keylen, uint8_t *key, size_t msglen, uint8_t *msg, 
         vrc4.clk = 1;
         vrc4.eval();
     }
-    vrc4.rst = 0;  // 将 rst 置 0，开始密钥混淆
+    vrc4.rst = 0;  // set rst to 0, start key confusion
     for (int i = 0; i < 256; i++) {
         vrc4.clk = 0;
         vrc4.eval();
@@ -23,12 +23,12 @@ void test(Vrc4 &vrc4, size_t keylen, uint8_t *key, size_t msglen, uint8_t *msg, 
         vrc4.eval();
     }
     for (int i = 0; i < msglen; i++) {
-        vrc4.in = msg[i];   // 输入明文
+        vrc4.in = msg[i];   // input plaintext
         vrc4.clk = 0;
         vrc4.eval();
         vrc4.clk = 1;
         vrc4.eval();
-        buf[i] = vrc4.out;  // 输出密文
+        buf[i] = vrc4.out;  // output ciphertext
     }
 }
 void show(ostream &o, size_t keylen, uint8_t *key, size_t msglen, uint8_t *msg, uint8_t *buf) {
