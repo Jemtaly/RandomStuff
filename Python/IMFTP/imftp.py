@@ -7,6 +7,13 @@ import Crypto.Hash.SHA224 as SHA224
 from tkinter import filedialog, messagebox
 from datetime import datetime
 from PIL import Image, ImageTk
+class Recorder:
+    def __init__(self, v):
+        self.v = v
+    def __iadd__(self, v):
+        self.v += v
+    def __isub__(self, v):
+        self.v -= v
 class TCPClientWrapper:
     def __init__(self, client):
         self.client = client
@@ -33,31 +40,31 @@ class TCPClientWrapper:
         peeraesk = SHA224.new(peerexpk + key).digest()
         self.enc = AES.new(sockaesk[:16], AES.MODE_CTR, nonce = sockaesk[16:]).encrypt
         self.dec = AES.new(peeraesk[:16], AES.MODE_CTR, nonce = peeraesk[16:]).decrypt
-    def sendstream(self, istream, r):
+    def sendstream(self, istream, recd):
         self.sendall(b'SBDS')
         assert self.recvall(4) == b'RBDS', 'peer is not in receiving mode'
-        size = 4094
-        while size == 4094:
-            data = istream.read(r[0] if 0 <= r[0] < 4094 else 4094)
+        while True:
+            data = istream.read(recd.v if 0x0000 <= recd.v < 0x0ffe else 0x0ffe)
             size = len(data)
             self.sendall(size.to_bytes(2, 'big') + data)
-            r[0] -= size
-    def recvstream(self, ostream, r):
+            recd -= size
+            if size < 0x0ffe:
+                break
+    def recvstream(self, ostream, recd):
         self.sendall(b'RBDS')
         assert self.recvall(4) == b'SBDS', 'peer is not in sending mode'
         size = int.from_bytes(self.recvall(2), 'big')
-        while size == 4094:
-            temp = self.recvall(4096)
-            r[0] += ostream.write(temp[:4094])
-            size = int.from_bytes(temp[4094:], 'big')
+        while size == 0x0ffe:
+            temp = self.recvall(0x1000)
+            recd += ostream.write(temp[:0x0ffe])
+            size = int.from_bytes(temp[0x0ffe:], 'big')
         data = self.recvall(size)
-        r[0] += ostream.write(data)
+        recd += ostream.write(data)
     def chat(self):
         self.sendall(b'CHAT')
         assert self.recvall(4) == b'CHAT', 'peer is not in chat mode'
         def on_quit(event = None):
-            time = datetime.now()
-            self.sendall(int(time.timestamp()).to_bytes(4, 'big') + b'\0\0\0\0')
+            self.sendall(b'\0\0\0\0')
             root.destroy()
         def on_enter(event = None):
             cont = entr.get()
@@ -67,13 +74,12 @@ class TCPClientWrapper:
                 messagebox.showerror('Error', 'Encoding error, invalid character(s) in the message')
                 return
             size = len(data)
-            if size > 16777215:
-                tkinter.messagebox.showerror('Error', 'Message too long, should be less than 16777215 bytes')
+            if size > 0xffffff:
+                tkinter.messagebox.showerror('Error', 'Message too long')
                 return
-            time = datetime.now()
-            self.sendall(int(time.timestamp()).to_bytes(4, 'big') + b'\1' + size.to_bytes(3, 'big') + data)
+            self.sendall(b'\1' + size.to_bytes(3, 'big') + data)
             text.config(state = tkinter.NORMAL)
-            text.insert(tkinter.END, time.strftime('%Y-%m-%d %H:%M:%S - Local: '), 'Local')
+            text.insert(tkinter.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Local: '), 'Local')
             text.insert(tkinter.END, '\n')
             text.insert(tkinter.END, cont)
             text.insert(tkinter.END, '\n')
@@ -92,13 +98,12 @@ class TCPClientWrapper:
                 messagebox.showerror('Error', 'Invalid image')
                 return
             size = len(data)
-            if size > 16777215:
+            if size > 0xffffff:
                 messagebox.showerror('Error', 'Image too large, should be less than 16 MiB')
                 return
-            time = datetime.now()
-            self.sendall(int(time.timestamp()).to_bytes(4, 'big') + b'\2' + size.to_bytes(3, 'big') + data)
+            self.sendall(b'\2' + size.to_bytes(3, 'big') + data)
             text.config(state = tkinter.NORMAL)
-            text.insert(tkinter.END, time.strftime('%Y-%m-%d %H:%M:%S - Local: '), 'Local')
+            text.insert(tkinter.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Local: '), 'Local')
             text.insert(tkinter.END, '\n')
             text.image_create(tkinter.END, image = imgtk)
             text.insert(tkinter.END, '\n')
@@ -115,42 +120,40 @@ class TCPClientWrapper:
                 messagebox.showerror('Error', 'Invalid file')
                 return
             size = len(data)
-            if size > 16777215:
+            if size > 0xffffff:
                 messagebox.showerror('Error', 'File too large, should be less than 16 MiB')
                 return
-            time = datetime.now()
-            self.sendall(int(time.timestamp()).to_bytes(4, 'big') + b'\3' + size.to_bytes(3, 'big') + data)
+            self.sendall(b'\3' + size.to_bytes(3, 'big') + data)
             text.config(state = tkinter.NORMAL)
-            text.insert(tkinter.END, time.strftime('%Y-%m-%d %H:%M:%S - Sent file: ') + path, 'Local')
+            text.insert(tkinter.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Sent file: ') + path, 'Local')
             text.insert(tkinter.END, '\n')
             text.see(tkinter.END)
             text.config(state = tkinter.DISABLED)
         def recvloop():
             while True:
-                head = self.recvall(8)
-                time = datetime.fromtimestamp(int.from_bytes(head[:4], 'big'))
-                mode = head[4]
-                data = self.recvall(int.from_bytes(head[5:], 'big'))
-                rque.put((time, mode, data))
+                head = self.recvall(4)
+                mode = head[0]
+                data = self.recvall(int.from_bytes(head[1:], 'big'))
+                rque.put((mode, data))
                 if mode == 0:
                     break
         def update():
             while not rque.empty():
-                time, mode, data = rque.get()
+                mode, data = rque.get()
                 text.config(state = tkinter.NORMAL)
                 if mode == 0:
-                    text.insert(tkinter.END, time.strftime('%Y-%m-%d %H:%M:%S - Remote left the chat'), 'Remote')
+                    text.insert(tkinter.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Remote left the chat'), 'Remote')
                     text.insert(tkinter.END, '\n')
                 elif mode == 1:
                     cont = data.decode()
-                    text.insert(tkinter.END, time.strftime('%Y-%m-%d %H:%M:%S - Remote:'), 'Remote')
+                    text.insert(tkinter.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Remote:'), 'Remote')
                     text.insert(tkinter.END, '\n')
                     text.insert(tkinter.END, cont)
                     text.insert(tkinter.END, '\n')
                 elif mode == 2:
                     image = Image.open(io.BytesIO(data))
                     imgtk = ImageTk.PhotoImage(image)
-                    text.insert(tkinter.END, time.strftime('%Y-%m-%d %H:%M:%S - Remote:'), 'Remote')
+                    text.insert(tkinter.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Remote:'), 'Remote')
                     text.insert(tkinter.END, '\n')
                     text.image_create(tkinter.END, image = imgtk)
                     text.insert(tkinter.END, '\n')
@@ -162,7 +165,7 @@ class TCPClientWrapper:
                         path = filedialog.asksaveasfilename(initialfile = base)
                         if path:
                             open(path, 'wb').write(data)
-                    text.insert(tkinter.END, time.strftime('%Y-%m-%d %H:%M:%S - Received file: '), 'Remote')
+                    text.insert(tkinter.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Received file: '), 'Remote')
                     link = tkinter.Label(text, text = base, fg = 'blue', cursor = 'hand2', font = TXTF, bg = 'white')
                     link.bind('<Enter>', lambda event, link = link: link.config(font = URLF))
                     link.bind('<Leave>', lambda event, link = link: link.config(font = TXTF))
@@ -178,7 +181,7 @@ class TCPClientWrapper:
         URLF = ('Consolas', 10, 'underline')
         imgs = [] # prevent garbage collection
         root = tkinter.Tk()
-        root.title('Chat')
+        root.title('Chat - {}:{} <-> {}:{}'.format(*self.sockname(), *self.peername()))
         root.minsize(640, 480)
         root.protocol('WM_DELETE_WINDOW', on_quit)
         topf = tkinter.Frame(root)
@@ -214,13 +217,13 @@ def run(client, recv, send, chat, size, enc):
     if chat:
         C.chat()
     elif recv:
-        rec = [0 if size == None else size]
-        C.recvstream(recv, rec)
-        print(rec[0])
+        recd = Recorder(+0 if size == None else size)
+        C.recvstream(recv, recd)
+        print(recd.v)
     elif send:
-        rec = [-1 if size == None else size]
-        C.sendstream(send, rec)
-        print(rec[0])
+        recd = Recorder(~0 if size == None else size)
+        C.sendstream(send, recd)
+        print(recd.v)
 def main():
     import argparse
     parser = argparse.ArgumentParser(description = "Chat and transfer files over TCP/IP")
