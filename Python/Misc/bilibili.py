@@ -3,7 +3,7 @@ SEQ = [9, 8, 1, 6, 2, 4]
 ADD = 0x00000002084007c0
 XOR = 0x000000000a93b324
 MSK = 0xffffffffffffffff
-def enc(av):
+def av2bv(av):
     av = (av ^ XOR) + ADD & MSK
     bv = [None] * 10
     for i in SEQ:
@@ -15,7 +15,7 @@ def enc(av):
     bv[7] = ABC[40]
     bv = 'BV' + ''.join(bv)
     return bv
-def dec(bv):
+def bv2av(bv):
     bv = bv[2:]
     av = 0
     for i in reversed(SEQ):

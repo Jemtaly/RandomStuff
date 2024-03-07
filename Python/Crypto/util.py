@@ -36,13 +36,13 @@ def modinv(a, m):
     # input: a, m such that (a, m) == 1
     # output: the inverse of a modulo m
     d, (r, _) = exgcd(a, m)
-    assert d == 1
+    assert d == 1, 'modinv: not invertible'
     return r % m
 def moddiv(a, b, m):
     # input: a, b, m such that (b, m) | a
     # output: k, n such that c == a / b (mod m) if and only if c == k (mod n)
     d, (r, _) = exgcd(b, m)
-    assert a % d == 0
+    assert a % d == 0, 'moddiv: not divisible'
     k = a // d * r
     n = m // d
     return k % n, n
@@ -53,7 +53,7 @@ def crt(D):
     for r, m in D:
         d, (N, n) = exgcd(M, m)
         c = r - R
-        assert c % d == 0
+        assert c % d == 0, 'crt: no solution'
         R = R + c // d * N * M
         M = M * m // d
     return R % M, M
@@ -65,31 +65,21 @@ def rref(m, h, w, q):
         I = next((I for I in range(h) if all(m[I][j] == 0 for j in range(J)) and m[I][J] != 0), None)
         if I is None:
             continue
+        k = modinv(m[I][J], q)
+        for j in range(J, w):
+            m[I][j] = m[I][j] * k % q
         for i in range(h):
             if i == I:
                 continue
-            mrecord = m[i][J]
-            for j in range(w):
-                m[i][j] = (m[i][j] * m[I][J] - m[I][j] * mrecord) % q
-def det(m, r, q):
-    # input: m, r, q such that m is a r * r matrix over Z / q
-    # output: the determinant of m
-    m = rref(m, r, r, q)
-    p = 1
-    for i in range(r):
-        j = next(j for j in range(r) if m[i][j] != 0)
-        p = p * m[i][j] % q
-    return p
+            k = m[i][J]
+            for j in range(J, w):
+                m[i][j] = (m[i][j] - m[I][j] * k) % q
+    return m
 def matinv(m, r, q):
     # input: m, r, q such that m is a r * r matrix over Z / q and det(m) != 0
     # output: the inverse of m
-    m = rref([v + [int(i == j) for j in range(r)] for i, v in enumerate(m)], r, r * 2, q)
-    M = []
-    for j in range(r):
-        i = next(j for j in range(r) if m[j][j] != 0)
-        t = modinv(m[i][j], q)
-        M.append([x * t % q for x in m[i][r:]])
-    return M
+    m = rref([m[i] + [int(i == j) for j in range(r)] for i in range(r)], r, r * 2, q)
+    return [[x * t % q for x in m[i][r:]] for i, t in (next((i, modinv(m[i][j], q)) for i in range(r) if m[i][j] != 0) for j in range(r))]
 def matmul(a, b, h, w, l, q):
     # input: a, b, h, w, l, q such that a is a h * w matrix, b is a w * l matrix over Z / q
     # output: the product of a and b
@@ -196,8 +186,8 @@ def fft(a, w, p):
     return b + c
 def ifft(a, w, p):
     N = len(a)
-    w = modinv(w, p)
-    N = modinv(N, p)
+    w = pow(w, -1, p)
+    N = pow(N, -1, p)
     return [x * N % p for x in fft(a, w, p)]
 def phi(fact):
     # input: a dictionary that represents the prime factorization of n

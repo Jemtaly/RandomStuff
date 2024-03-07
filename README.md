@@ -12,6 +12,15 @@ Some small, personal projects that are hard to categorize, including some toyish
 + **[IMFTP](Python/IMFTP):** 
   + A file transfer tool and an instant messager written in Python, supporting Diffie-Hellman key exchange and AES-CTR encryption.
   + 使用 Python 实现的文件传输和即时通讯工具，支持使用 Diffie-Hellman 密钥交换协议及 AES-CTR 来加密连接。
++ **[VidXXC](Python/VidXXC):** 
+  + A tool to encrypt/decrypt videos using AES-CTR.
+  + 视频加密/解密工具，使用 AES-CTR 加密。
++ **[Quthon](Python/Quthon):** 
+  + A simple quantum simulator implemented in python. 
+  + 量子计算模拟器，使用 Python 实现。
++ **[PyCrypto](Python/Crypto):** 
+  + Some cryptographic algorithms and protocols implemented in python.
+  + 使用 Python 实现的一些加密算法和协议。
 + **[CellAuto](C++/CellAuto):**
   + A cellular automata written in C++.
   + 使用 C++ 实现的元胞自动机。

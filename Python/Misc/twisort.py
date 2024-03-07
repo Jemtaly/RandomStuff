@@ -7,14 +7,14 @@ def twi2int(s):
     return sum(T2I[c] * 64 ** i for i, c in enumerate(reversed(s)))
 def int2twi(n):
     return ''.join(TWI[n // 64 ** i % 64] for i in reversed(range(15)))
-def twisort(l):
-    d = {twi2int(os.path.splitext(os.path.basename(s))[0]): s for s in l}
-    return sorted(l, key = d.get)
-def twiname(f):
+def t2iname(f):
     path, name = os.path.split(f)
     name, ext = os.path.splitext(name)
     return os.path.join(path, '{:028}{}'.format(twi2int(name), ext))
-def recover(l):
+def i2tname(l):
     path, name = os.path.split(l)
     name, ext = os.path.splitext(name)
     return os.path.join(path, '{}{}'.format(int2twi(int(name)), ext))
+def twisort(l):
+    d = {twi2int(os.path.splitext(os.path.basename(s))[0]): s for s in l}
+    return sorted(l, key = d.get)
