@@ -1,6 +1,6 @@
 # Boolfuck Verilog
 
-An awesome boolfuck machine implemented in verilog.
+An awesome boolfuck computer implemented in verilog.
 
 ## Compile and Run Testbench File
 
