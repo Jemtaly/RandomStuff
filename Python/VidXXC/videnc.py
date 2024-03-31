@@ -3,6 +3,7 @@ from PIL import Image
 from Crypto.Cipher import AES
 import random, cv2
 import numpy as np
+import argparse
 def encrypt(key, iSrc, len):
     iSrc = iSrc.convert('RGB')
     bSrc = iSrc.tobytes()
@@ -40,7 +41,6 @@ def generate(key, len, nSrc, nDst, num, red):
     vSrc.release()
     vDst.release()
 def main():
-    import argparse
     parser = argparse.ArgumentParser()
     parser = argparse.ArgumentParser(description = 'Video Encrypter/Decrypter')
     parser.add_argument('-k', '--key', type = bytes.fromhex, default = bytes(16), help = '16/24/32-byte key in hex')

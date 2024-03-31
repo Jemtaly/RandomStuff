@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import tkinter
 def tpoint(t, p, q):
     return tuple(x * (1 - t) + z * t for x, z in zip(p, q))
 def bpoint(t, points):
@@ -6,7 +7,6 @@ def bpoint(t, points):
 def bezier(n, points):
     return [bpoint(i / (n - 1), points) for i in range(n)]
 def main():
-    import tkinter
     tk = tkinter.Tk()
     tk.title('Bezier')
     canvas = tkinter.Canvas(tk)

@@ -1,12 +1,13 @@
 #!/usr/bin/python3
-import os, sys, io, socket, threading, queue, tkinter
+from tkinter import filedialog, messagebox
+from datetime import datetime
+from PIL import Image, ImageTk
 import Crypto.PublicKey.ECC as ECC
 import Crypto.Protocol.DH as DH
 import Crypto.Cipher.AES as AES
 import Crypto.Hash.SHA224 as SHA224
-from tkinter import filedialog, messagebox
-from datetime import datetime
-from PIL import Image, ImageTk
+import os, sys, io, socket, threading, queue, tkinter
+import argparse
 class Recorder:
     def __init__(self, v):
         self.v = v
@@ -232,7 +233,6 @@ def run(client, recv, send, chat, enc, buff):
     elif send:
         C.sendstream(send, buff)
 def main():
-    import argparse
     parser = argparse.ArgumentParser(description = "Chat and transfer files over TCP/IP")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--server', metavar = 'IP', nargs = '?', default = '', const = '', help = 'run as a server (default)')

@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import math
+import tkinter
 class RGB:
     def __init__(self, r, g, b):
         assert (r | g | b) >> 8 == 0
@@ -14,13 +15,11 @@ class RGB:
         S = (math.exp(+saturation) - math.exp(-saturation)) / (math.exp(+saturation) + math.exp(-saturation))
         H = 1 / (1 + math.exp(-brightness))
         R = S / (1 + math.exp(-brightness) + math.exp(+brightness))
-        # print(H, R)
         r = min(255, math.floor(256 * (H + R * math.cos(hues))))
         g = min(255, math.floor(256 * (H + R * math.cos(hues - math.tau / 3))))
         b = min(255, math.floor(256 * (H + R * math.cos(hues + math.tau / 3))))
         return RGB(r, g, b)
 def main():
-    import tkinter
     tk = tkinter.Tk()
     tk.title('RGB')
     canvas = tkinter.Canvas(tk)
@@ -42,7 +41,6 @@ def main():
     change()
     tk.mainloop()
 def test():
-    import tkinter
     tk = tkinter.Tk()
     tk.title('HSB')
     canvas = tkinter.Canvas(tk)

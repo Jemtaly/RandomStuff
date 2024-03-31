@@ -2,6 +2,7 @@
 from PIL import Image, ImageGrab, ImageTk
 from Crypto.Cipher import AES
 import tkinter as tk
+import argparse
 def decrypt(key, iSrc, len):
     iSrc = iSrc.convert('RGB')
     bSrc = iSrc.tobytes()
@@ -116,7 +117,6 @@ class Decrypter(tk.Tk):
         else:
             self.selecter.mm.configure(bg = '#808080')
 def main():
-    import argparse
     parser = argparse.ArgumentParser()
     parser = argparse.ArgumentParser(description = 'Video Encrypter/Decrypter')
     parser.add_argument('-k', '--key', type = bytes.fromhex, default = bytes(16), help = '16/24/32-byte key in hex')

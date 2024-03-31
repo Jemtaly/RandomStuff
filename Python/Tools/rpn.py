@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import sys
 oprs = {
     '+': int.__add__,
     '-': int.__sub__,
@@ -17,7 +18,6 @@ def RPN(expression):
             stack.append(int(token))
     return stack.pop()
 def main():
-    import sys
     ps_in = '>> ' if sys.stderr.isatty() and sys.stdin.isatty() else ''
     ps_out = '=> ' if sys.stderr.isatty() and sys.stdout.isatty() else ''
     lf = True

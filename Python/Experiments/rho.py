@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import sys
 def get_rho(hash, seed):
     i = seed
     time = 1
@@ -22,7 +23,6 @@ def collide(hash, seed):
             return x, y
         x, y = m, n
 def main():
-    import sys
     hlen = sys.hash_info.width // 8
     x, y = collide(lambda data: hash(data).to_bytes(hlen, 'little', signed = True), hash(None).to_bytes(hlen, 'little', signed = True))
     print(x.hex())

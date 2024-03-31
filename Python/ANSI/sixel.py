@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import numpy as np
 import PIL.Image as Image
+import argparse
 def sixel(image, size):
     if size:
         image.thumbnail(size, Image.LANCZOS)
@@ -15,7 +16,6 @@ def sixel(image, size):
         print('-', end = '')
     print('\033\\', end = '')
 def main():
-    import argparse
     parser = argparse.ArgumentParser(description = 'Sixel Image Viewer')
     parser.add_argument('image', type = Image.open, help = 'image file')
     parser.add_argument('-s', '--size', metavar = ('WIDTH', 'HEIGHT'), default = None, type = int, nargs = 2, help = 'size (width, height)')

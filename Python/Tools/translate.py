@@ -1,12 +1,12 @@
 #!/usr/bin/python3
-import requests
 from urllib.parse import quote
+import requests
+import argparse
 def translate(text, source, target):
     url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl={}&tl={}&dt=t&q={}'.format(source, target, quote(text))
     ans = requests.get(url).json()[0] or []
     return ''.join(i[0] for i in ans)
 def main():
-    import argparse
     parser = argparse.ArgumentParser(description = "Command Line Translator")
     parser.add_argument('-s', dest = 'source', help = 'source language', default = 'auto')
     parser.add_argument('-t', dest = 'target', help = 'target language', default = 'auto')

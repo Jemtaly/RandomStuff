@@ -1,6 +1,7 @@
 #!/usr/bin/python3
-import requests, os, bs4, argparse, re
 from urllib.parse import urljoin, unquote, urlparse, parse_qs
+import requests, os, bs4, re
+import argparse
 warn = '\033[31m!!\033[0m'
 info = '\033[32m>>\033[0m'
 def krawl(url, exclude, include, dir = None):
@@ -34,11 +35,15 @@ def index(url):
         os.mkdir(dir)
     for i, div in enumerate(soup.find_all('div', class_ = 'post__thumbnail')):
         href = urljoin(url, div.a.get('href'))
-        name = unquote(parse_qs(urlparse(href).query)['f'][0])
-        name = '{:02}{}'.format(i, os.path.splitext(name)[1])
+        oldn = unquote(parse_qs(urlparse(href).query)['f'][0])
+        name = '{:02}{}'.format(i, os.path.splitext(oldn)[1])
+        oldp = os.path.join(dir, oldn)
         path = os.path.join(dir, name)
         if os.path.exists(path):
             print('\033[31m>>\033[0m Skipping {} because {} already exists'.format(href, path))
+        elif os.path.exists(oldp):
+            print('\033[32m>>\033[0m Renaming {} to {}'.format(oldp, path))
+            os.rename(oldp, path)
         else:
             print('\033[32m>>\033[0m Downloading {} to {}'.format(href, path))
             part = path + '.part'

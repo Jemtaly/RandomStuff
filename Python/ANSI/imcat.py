@@ -1,7 +1,8 @@
 #!/usr/bin/python3
-import PIL.Image as Image
 import numpy as np
+import PIL.Image as Image
 import ansi, os
+import argparse
 def imcat(image, size):
     cols, rows = size
     image.thumbnail((cols * 1, rows * 2), Image.LANCZOS)
@@ -15,7 +16,6 @@ def imcat(image, size):
             print(ansi.SGR(fgc = h, bgc = l) + '▀', end = '')
         print(ansi.SGR())
 def main():
-    import argparse
     parser = argparse.ArgumentParser(description = 'Image Viewer for ANSI Terminal')
     parser.add_argument('image', type = Image.open, help = 'image file')
     parser.add_argument('-s', '--size', metavar = ('COLS', 'ROWS'), default = None, type = int, nargs = 2, help = 'size (columns, rows)')
