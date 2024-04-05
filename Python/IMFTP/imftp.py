@@ -8,13 +8,6 @@ import Crypto.Cipher.AES as AES
 import Crypto.Hash.SHA224 as SHA224
 import os, sys, io, socket, threading, queue, tkinter
 import argparse
-class Recorder:
-    def __init__(self, v):
-        self.v = v
-    def __iadd__(self, v):
-        self.v += v
-    def __isub__(self, v):
-        self.v -= v
 class TCPClientWrapper:
     def __init__(self, client):
         self.client = client
