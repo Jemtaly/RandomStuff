@@ -92,7 +92,6 @@ class Selecter(tk.Toplevel):
         w = self.mm.winfo_width()
         h = self.mm.winfo_height()
         return ImageGrab.grab((l, t, l + w, t + h))
-import time
 class Decrypter(tk.Tk):
     def __init__(self, key, len, res):
         super().__init__()
@@ -106,15 +105,12 @@ class Decrypter(tk.Tk):
         self.len = len
         self.res = res
         self.after(20, self.refresh)
-        self.now = time.time()
     def refresh(self):
         iSrc = self.selecter.grab().resize(self.res)
         iDst = decrypt(self.key, iSrc, self.len)
         self.imgtk = ImageTk.PhotoImage(iDst)
         self.label.configure(image = self.imgtk)
         self.after(20, self.refresh)
-        print(time.time() - self.now)
-        self.now = time.time()
     def select(self, event = None):
         if self.selecter.mm.cget('bg') == '#808080':
             self.selecter.mm.configure(bg = '#000000')
