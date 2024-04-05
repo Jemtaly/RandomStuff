@@ -70,73 +70,8 @@ class TCPClientWrapper:
     def chat(self):
         self.sendall(b'CHAT')
         assert self.recvall(4) == b'CHAT', 'peer is not in chat mode'
-        def on_quit(event = None):
-            self.sendall(b'\0\0\0\0')
-            root.destroy()
-        def on_enter(event = None):
-            cont = entr.get()
-            try:
-                data = cont.encode()
-            except:
-                messagebox.showerror('Error', 'Encoding error, invalid character(s) in the message')
-                return
-            size = len(data)
-            if size > 0xffffff:
-                tkinter.messagebox.showerror('Error', 'Message too long')
-                return
-            self.sendall(b'\1' + size.to_bytes(3, 'big') + data)
-            text.config(state = tkinter.NORMAL)
-            text.insert(tkinter.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Local: '), 'Local')
-            text.insert(tkinter.END, '\n')
-            text.insert(tkinter.END, cont)
-            text.insert(tkinter.END, '\n')
-            text.see(tkinter.END)
-            text.config(state = tkinter.DISABLED)
-            entr.delete(0, tkinter.END)
-        def on_image(event = None):
-            path = filedialog.askopenfilename()
-            if not path:
-                return
-            try:
-                data = open(path, 'rb').read()
-                image = Image.open(io.BytesIO(data))
-                imgtk = ImageTk.PhotoImage(image)
-            except:
-                messagebox.showerror('Error', 'Invalid image')
-                return
-            size = len(data)
-            if size > 0xffffff:
-                messagebox.showerror('Error', 'Image too large, should be less than 16 MiB')
-                return
-            self.sendall(b'\2' + size.to_bytes(3, 'big') + data)
-            text.config(state = tkinter.NORMAL)
-            text.insert(tkinter.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Local: '), 'Local')
-            text.insert(tkinter.END, '\n')
-            text.image_create(tkinter.END, image = imgtk)
-            text.insert(tkinter.END, '\n')
-            text.see(tkinter.END)
-            text.config(state = tkinter.DISABLED)
-            imgs.append(imgtk)
-        def on_file(event = None):
-            path = filedialog.askopenfilename()
-            if not path:
-                return
-            try:
-                data = os.path.basename(path).encode() + b'\0' + open(path, 'rb').read()
-            except:
-                messagebox.showerror('Error', 'Invalid file')
-                return
-            size = len(data)
-            if size > 0xffffff:
-                messagebox.showerror('Error', 'File too large, should be less than 16 MiB')
-                return
-            self.sendall(b'\3' + size.to_bytes(3, 'big') + data)
-            text.config(state = tkinter.NORMAL)
-            text.insert(tkinter.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Sent file: '), 'Local')
-            text.insert(tkinter.END, path, 'Local')
-            text.insert(tkinter.END, '\n')
-            text.see(tkinter.END)
-            text.config(state = tkinter.DISABLED)
+        rque = queue.Queue()
+        sque = queue.Queue()
         def recvloop():
             while True:
                 head = self.recvall(4)
@@ -145,54 +80,31 @@ class TCPClientWrapper:
                 rque.put((mode, data))
                 if mode == 0:
                     break
-        def update():
-            while not rque.empty():
-                mode, data = rque.get()
-                text.config(state = tkinter.NORMAL)
+        def sendloop():
+            while True:
+                mode, data = sque.get()
+                size = len(data)
+                self.sendall(bytes([mode]) + size.to_bytes(3, 'big') + data)
                 if mode == 0:
-                    text.insert(tkinter.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Remote left the chat'), 'Info')
-                    text.insert(tkinter.END, '\n')
-                elif mode == 1:
-                    cont = data.decode()
-                    text.insert(tkinter.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Remote: '), 'Remote')
-                    text.insert(tkinter.END, '\n')
-                    text.insert(tkinter.END, cont)
-                    text.insert(tkinter.END, '\n')
-                elif mode == 2:
-                    image = Image.open(io.BytesIO(data))
-                    imgtk = ImageTk.PhotoImage(image)
-                    text.insert(tkinter.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Remote: '), 'Remote')
-                    text.insert(tkinter.END, '\n')
-                    text.image_create(tkinter.END, image = imgtk)
-                    text.insert(tkinter.END, '\n')
-                    imgs.append(imgtk)
-                elif mode == 3:
-                    name, data = data.split(b'\0', 1)
-                    base = name.decode()
-                    def save(event, base = base, data = data):
-                        path = filedialog.asksaveasfilename(initialfile = base)
-                        if path:
-                            open(path, 'wb').write(data)
-                    text.insert(tkinter.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Received file: '), 'Remote')
-                    link = tkinter.Label(text, text = base, fg = 'blue', cursor = 'hand2', font = TXTF, bg = 'white')
-                    link.bind('<Enter>', lambda event, link = link: link.config(font = URLF))
-                    link.bind('<Leave>', lambda event, link = link: link.config(font = TXTF))
-                    link.bind('<Button-1>', save)
-                    text.window_create(tkinter.END, window = link)
-                    text.insert(tkinter.END, '\n')
-                text.see(tkinter.END)
-                text.config(state = tkinter.DISABLED)
-                root.deiconify()
-            root.after(1, update)
+                    break
+        rthr = threading.Thread(target = recvloop)
+        sthr = threading.Thread(target = sendloop)
+        rthr.start()
+        sthr.start()
+        root = Messager(rque, sque, self.sockname(), self.peername())
+        root.mainloop()
+        rthr.join()
+        sthr.join()
+class Messager(tkinter.Tk):
+    def __init__(self, rque, sque, sockname, peername):
+        super().__init__()
+        self.title('Chat - {}:{} <-> {}:{}'.format(*sockname, *peername))
+        self.minsize(640, 480)
         TXTF = ('Consolas', 10)
         BTNF = ('Consolas', 10)
         URLF = ('Consolas', 10, 'underline')
-        imgs = [] # prevent garbage collection
-        root = tkinter.Tk()
-        root.title('Chat - {}:{} <-> {}:{}'.format(*self.sockname(), *self.peername()))
-        root.minsize(640, 480)
-        root.protocol('WM_DELETE_WINDOW', on_quit)
-        topf = tkinter.Frame(root)
+        topf = tkinter.Frame(self)
+        botf = tkinter.Frame(self)
         text = tkinter.Text(topf, font = TXTF, height = 10, bg = 'white')
         scrl = tkinter.Scrollbar(topf, command = text.yview)
         text.config(yscrollcommand = scrl.set)
@@ -202,26 +114,133 @@ class TCPClientWrapper:
         text.insert(tkinter.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Chat started'), 'Info')
         text.insert(tkinter.END, '\n')
         text.config(state = tkinter.DISABLED)
-        botf = tkinter.Frame(root)
+        opnb = tkinter.Button(botf, text = 'File', command = self.on_file, font = BTNF)
+        imgb = tkinter.Button(botf, text = 'Image', command = self.on_image, font = BTNF)
+        entb = tkinter.Button(botf, text = 'Enter', command = self.on_enter, font = BTNF)
         entr = tkinter.Entry(botf, font = TXTF)
-        entb = tkinter.Button(botf, text = 'Enter', command = on_enter, font = BTNF)
-        imgb = tkinter.Button(botf, text = 'Image', command = on_image, font = BTNF)
-        opnb = tkinter.Button(botf, text = 'File', command = on_file, font = BTNF)
-        entr.bind('<Return>', on_enter)
+        entr.bind('<Return>', self.on_enter)
+        botf.bind('<Destroy>', self.on_quit)
         topf.pack(fill = tkinter.BOTH, side = tkinter.TOP, expand = True)
+        botf.pack(fill = tkinter.X, side = tkinter.BOTTOM)
         text.pack(fill = tkinter.BOTH, side = tkinter.LEFT, expand = True)
         scrl.pack(fill = tkinter.Y, side = tkinter.RIGHT)
-        botf.pack(fill = tkinter.X, side = tkinter.BOTTOM)
+        opnb.pack(fill = tkinter.X, side = tkinter.RIGHT)
+        imgb.pack(fill = tkinter.X, side = tkinter.RIGHT)
+        entb.pack(fill = tkinter.X, side = tkinter.RIGHT)
         entr.pack(fill = tkinter.X, side = tkinter.LEFT, expand = True)
-        entb.pack(fill = tkinter.X, side = tkinter.LEFT)
-        imgb.pack(fill = tkinter.X, side = tkinter.LEFT)
-        opnb.pack(fill = tkinter.X, side = tkinter.LEFT)
-        rque = queue.Queue()
-        thrd = threading.Thread(target = recvloop)
-        thrd.start()
-        root.after(1, update)
-        root.mainloop()
-        thrd.join()
+        self.text = text
+        self.entr = entr
+        self.rque = rque
+        self.sque = sque
+        self.imgs = [] # prevent garbage collections
+        self.TXTF = TXTF
+        self.URLF = URLF
+        self.after(1, self.update)
+    def on_quit(self, event = None):
+        self.sque.put((0, b''))
+    def on_enter(self, event = None):
+        cont = self.entr.get()
+        try:
+            data = cont.encode()
+        except:
+            messagebox.showerror('Error', 'Encoding error, invalid character(s) in the message')
+            return
+        size = len(data)
+        if size > 0xffffff:
+            tkinter.messagebox.showerror('Error', 'Message too long')
+            return
+        self.sque.put((1, data))
+        self.text.config(state = tkinter.NORMAL)
+        self.text.insert(tkinter.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Local: '), 'Local')
+        self.text.insert(tkinter.END, '\n')
+        self.text.insert(tkinter.END, cont)
+        self.text.insert(tkinter.END, '\n')
+        self.text.see(tkinter.END)
+        self.text.config(state = tkinter.DISABLED)
+        self.entr.delete(0, tkinter.END)
+    def on_image(self, event = None):
+        path = filedialog.askopenfilename()
+        if not path:
+            return
+        try:
+            data = open(path, 'rb').read()
+            image = Image.open(io.BytesIO(data))
+            imgtk = ImageTk.PhotoImage(image)
+        except:
+            messagebox.showerror('Error', 'Invalid image')
+            return
+        size = len(data)
+        if size > 0xffffff:
+            messagebox.showerror('Error', 'Image too large, should be less than 16 MiB')
+            return
+        self.sque.put((2, data))
+        self.text.config(state = tkinter.NORMAL)
+        self.text.insert(tkinter.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Local: '), 'Local')
+        self.text.insert(tkinter.END, '\n')
+        self.text.image_create(tkinter.END, image = imgtk)
+        self.text.insert(tkinter.END, '\n')
+        self.text.see(tkinter.END)
+        self.text.config(state = tkinter.DISABLED)
+        self.imgs.append(imgtk)
+    def on_file(self, event = None):
+        path = filedialog.askopenfilename()
+        if not path:
+            return
+        try:
+            data = os.path.basename(path).encode() + b'\0' + open(path, 'rb').read()
+        except:
+            messagebox.showerror('Error', 'Invalid file')
+            return
+        size = len(data)
+        if size > 0xffffff:
+            messagebox.showerror('Error', 'File too large, should be less than 16 MiB')
+            return
+        self.sque.put((3, data))
+        self.text.config(state = tkinter.NORMAL)
+        self.text.insert(tkinter.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Sent file: '), 'Local')
+        self.text.insert(tkinter.END, path, 'Local')
+        self.text.insert(tkinter.END, '\n')
+        self.text.see(tkinter.END)
+        self.text.config(state = tkinter.DISABLED)
+    def update(self):
+        while not self.rque.empty():
+            mode, data = self.rque.get()
+            self.text.config(state = tkinter.NORMAL)
+            if mode == 0:
+                self.text.insert(tkinter.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Remote left the chat'), 'Info')
+                self.text.insert(tkinter.END, '\n')
+            elif mode == 1:
+                cont = data.decode()
+                self.text.insert(tkinter.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Remote: '), 'Remote')
+                self.text.insert(tkinter.END, '\n')
+                self.text.insert(tkinter.END, cont)
+                self.text.insert(tkinter.END, '\n')
+            elif mode == 2:
+                image = Image.open(io.BytesIO(data))
+                imgtk = ImageTk.PhotoImage(image)
+                self.text.insert(tkinter.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Remote: '), 'Remote')
+                self.text.insert(tkinter.END, '\n')
+                self.text.image_create(tkinter.END, image = imgtk)
+                self.text.insert(tkinter.END, '\n')
+                self.imgs.append(imgtk)
+            elif mode == 3:
+                name, data = data.split(b'\0', 1)
+                base = name.decode()
+                def save(event, base = base, data = data):
+                    path = filedialog.asksaveasfilename(initialfile = base)
+                    if path:
+                        open(path, 'wb').write(data)
+                self.text.insert(tkinter.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Received file: '), 'Remote')
+                link = tkinter.Label(self.text, text = base, fg = 'blue', cursor = 'hand2', font = self.TXTF, bg = 'white')
+                link.bind('<Enter>', lambda event, link = link: link.config(font = self.URLF))
+                link.bind('<Leave>', lambda event, link = link: link.config(font = self.TXTF))
+                link.bind('<Button-1>', save)
+                self.text.window_create(tkinter.END, window = link)
+                self.text.insert(tkinter.END, '\n')
+            self.text.see(tkinter.END)
+            self.text.config(state = tkinter.DISABLED)
+            self.deiconify()
+        self.after(1, self.update)
 def run(client, recv, send, chat, enc, buff):
     C = TCPClientWrapper(client)
     if enc:
