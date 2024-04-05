@@ -128,7 +128,7 @@ class Messager(tkinter.Tk):
         self.imgs = [] # prevent garbage collections
         self.TXTF = TXTF
         self.URLF = URLF
-        self.after(1, self.update)
+        self.after(100, self.update)
     def on_quit(self, event = None):
         self.sque.put((0, b''))
     def on_enter(self, event = None):
@@ -233,7 +233,7 @@ class Messager(tkinter.Tk):
             self.text.see(tkinter.END)
             self.text.config(state = tkinter.DISABLED)
             self.deiconify()
-        self.after(1, self.update)
+        self.after(100, self.update) # prevent busy waiting
 def run(client, recv, send, chat, enc, buff):
     C = TCPClientWrapper(client)
     if enc:
