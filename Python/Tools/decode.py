@@ -1,5 +1,6 @@
 #!/usr/bin/python3
-import chardet, argparse
+import argparse
+import chardet
 def main():
     parser = argparse.ArgumentParser(description = 'Text File Decoder')
     parser.add_argument(dest = 'encoded', help = 'encoded file', type = argparse.FileType('rb'))

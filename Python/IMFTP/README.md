@@ -1,6 +1,6 @@
 # IMFTP
 
-![Alt text](image.png)
+![IMFTP](image.png)
 
 A file transfer and instant messager program based on TCP/IP, supporting encryption with DHKE and AES-CTR.
 

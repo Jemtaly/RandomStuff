@@ -1,7 +1,10 @@
 #!/usr/bin/python3
 from urllib.parse import urljoin, unquote, urlparse, parse_qs
-import requests, os, bs4, re
 import argparse
+import requests
+import bs4
+import re
+import os
 warn = '\033[31m!!\033[0m'
 info = '\033[32m>>\033[0m'
 def krawl(url, exclude, include, dir = None):

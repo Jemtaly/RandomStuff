@@ -2,8 +2,12 @@
 import Crypto.Cipher.AES as AES
 import Crypto.Util.Padding as Padding
 import Crypto.Util.strxor as strxor
-import base64, struct, json, os
-import argparse, glob
+import base64
+import struct
+import json
+import os
+import argparse
+import glob
 core_key = bytes.fromhex('687A4852416D736F356B496E62617857')
 meta_key = bytes.fromhex('2331346C6A6B5F215C5D2630553C2728')
 core_cryptor = AES.new(core_key, AES.MODE_ECB)

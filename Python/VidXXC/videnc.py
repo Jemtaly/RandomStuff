@@ -1,24 +1,9 @@
 #!/usr/bin/python3
-from PIL import Image
-from Crypto.Cipher import AES
-import random, cv2
-import numpy as np
 import argparse
-def encrypt(key, iSrc, len):
-    iSrc = iSrc.convert('RGB')
-    bSrc = iSrc.tobytes()
-    nonce = random.randbytes(8)
-    cipher = AES.new(key, AES.MODE_CTR, nonce = nonce)
-    bDst = cipher.encrypt(bSrc)
-    iDst = Image.frombytes('RGB', iSrc.size, bDst)
-    for i in range(8):
-        for j in range(8):
-            bit = nonce[i] >> j & 1
-            rgb = 255 * bit, 255 * bit, 255 * bit
-            for x in range(len):
-                for y in range(len):
-                    iDst.putpixel((i * len + x, j * len + y), rgb)
-    return iDst
+import numpy as np
+import cv2
+from PIL import Image
+from core import encrypt
 def generate(key, len, nSrc, nDst, num, red):
     vSrc = cv2.VideoCapture(nSrc)
     wSrc = int(vSrc.get(cv2.CAP_PROP_FRAME_WIDTH))

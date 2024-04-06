@@ -1,8 +1,9 @@
 #!/usr/bin/python3
+import os
 import numpy as np
 import PIL.Image as Image
-import ansi, os
 import argparse
+import ansi
 def imcat(image, size):
     cols, rows = size
     image.thumbnail((cols * 1, rows * 2), Image.LANCZOS)

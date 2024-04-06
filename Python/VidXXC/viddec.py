@@ -1,21 +1,8 @@
 #!/usr/bin/python3
-from PIL import Image, ImageGrab, ImageTk
-from Crypto.Cipher import AES
-import tkinter as tk
 import argparse
-def decrypt(key, iSrc, len):
-    iSrc = iSrc.convert('RGB')
-    bSrc = iSrc.tobytes()
-    nonce = bytearray(8)
-    for i in range(8):
-        for j in range(8):
-            rgb = iSrc.getpixel((i * len + len // 2, j * len + len // 2))
-            bit = sum(rgb) // 383
-            nonce[i] |= bit << j
-    cipher = AES.new(key, AES.MODE_CTR, nonce = nonce)
-    bDst = cipher.decrypt(bSrc)
-    iDst = Image.frombytes('RGB', iSrc.size, bDst)
-    return iDst
+import tkinter as tk
+from PIL import ImageGrab, ImageTk
+from core import decrypt
 class Selecter(tk.Toplevel):
     def __init__(self, parent, res, len):
         super().__init__(parent)

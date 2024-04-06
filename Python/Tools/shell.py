@@ -1,5 +1,6 @@
 #!/usr/bin/python3 -i
-import os, hashlib
+import os
+import hashlib
 def pwd():
     return os.getcwd()
 def mkdir(dirname):

@@ -1,11 +1,15 @@
 #!/usr/bin/python3
+import socket
+import threading
+import queue
+import sys
+import os
+import argparse
 import Crypto.PublicKey.ECC as ECC
 import Crypto.Protocol.DH as DH
 import Crypto.Cipher.AES as AES
 import Crypto.Hash.SHA224 as SHA224
-import os, sys, socket, threading, queue
 from messager import Messager
-import argparse
 class TCPClientWrapper:
     def __init__(self, client):
         self.client = client
