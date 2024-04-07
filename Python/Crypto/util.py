@@ -46,6 +46,17 @@ def moddiv(a, b, m):
     k = a // d * r
     n = m // d
     return k % n, n
+def modpow(a, n, m):
+    # input: a, b, m
+    # output: a ** b (mod m)
+    if n < 0:
+        a, n = modinv(a, m), -n
+    r = 1
+    while n:
+        if n % 2 == 1:
+            r = r * a % m
+        a, n = a * a % m, n // 2
+    return r
 def crt(D):
     # input: D, which is a list of r, m pairs
     # output: R, M such that x == r (mod m) for all r, m in D if and only if x == R (mod M)
@@ -139,7 +150,7 @@ def polydm(a, b, m):
 def polyshow(coeffs):
     return ' + '.join('{} * x ** {}'.format(c, i) for i, c in enumerate(coeffs) if c != 0) or '0'
 def polyval(coeffs, x, q):
-    return sum(c * pow(x, i, q) for i, c in enumerate(coeffs)) % q
+    return sum(c * modpow(x, i, q) for i, c in enumerate(coeffs)) % q
 def chkprime(n, k = 16):
     if n == 2:
         return True
@@ -150,7 +161,7 @@ def chkprime(n, k = 16):
         s, t = s // 2, t + 1
     for _ in range(k):
         a = random.randrange(1, n)
-        x = pow(a, s, n)
+        x = modpow(a, s, n)
         if x == 1:
             continue
         for _ in range(t):
@@ -184,34 +195,34 @@ def num(fact):
 def modroot(x, fact, n):
     # input: x, n and a dictionary that represents the prime factorization of m
     # output: x ** (1 / n) (mod m)
-    return pow(x, modinv(n, phi(fact)), num(fact))
+    return modpow(x, modinv(n, phi(fact)), num(fact))
 def rthroot(x, p, m, r):
     # input: x, p, m, r such that p is odd prime, r is a prime factor of p ** m * (1 - 1 / p)
     # output: h such that h ** r == x (mod p ** m)
     assert chkprime(p) and p != 2
     q, f = p ** m, p ** m - p ** m // p
     assert f % r == 0
-    assert pow(x, f // r, q) == 1
+    assert modpow(x, f // r, q) == 1
     for z in range(2, p):
-        if pow(z, f // r, q) != 1:
+        if modpow(z, f // r, q) != 1:
             break
     s, t = f, 0
     while s % r == 0:
         s, t = s // r, t + 1
     k = modinv(r, s)
     S = k * r - 1
-    h = pow(x, k, q)
-    a = pow(z, s, q)
-    b = pow(x, S, q)
-    c = pow(a, r ** (t - 1), q)
+    h = modpow(x, k, q)
+    a = modpow(z, s, q)
+    b = modpow(x, S, q)
+    c = modpow(a, r ** (t - 1), q)
     for i in range(1, t):
-        d = pow(b, r ** (t - 1 - i), q)
+        d = modpow(b, r ** (t - 1 - i), q)
         j, e = 0, 1
         while d != e:
             j, e = j - 1, e * c % q
-        h = pow(a, j, q) * h % q
-        a = pow(a, r, q)
-        b = pow(a, j, q) * b % q
+        h = modpow(a, j, q) * h % q
+        a = modpow(a, r, q)
+        b = modpow(a, j, q) * b % q
     return h
 def nthroot(x, p, m, n):
     # input: x, p, m, n such that p is odd prime, n | p ** m * (1 - 1 / p)
@@ -219,7 +230,7 @@ def nthroot(x, p, m, n):
     assert chkprime(p) and p != 2
     q, f = p ** m, p ** m - p ** m // p
     assert f % n == 0
-    assert pow(x, f // n, q) == 1
+    assert modpow(x, f // n, q) == 1
     g = 1 # g ** n == 1 (mod p ** m) and g ** i != 1 (mod p ** m) for all i < n
     r = 2
     while n > 1:
@@ -229,9 +240,9 @@ def nthroot(x, p, m, n):
             x = rthroot(x, p, m, r)
         if a > 0:
             for z in range(2, p):
-                if pow(z, f // r, q) != 1:
+                if modpow(z, f // r, q) != 1:
                     break
-            g = pow(z, f // r ** a, q) * g % q
+            g = modpow(z, f // r ** a, q) * g % q
         r = r + 1
     S = set()
     while x not in S:

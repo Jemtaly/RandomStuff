@@ -35,7 +35,7 @@ class RSAPriv:
         return (m * self.s + n * self.r) % self.n
     def genpubl(self):
         return RSAPubl(self.n, self.e)
-if __name__ == '__main__':
+def test():
     server = RSAPriv(1024)
     client = server.genpubl()
     # sign and verify
@@ -58,3 +58,5 @@ if __name__ == '__main__':
     N = [(server.decrypt(q - x) + m) % server.n for x, m in zip(X, M)] # responses
     m = (N[b] - k) % client.n # decryption
     assert m == M[b]
+if __name__ == '__main__':
+    test()

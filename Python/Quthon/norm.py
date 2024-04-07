@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import quthon
 import matplotlib.pyplot as plt
-def norm():
+def main():
     qsta = quthon.Qubits(26)
     for i in range(0, 22, 11):
         for j in range(0, 8, 4):
@@ -18,4 +18,4 @@ def norm():
     plt.bar(range(16), prob)
     plt.show()
 if __name__ == '__main__':
-    norm()
+    main()

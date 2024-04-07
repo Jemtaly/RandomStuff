@@ -11,15 +11,15 @@ class RGB:
         return '#{:02x}{:02x}{:02x}'.format(self.r, self.g, self.b)
     def __invert__(self):
         return RGB(255 - self.r, 255 - self.g, 255 - self.b)
-    def rainbow(hues, saturation = math.inf, brightness = 0.0):
-        S = (math.exp(+saturation) - math.exp(-saturation)) / (math.exp(+saturation) + math.exp(-saturation))
-        H = 1 / (1 + math.exp(-brightness))
-        R = S / (1 + math.exp(-brightness) + math.exp(+brightness))
-        r = min(255, math.floor(256 * (H + R * math.cos(hues))))
-        g = min(255, math.floor(256 * (H + R * math.cos(hues - math.tau / 3))))
-        b = min(255, math.floor(256 * (H + R * math.cos(hues + math.tau / 3))))
-        return RGB(r, g, b)
-def main():
+def HSB(hues, saturation = math.inf, brightness = 0.0):
+    S = (math.exp(+saturation) - math.exp(-saturation)) / (math.exp(+saturation) + math.exp(-saturation))
+    H = 1 / (1 + math.exp(-brightness))
+    R = S / (1 + math.exp(-brightness) + math.exp(+brightness))
+    r = min(255, math.floor(256 * (H + R * math.cos(hues))))
+    g = min(255, math.floor(256 * (H + R * math.cos(hues - math.tau / 3))))
+    b = min(255, math.floor(256 * (H + R * math.cos(hues + math.tau / 3))))
+    return RGB(r, g, b)
+def RGB_main():
     tk = tkinter.Tk()
     tk.title('RGB')
     canvas = tkinter.Canvas(tk)
@@ -40,12 +40,12 @@ def main():
     canvas.pack(fill = tkinter.BOTH, expand = True)
     change()
     tk.mainloop()
-def test():
+def HSB_main():
     tk = tkinter.Tk()
     tk.title('HSB')
     canvas = tkinter.Canvas(tk)
     def change(value = None):
-        colour = RGB.rainbow(H.get(), math.tan(S.get()), math.tan(B.get()))
+        colour = HSB(H.get(), math.tan(S.get()), math.tan(B.get()))
         canvas.delete(tkinter.ALL)
         canvas.configure(background = colour)
         canvas.create_text(0.0, 0.0, text = colour, fill = ~colour, anchor = tkinter.NW)
@@ -62,4 +62,4 @@ def test():
     change()
     tk.mainloop()
 if __name__ == '__main__':
-    test()
+    HSB_main()

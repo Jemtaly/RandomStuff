@@ -5,7 +5,7 @@ import argparse
 def translate(text, source, target):
     url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl={}&tl={}&dt=t&q={}'.format(source, target, quote(text))
     ans = requests.get(url).json()[0] or []
-    return ''.join(i[0] for i in ans)
+    return ''.join(t for t, s, *info in ans)
 def main():
     parser = argparse.ArgumentParser(description = "Command Line Translator")
     parser.add_argument('-s', dest = 'source', help = 'source language', default = 'auto')

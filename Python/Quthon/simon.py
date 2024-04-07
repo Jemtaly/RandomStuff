@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 import quthon
-import numpy as np
 def simon(func, i, o):
     qsta = quthon.Qubits(i + o)
     for j in range(i):
@@ -13,8 +12,7 @@ def simon(func, i, o):
         print('p({:0{}b}) = {:.6f}'.format(j, i, p))
 def test():
     v, u = 0b000111, 0b110000
-    f, g = lambda x: max(x, x ^ u), lambda x: max(x, x ^ v)
-    func = lambda x: f(g(x))
+    func = lambda x: max(x, x ^ u, x ^ v, x ^ u ^ v)
     simon(func, 6, 6)
 if __name__ == '__main__':
     test()

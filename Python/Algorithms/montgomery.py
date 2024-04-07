@@ -22,7 +22,7 @@ class Montgomery:
         return self.redc(x)
     def mult(self, x, y):
         return self.redc(x * y)
-if __name__ == "__main__":
+def test():
     m = 1000000007
     mont = Montgomery(m)
     x = 123456789
@@ -41,3 +41,5 @@ if __name__ == "__main__":
     for i in range(1000000):
         z = x * y % m
     print("Modular multiplication:", time.time() - start)
+if __name__ == '__main__':
+    test()

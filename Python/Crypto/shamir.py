@@ -22,7 +22,7 @@ def recsecret(shares):
         r = util.modinv(x, Q)
         Y = (Y + y * k * r) % Q
     return Y * Z % Q
-if __name__ == '__main__':
+def test():
     print('GF({})'.format(Q))
     K, N = 3, 5
     secret = random.randrange(0, Q)
@@ -33,3 +33,5 @@ if __name__ == '__main__':
     print('sample:', ', '.join('({}, {})'.format(x, y) for x, y in sample))
     recons = recsecret(sample)
     print('recons:', recons)
+if __name__ == '__main__':
+    test()
