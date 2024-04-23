@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import tkinter
+import tkinter as tk
 def tpoint(t, p, q):
     return tuple(x * (1 - t) + z * t for x, z in zip(p, q))
 def bpoint(t, points):
@@ -7,14 +7,14 @@ def bpoint(t, points):
 def bezier(n, points):
     return [bpoint(i / (n - 1), points) for i in range(n)]
 def main():
-    tk = tkinter.Tk()
-    tk.title('Bezier')
-    canvas = tkinter.Canvas(tk)
-    canvas.pack(fill = tkinter.BOTH, expand = True)
+    root = tk.Tk()
+    root.title('Bezier')
+    canvas = tk.Canvas(root)
+    canvas.pack(fill = tk.BOTH, expand = True)
     def init_canvas(event = None):
         global points
         points = []
-        canvas.delete(tkinter.ALL)
+        canvas.delete(tk.ALL)
         canvas.bind('<Button-1>', draw_point)
         canvas.bind('<Double-1>', draw_curve)
     def draw_point(event):
@@ -29,6 +29,6 @@ def main():
         canvas.create_line(*curve, fill = 'red')
     canvas.bind('<Button-3>', init_canvas)
     init_canvas()
-    tk.mainloop()
+    root.mainloop()
 if __name__ == '__main__':
     main()
