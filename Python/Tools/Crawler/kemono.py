@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from urllib.parse import urljoin, unquote, urlparse, parse_qs
+from urllib.parse import urljoin, urlparse, parse_qs, unquote
 import argparse
 import requests
 import bs4
@@ -7,7 +7,7 @@ import re
 import os
 warn = '\033[31m!!\033[0m'
 info = '\033[32m>>\033[0m'
-def krawl(url, exclude, include, dir = None):
+def crawl_by_name(url, exclude, include, dir = None):
     if dir is None:
         dir = url.split('/')[-1]
     r = requests.get(url)
@@ -30,7 +30,7 @@ def krawl(url, exclude, include, dir = None):
             with open(part, 'wb') as f:
                 f.write(requests.get(href).content)
             os.rename(part, path)
-def index(url):
+def crawl_by_index(url):
     dir = url.split('/')[-1]
     r = requests.get(url)
     soup = bs4.BeautifulSoup(r.text, 'html.parser')
@@ -62,6 +62,6 @@ def main():
     parser.add_argument('-r', '--rename', action = 'store_true', help = 'rename the files')
     args = parser.parse_args()
     for url in args.url:
-        krawl(url, args.exclude, args.include, args.dir) if not args.rename else index(url)
+        crawl_by_name(url, args.exclude, args.include, args.dir) if not args.rename else crawl_by_index(url)
 if __name__ == '__main__':
     main()
