@@ -2,23 +2,24 @@
 import Crypto.Cipher.AES as AES
 import Crypto.Util.Padding as Padding
 import Crypto.Random as Random
+import Crypto.Util.strxor as strxor
 def padding_oracle_attack_one(iv, ct, oracle):
     bs = len(iv)
     assert len(ct) == bs
-    xv = bytearray(bs)
+    dx = bytearray(bs)
     for i in reversed(range(bs)):
-        for j in range(i, bs):
-            xv[j] = xv[j] ^ bs - i
+        px = Random.get_random_bytes(i)
+        px = Padding.pad(px, bs)
         while True:
             try:
-                oracle.decrypt(xv, ct)
-            except ValueError:
-                xv[i] = xv[i] + 1 & 0xff
+                ix = strxor.strxor(px, dx)
+                pt = oracle.decrypt(ix, ct)
+                assert len(pt) == i
+            except (ValueError, AssertionError):
+                dx[i] += 1
             else:
                 break
-        for j in range(i, bs):
-            xv[j] = xv[j] ^ bs - i
-    return bytearray(i ^ x for i, x in zip(iv, xv))
+    return strxor.strxor(iv, dx)
 def padding_oracle_attack_any(iv, ct, oracle):
     bs = len(iv)
     assert len(ct) % bs == 0

@@ -12,19 +12,28 @@ def minidx(arr):
             j, x = i, v
     return j
 def analysis(carr):
-    cycl, chck = 0, False
-    while not chck:
-        cycl, chck = cycl + 1, True
-        for n in range(cycl):
-            smin, smax = len(carr[n::cycl]), 0
-            for c in range(26):
-                stat = carr[n::cycl].count(c)
-                if stat < smin:
-                    smin = stat
-                if stat > smax:
-                    smax = stat
-            chck = chck and smin * 20 < smax
-    return [minidx(sum((carr[n::cycl].count(i) / len(carr) - freq[i - k]) ** 2 for i in range(26)) for k in range(26)) for n in range(cycl)]
+    d = 1
+    k = 0
+    vrec = float('inf')
+    while True:
+        k = k + d
+        kcur = []
+        scur = 0
+        for n in range(k):
+            row = carr[n::k]
+            nums = [0] * 26
+            for i in row:
+                nums[i] += 1
+            i, v = min(enumerate(sum((nums[i] / len(row) - freq[i - j]) ** 2 for i in range(26)) / 26 for j in range(26)), key = lambda x: x[1])
+            kcur.append(i)
+            scur = scur + v
+        vcur = scur / k
+        if vcur > vrec * 2:
+            return krec
+        if vcur < vrec:
+            vrec = vcur
+            krec = kcur
+            d = k
 def encrypt(karr, parr):
     return [(p + karr[i % len(karr)]) % 26 for i, p in enumerate(parr)]
 def decrypt(karr, carr):
