@@ -6,19 +6,19 @@ import Crypto.Util.strxor as strxor
 def padding_oracle_attack_one(iv, ct, oracle):
     bs = len(iv)
     assert len(ct) == bs
-    dx = bytearray(bs)
-    for i in reversed(range(bs)):
-        px = Random.get_random_bytes(i)
-        px = Padding.pad(px, bs)
-        while True:
-            try:
+    while True:
+        dx = bytearray(bs)
+        for i in reversed(range(bs)):
+            px = Random.get_random_bytes(i)
+            px = Padding.pad(px, bs)
+            for dx[i] in range(256):
                 ix = strxor.strxor(px, dx)
-                pt = oracle.decrypt(ix, ct)
-                assert len(pt) == i
-            except (ValueError, AssertionError):
-                dx[i] += 1
+                if oracle(ix, ct):
+                    break
             else:
                 break
+        else:
+            break
     return strxor.strxor(iv, dx)
 def padding_oracle_attack_any(iv, ct, oracle):
     bs = len(iv)
@@ -28,7 +28,7 @@ def padding_oracle_attack_any(iv, ct, oracle):
         pt.extend(padding_oracle_attack_one(iv, ct[:bs], oracle))
         iv, ct = ct[:bs], ct[bs:]
     return Padding.unpad(pt, bs)
-class Oracle:
+class Server:
     def __init__(self):
         self.key = Random.get_random_bytes(16)
     def encrypt(self, pt):
@@ -40,11 +40,18 @@ class Oracle:
         pt = AES.new(self.key, AES.MODE_CBC, iv).decrypt(ct)
         pt = Padding.unpad(pt, 16)
         return pt
+    def oracle(self, iv, ct):
+        try:
+            self.decrypt(iv, ct)
+        except ValueError:
+            return False
+        else:
+            return True
 def main():
-    oracle = Oracle()
+    server = Server()
     pt = Random.get_random_bytes(256)
-    iv, ct = oracle.encrypt(pt)
-    re = padding_oracle_attack_any(iv, ct, oracle)
+    iv, ct = server.encrypt(pt)
+    re = padding_oracle_attack_any(iv, ct, server.oracle)
     if re == pt:
         print('Success')
     else:
