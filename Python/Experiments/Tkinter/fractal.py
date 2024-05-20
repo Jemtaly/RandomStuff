@@ -1,5 +1,43 @@
 #!/usr/bin/env python3
-import turtle
+import tkinter as tk
+class Canvas(tk.Canvas):
+    def __init__(self, master = None, width = 800, height = 800, unit = 400, graph = None):
+        super().__init__(master, width = width, height = height)
+        self.bind('<ButtonPress-1>', self.drag_start)
+        self.bind('<ButtonRelease-1>', self.drag_end)
+        self.bind('<B1-Motion>', self.drag)
+        self.bind('<Button-4>', self.zoom)
+        self.bind('<Button-5>', self.zoom)
+        self.bind('<MouseWheel>', self.zoom)
+        self.bind('<Configure>', self.change)
+        graph.draw(self)
+        self.scale(tk.ALL, 0, 0, unit, unit)
+        self.move(tk.ALL, width / 2, height / 2)
+        self.width = width
+        self.height = height
+    def drag_start(self, event):
+        self.x_start = event.x
+        self.y_start = event.y
+    def drag_end(self, event):
+        del self.x_start
+        del self.y_start
+    def drag(self, event):
+        x = event.x - self.x_start
+        y = event.y - self.y_start
+        self.move(tk.ALL, x, y)
+        self.x_start = event.x
+        self.y_start = event.y
+    def zoom(self, event):
+        x = event.x
+        y = event.y
+        if event.delta > 0 or event.num == 4:
+            self.scale(tk.ALL, x, y, 1.25, 1.25)
+        if event.delta < 0 or event.num == 5:
+            self.scale(tk.ALL, x, y, 0.80, 0.80)
+    def change(self, event):
+        self.move(tk.ALL, event.width / 2 - self.width / 2, event.height / 2 - self.height / 2)
+        self.width = event.width
+        self.height = event.height
 class Affine:
     def __init__(self, b = 0, u = 1, v = 0):
         self.b = b
@@ -15,26 +53,25 @@ class Affine:
             v = self.u * former.v + self.v * former.u.conjugate(),
         )
 class Polygon:
-    def __init__(self, start, *points):
-        self.start = start
+    def __init__(self, *points):
         self.points = points
-    def draw(self, affine):
-        turtle.goto(affine(self.start))
-        turtle.pendown()
-        turtle.begin_fill()
-        for point in self.points:
-            turtle.goto(affine(point))
-        turtle.end_fill()
-        turtle.penup()
+    def draw(self, canvas, affine = Affine()):
+        floats = sum(map(affine, self.points), ())
+        if len(self.points) == 0:
+            pass
+        elif len(self.points) == 1:
+            canvas.create_rectangle(*floats, *floats, fill = 'black', width = 0)
+        elif len(self.points) == 2:
+            canvas.create_line(*floats, fill = 'black')
+        else:
+            canvas.create_polygon(*floats, fill = 'black')
 class Compound:
     def __init__(self, *components):
         self.leaves = components
-    def draw(self, affine):
+    def draw(self, canvas, affine = Affine()):
         for component, former in self.leaves:
-            component.draw(affine * former)
+            component.draw(canvas, affine * former)
 def test():
-    turtle.tracer(0, 0)
-    turtle.penup()
     line = Polygon(
         -0.5,
         +0.5,
@@ -50,8 +87,8 @@ def test():
             (poly, Affine(-0.25j, -0.5j, 0)),
             (poly, Affine(+0.25j, +0.5j, 0)),
         )
-    poly.draw(Affine(0, 256, 0))
-    turtle.hideturtle()
-    turtle.mainloop()
+    canvas = Canvas(graph = poly)
+    canvas.pack(expand = True, fill = tk.BOTH)
+    canvas.mainloop()
 if __name__ == '__main__':
     test()
