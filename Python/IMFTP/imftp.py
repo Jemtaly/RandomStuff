@@ -65,30 +65,39 @@ class TCPClientWrapper:
     def chat(self):
         self.sendall(b'CHAT')
         assert self.recvall(4) == b'CHAT', 'peer is not in chat mode'
-        rque = queue.Queue()
-        sque = queue.Queue()
-        def recvloop():
+        recv_queue = queue.Queue()
+        send_queue = queue.Queue()
+        def recv_loop():
             while True:
                 head = self.recvall(4)
                 mode = head[0]
                 data = self.recvall(int.from_bytes(head[1:], 'big'))
-                rque.put((mode, data))
+                recv_queue.put((mode, data))
                 if mode == 0:
                     break
-        def sendloop():
+        def send_loop():
             while True:
-                mode, data = sque.get()
+                mode, data = send_queue.get()
                 size = len(data)
                 self.sendall(bytes([mode]) + size.to_bytes(3, 'big') + data)
                 if mode == 0:
                     break
-        rthr = threading.Thread(target = recvloop)
-        sthr = threading.Thread(target = sendloop)
-        rthr.start()
-        sthr.start()
-        Messager(rque, sque, self.sockname(), self.peername()).mainloop()
-        rthr.join()
-        sthr.join()
+        def recv():
+            try:
+                return recv_queue.get_nowait()
+            except queue.Empty:
+                return None
+        def send(mode, data):
+            if len(data) > 0xffffff:
+                raise OverflowError('data too large')
+            send_queue.put((mode, data))
+        recv_thrd = threading.Thread(target = recv_loop)
+        send_thrd = threading.Thread(target = send_loop)
+        recv_thrd.start()
+        send_thrd.start()
+        Messager(recv, send, self.sockname(), self.peername()).mainloop()
+        recv_thrd.join()
+        send_thrd.join()
 def process(client, recv, send, chat, enc, buff):
     C = TCPClientWrapper(client)
     if enc:

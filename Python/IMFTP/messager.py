@@ -7,7 +7,7 @@ import PIL.Image as Image
 import PIL.ImageTk as ImageTk
 from datetime import datetime
 class Messager(tk.Tk):
-    def __init__(self, rque, sque, sockname, peername):
+    def __init__(self, recv, send, sockname, peername):
         super().__init__()
         self.title('Chat - {}:{} <-> {}:{}'.format(*sockname, *peername))
         self.minsize(640, 480)
@@ -41,34 +41,30 @@ class Messager(tk.Tk):
         entr.pack(fill = tk.X, side = tk.LEFT, expand = True)
         self.text = text
         self.entr = entr
-        self.rque = rque
-        self.sque = sque
+        self.recv = recv
+        self.send = send
         self.imgs = [] # prevent garbage collections
         self.TXTF = TXTF
         self.URLF = URLF
         self.after(100, self.update)
     def on_quit(self, event = None):
-        self.sque.put((0, b''))
+        self.send(0, b'')
     def on_enter(self, event = None):
-        cont = self.entr.get()
+        text = self.entr.get()
         try:
-            data = cont.encode()
-        except:
-            messagebox.showerror('Error', 'Encoding error, invalid character(s) in the message')
-            return
-        size = len(data)
-        if size > 0xffffff:
-            tk.messagebox.showerror('Error', 'Message too long')
-            return
-        self.sque.put((1, data))
-        self.text.config(state = tk.NORMAL)
-        self.text.insert(tk.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Local: '), 'Local')
-        self.text.insert(tk.END, '\n')
-        self.text.insert(tk.END, cont)
-        self.text.insert(tk.END, '\n')
-        self.text.see(tk.END)
-        self.text.config(state = tk.DISABLED)
-        self.entr.delete(0, tk.END)
+            data = text.encode('utf-8')
+            self.send(1, data)
+        except Exception as e:
+            messagebox.showerror(e.__class__.__name__, str(e))
+        else:
+            self.text.config(state = tk.NORMAL)
+            self.text.insert(tk.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Local: '), 'Local')
+            self.text.insert(tk.END, '\n')
+            self.text.insert(tk.END, text)
+            self.text.insert(tk.END, '\n')
+            self.text.see(tk.END)
+            self.text.config(state = tk.DISABLED)
+            self.entr.delete(0, tk.END)
     def on_image(self, event = None):
         path = filedialog.askopenfilename()
         if not path:
@@ -77,54 +73,46 @@ class Messager(tk.Tk):
             data = open(path, 'rb').read()
             image = Image.open(io.BytesIO(data))
             imgtk = ImageTk.PhotoImage(image)
-        except:
-            messagebox.showerror('Error', 'Invalid image')
-            return
-        size = len(data)
-        if size > 0xffffff:
-            messagebox.showerror('Error', 'Image too large, should be less than 16 MiB')
-            return
-        self.sque.put((2, data))
-        self.text.config(state = tk.NORMAL)
-        self.text.insert(tk.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Local: '), 'Local')
-        self.text.insert(tk.END, '\n')
-        self.text.image_create(tk.END, image = imgtk)
-        self.text.insert(tk.END, '\n')
-        self.text.see(tk.END)
-        self.text.config(state = tk.DISABLED)
-        self.imgs.append(imgtk)
+            self.send(2, data)
+        except Exception as e:
+            messagebox.showerror(e.__class__.__name__, str(e))
+        else:
+            self.text.config(state = tk.NORMAL)
+            self.text.insert(tk.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Local: '), 'Local')
+            self.text.insert(tk.END, '\n')
+            self.text.image_create(tk.END, image = imgtk)
+            self.text.insert(tk.END, '\n')
+            self.text.see(tk.END)
+            self.text.config(state = tk.DISABLED)
+            self.imgs.append(imgtk)
     def on_file(self, event = None):
         path = filedialog.askopenfilename()
         if not path:
             return
         try:
             data = os.path.basename(path).encode() + b'\0' + open(path, 'rb').read()
-        except:
-            messagebox.showerror('Error', 'Invalid file')
-            return
-        size = len(data)
-        if size > 0xffffff:
-            messagebox.showerror('Error', 'File too large, should be less than 16 MiB')
-            return
-        self.sque.put((3, data))
-        self.text.config(state = tk.NORMAL)
-        self.text.insert(tk.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Sent file: '), 'Local')
-        self.text.insert(tk.END, path, 'Local')
-        self.text.insert(tk.END, '\n')
-        self.text.see(tk.END)
-        self.text.config(state = tk.DISABLED)
+            self.send(3, data)
+        except Exception as e:
+            messagebox.showerror(e.__class__.__name__, str(e))
+        else:
+            self.text.config(state = tk.NORMAL)
+            self.text.insert(tk.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Sent file: '), 'Local')
+            self.text.insert(tk.END, path, 'Local')
+            self.text.insert(tk.END, '\n')
+            self.text.see(tk.END)
+            self.text.config(state = tk.DISABLED)
     def update(self):
-        while not self.rque.empty():
-            mode, data = self.rque.get()
+        while cont := self.recv():
+            mode, data = cont
             self.text.config(state = tk.NORMAL)
             if mode == 0:
                 self.text.insert(tk.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Remote left the chat'), 'Info')
                 self.text.insert(tk.END, '\n')
             elif mode == 1:
-                cont = data.decode()
+                text = data.decode('utf-8')
                 self.text.insert(tk.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Remote: '), 'Remote')
                 self.text.insert(tk.END, '\n')
-                self.text.insert(tk.END, cont)
+                self.text.insert(tk.END, text)
                 self.text.insert(tk.END, '\n')
             elif mode == 2:
                 image = Image.open(io.BytesIO(data))
