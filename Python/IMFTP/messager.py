@@ -48,7 +48,10 @@ class Messager(tk.Tk):
         self.URLF = URLF
         self.after(100, self.update)
     def on_quit(self, event = None):
-        self.send(0, b'')
+        try:
+            self.send(0, b'')
+        except Exception as e:
+            pass
     def on_enter(self, event = None):
         text = self.entr.get()
         try:
@@ -105,7 +108,10 @@ class Messager(tk.Tk):
         while cont := self.recv():
             mode, data = cont
             self.text.config(state = tk.NORMAL)
-            if mode == 0:
+            if mode == -1:
+                self.text.insert(tk.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Connection lost'), 'Info')
+                self.text.insert(tk.END, '\n')
+            elif mode == 0:
                 self.text.insert(tk.END, datetime.now().strftime('%Y-%m-%d %H:%M:%S - Remote left the chat'), 'Info')
                 self.text.insert(tk.END, '\n')
             elif mode == 1:
