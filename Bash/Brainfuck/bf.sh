@@ -1,8 +1,10 @@
-#!/bin/bash
+#!/usr/bin/bash
+
 if [ $# -ne 1 ]; then
     echo "Usage: $0 <file>"
     exit 1
 fi
+
 func=$(
     for ch in $(sed 's/\s*/ /g' "$1"); do
         case $ch in
@@ -33,6 +35,7 @@ func=$(
         esac
     done | sed 's/^/unset arr ptr; /'
 )
+
 stty=$(stty -g 2>/dev/null)
 stty -echo -icanon &>/dev/null
 eval $func

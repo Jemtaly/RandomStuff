@@ -1,13 +1,17 @@
 import random
-from PIL import Image
-from Crypto.Cipher import AES
+
+import PIL.Image as Image
+
+import Crypto.Cipher.AES as AES
+
+
 def encrypt(key, iSrc, len):
-    iSrc = iSrc.convert('RGB')
+    iSrc = iSrc.convert("RGB")
     bSrc = iSrc.tobytes()
     nonce = random.randbytes(8)
-    cipher = AES.new(key, AES.MODE_CTR, nonce = nonce)
+    cipher = AES.new(key, AES.MODE_CTR, nonce=nonce)
     bDst = cipher.encrypt(bSrc)
-    iDst = Image.frombytes('RGB', iSrc.size, bDst)
+    iDst = Image.frombytes("RGB", iSrc.size, bDst)
     for i in range(8):
         for j in range(8):
             bit = nonce[i] >> j & 1
@@ -16,8 +20,10 @@ def encrypt(key, iSrc, len):
                 for y in range(len):
                     iDst.putpixel((i * len + x, j * len + y), rgb)
     return iDst
+
+
 def decrypt(key, iSrc, len):
-    iSrc = iSrc.convert('RGB')
+    iSrc = iSrc.convert("RGB")
     bSrc = iSrc.tobytes()
     nonce = bytearray(8)
     for i in range(8):
@@ -25,7 +31,7 @@ def decrypt(key, iSrc, len):
             rgb = iSrc.getpixel((i * len + len // 2, j * len + len // 2))
             bit = sum(rgb) // 383
             nonce[i] |= bit << j
-    cipher = AES.new(key, AES.MODE_CTR, nonce = nonce)
+    cipher = AES.new(key, AES.MODE_CTR, nonce=nonce)
     bDst = cipher.decrypt(bSrc)
-    iDst = Image.frombytes('RGB', iSrc.size, bDst)
+    iDst = Image.frombytes("RGB", iSrc.size, bDst)
     return iDst

@@ -1,5 +1,7 @@
 `timescale 1ns / 1ps
+
 /* verilator lint_off UNOPTFLAT */
+
 module SM4_gen_key(
     input [7:0] SB [0:255],
     input [31:0] CK [0:31],

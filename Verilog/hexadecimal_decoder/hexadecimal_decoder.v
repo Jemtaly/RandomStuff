@@ -1,5 +1,7 @@
 `timescale 1ns / 1ps
+
 /* verilator lint_off WIDTH */
+
 module hexadecimal_decoder(
     input clk,
     input [7:0] blank,

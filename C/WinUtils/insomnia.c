@@ -1,9 +1,11 @@
 #include <Windows.h>
 #include <stdio.h>
+
 #define REC_TIMEOUT 1
 #define REC_COMMAND 2
 #define REC_DISPLAY 8
 #define REC_ERROR 128
+
 int timeout(LONGLONG llPeriod) {
     fprintf(stderr, "Waiting for %lld milliseconds, press Esc to continue, or press Enter to check the remaining time ...", llPeriod);
     HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
@@ -28,6 +30,7 @@ int timeout(LONGLONG llPeriod) {
         }
     }
 }
+
 int pause() {
     fprintf(stderr, "Press Esc to continue ...");
     HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
@@ -44,6 +47,7 @@ int pause() {
         }
     }
 }
+
 int main(int argc, char *argv[]) {
     int rec = 0;
     long long t;

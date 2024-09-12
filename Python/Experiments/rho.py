@@ -1,5 +1,9 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
+
+
 import sys
+
+
 def get_rho(hash, seed):
     i = seed
     time = 1
@@ -10,6 +14,8 @@ def get_rho(hash, seed):
             if i == t:
                 return r
         time <<= 1
+
+
 def collide(hash, seed):
     x = seed
     y = seed
@@ -22,10 +28,14 @@ def collide(hash, seed):
         if m == n:
             return x, y
         x, y = m, n
+
+
 def main():
     hlen = sys.hash_info.width // 8
-    x, y = collide(lambda data: hash(data).to_bytes(hlen, 'little', signed = True), hash(None).to_bytes(hlen, 'little', signed = True))
+    x, y = collide(lambda data: hash(data).to_bytes(hlen, "little", signed=True), hash(None).to_bytes(hlen, "little", signed=True))
     print(x.hex())
     print(y.hex())
-if __name__ == '__main__':
+
+
+if __name__ == "__main__":
     main()

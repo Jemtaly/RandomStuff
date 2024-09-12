@@ -1,10 +1,12 @@
 #include <Windows.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #define REC_ERR 1
 #define REC_OPN 2
 #define REC_BEG 4
 #define REC_END 8
+
 int main(int argc, char *argv[]) {
     HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE), hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
     DWORD dwStdinModeOld, dwStdoutModeOld, dwStdinModeNew, dwStdoutModeNew;
@@ -72,6 +74,7 @@ int main(int argc, char *argv[]) {
     fflush(stdout);
     SHORT w, h;
     goto _READ;
+
 _DRAW:
     if (itr > len) {
         itr = len;
@@ -122,6 +125,7 @@ _DRAW:
         }
     }
     fflush(stdout);
+
 _READ:
     INPUT_RECORD irRead;
     DWORD dwRead;
@@ -162,6 +166,7 @@ _READ:
     default:
         goto _READ;
     }
+
 _QUIT:
     printf("\033[?1049l\033[?25h");
     fflush(stdout);

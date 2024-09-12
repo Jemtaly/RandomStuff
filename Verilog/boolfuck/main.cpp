@@ -2,10 +2,13 @@
 #include "Vboolfuck.h"
 #include "Windows.h"
 #include "verilated.h"
+
 #define mv(x, y) printf("\033[%d;%dH", (x) + 1, (y) + 1)
 #define mvprintf(x, y, format, ...) printf("\033[%d;%dH" format, (x) + 1, (y) + 1 __VA_OPT__(,) __VA_ARGS__)
+
 #define INSTRS "/~<>.,[]"
 #define VALUES "01??????"
+
 int main(int argc, char **argv, char **env) {
     HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE), hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
     DWORD dwStdinModeOld, dwStdoutModeOld, dwStdinModeNew, dwStdoutModeNew;
@@ -94,9 +97,15 @@ int main(int argc, char **argv, char **env) {
         mvprintf(10 + vbfo.ptr / 32, vbfo.ptr % 32 + 2, "\033[4m%c\033[24m", VALUES[vbfo.mem[vbfo.ptr]]);
         mvprintf(19 + vbfo.top / 16, vbfo.top % 16 * 3 + 2, "\033[4m%02X\033[24m", vbfo.stk[vbfo.top]);
         switch (vbfo.blk) {
-        case 0b11: mvprintf( 1 + vbfo.cur / 32, vbfo.cur % 32 + 2, "\033[7m%c\033[27m", INSTRS[vbfo.prg[vbfo.cur]]); break;
-        case 0b01: mvprintf(10 + vbfo.ptr / 32, vbfo.ptr % 32 + 2, "\033[7m%c\033[27m", VALUES[vbfo.mem[vbfo.ptr]]); break;
-        case 0b10: mvprintf(10 + vbfo.ptr / 32, vbfo.ptr % 32 + 2, "\033[7m%c\033[27m", VALUES[7]); break;
+        case 0b11:
+            mvprintf( 1 + vbfo.cur / 32, vbfo.cur % 32 + 2, "\033[7m%c\033[27m", INSTRS[vbfo.prg[vbfo.cur]]);
+            break;
+        case 0b01:
+            mvprintf(10 + vbfo.ptr / 32, vbfo.ptr % 32 + 2, "\033[7m%c\033[27m", VALUES[vbfo.mem[vbfo.ptr]]);
+            break;
+        case 0b10:
+            mvprintf(10 + vbfo.ptr / 32, vbfo.ptr % 32 + 2, "\033[7m%c\033[27m", VALUES[7]);
+            break;
         }
         for (int i = 0; i < 8; i++) {
             mvprintf(i +  1, 46, "%d", vbfo.key >> i & 1);
@@ -108,14 +117,14 @@ int main(int argc, char **argv, char **env) {
         mvprintf(16, 46, "%d", vbfo.blk >> 0 & 1);
         mvprintf(17, 46, "%d", vbfo.blk >> 1 & 1);
         fflush(stdout);
-        vbfo.lft = GetAsyncKeyState(VK_LEFT)  < 0;
-        vbfo.rgt = GetAsyncKeyState(VK_RIGHT) < 0;
-        vbfo.ctl = GetAsyncKeyState(VK_SPACE) < 0;
-        auto rei = GetAsyncKeyState(VK_OEM_2) < 0;
-        auto wav = GetAsyncKeyState(VK_OEM_3) < 0;
-        auto lbr = GetAsyncKeyState(VK_OEM_4) < 0;
-        auto rbr = GetAsyncKeyState(VK_OEM_6) < 0;
-        auto alt = GetAsyncKeyState(VK_SHIFT) < 0;
+        vbfo.lft = GetAsyncKeyState(VK_LEFT)       < 0;
+        vbfo.rgt = GetAsyncKeyState(VK_RIGHT)      < 0;
+        vbfo.ctl = GetAsyncKeyState(VK_SPACE)      < 0;
+        auto rei = GetAsyncKeyState(VK_OEM_2)      < 0;
+        auto wav = GetAsyncKeyState(VK_OEM_3)      < 0;
+        auto lbr = GetAsyncKeyState(VK_OEM_4)      < 0;
+        auto rbr = GetAsyncKeyState(VK_OEM_6)      < 0;
+        auto alt = GetAsyncKeyState(VK_SHIFT)      < 0;
         auto cma = GetAsyncKeyState(VK_OEM_COMMA)  < 0;
         auto prd = GetAsyncKeyState(VK_OEM_PERIOD) < 0;
         vbfo.key = rei << 0 | wav << 1 | cma << (alt ? 2 : 5) | prd << (alt ? 3 : 4) | lbr << 6 | rbr << 7;

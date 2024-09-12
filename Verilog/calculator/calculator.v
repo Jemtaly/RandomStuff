@@ -52,19 +52,20 @@ endmodule
 module multiplier_8(
     input [7:0] a,
     input [7:0] b,
-    input [7:0] cin,
+    input [7:0] cina,
+    input [7:0] cinb,
     output [7:0] cout,
     output [7:0] prod
   );
   wire [7:0] s [0:7];
-  adder_8 add_o0(     8'b0, b & {8{a[0]}}, cin[0], s[0][7], {s[0][6:0], prod[0]});
-  adder_8 add_o1(s[0][7:0], b & {8{a[1]}}, cin[1], s[1][7], {s[1][6:0], prod[1]});
-  adder_8 add_o2(s[1][7:0], b & {8{a[2]}}, cin[2], s[2][7], {s[2][6:0], prod[2]});
-  adder_8 add_o3(s[2][7:0], b & {8{a[3]}}, cin[3], s[3][7], {s[3][6:0], prod[3]});
-  adder_8 add_o4(s[3][7:0], b & {8{a[4]}}, cin[4], s[4][7], {s[4][6:0], prod[4]});
-  adder_8 add_o5(s[4][7:0], b & {8{a[5]}}, cin[5], s[5][7], {s[5][6:0], prod[5]});
-  adder_8 add_o6(s[5][7:0], b & {8{a[6]}}, cin[6], s[6][7], {s[6][6:0], prod[6]});
-  adder_8 add_o7(s[6][7:0], b & {8{a[7]}}, cin[7], s[7][7], {s[7][6:0], prod[7]});
+  adder_8 add_o0(cinb[7:0], b & {8{a[0]}}, cina[0], s[0][7], {s[0][6:0], prod[0]});
+  adder_8 add_o1(s[0][7:0], b & {8{a[1]}}, cina[1], s[1][7], {s[1][6:0], prod[1]});
+  adder_8 add_o2(s[1][7:0], b & {8{a[2]}}, cina[2], s[2][7], {s[2][6:0], prod[2]});
+  adder_8 add_o3(s[2][7:0], b & {8{a[3]}}, cina[3], s[3][7], {s[3][6:0], prod[3]});
+  adder_8 add_o4(s[3][7:0], b & {8{a[4]}}, cina[4], s[4][7], {s[4][6:0], prod[4]});
+  adder_8 add_o5(s[4][7:0], b & {8{a[5]}}, cina[5], s[5][7], {s[5][6:0], prod[5]});
+  adder_8 add_o6(s[5][7:0], b & {8{a[6]}}, cina[6], s[6][7], {s[6][6:0], prod[6]});
+  adder_8 add_o7(s[6][7:0], b & {8{a[7]}}, cina[7], s[7][7], {s[7][6:0], prod[7]});
   assign cout = +s[7][7:0];
 endmodule
 

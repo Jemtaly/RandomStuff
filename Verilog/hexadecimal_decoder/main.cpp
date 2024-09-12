@@ -2,12 +2,15 @@
 #include "Vhexadecimal_decoder.h"
 #include "Windows.h"
 #include "verilated.h"
+
 #define mv(x, y) printf("\033[%d;%dH", (x) + 1, (y) + 1)
 #define mvprintf(x, y, format, ...) printf("\033[%d;%dH" format, (x) + 1, (y) + 1 __VA_OPT__(,) __VA_ARGS__)
-#define MASK_A  2 //  1
-#define MASK_D  6 //  3
-#define MASK_W 18 //  9
-#define MASK_S 54 // 27
+
+#define MASK_A  2  //  1
+#define MASK_D  6  //  3
+#define MASK_W 18  //  9
+#define MASK_S 54  // 27
+
 constexpr char ctable[81][4] = {
     " ", "╴", "╸", "╶", "─", "╾", "╺", "╼", "━",
     "╵", "┘", "┙", "└", "┴", "┵", "┕", "┶", "┷",
@@ -19,6 +22,7 @@ constexpr char ctable[81][4] = {
     "╽", "┧", "┪", "┟", "╁", "╅", "┢", "╆", "╈",
     "┃", "┨", "┫", "┠", "╂", "╉", "┣", "╊", "╋",
 };
+
 int main(int argc, char **argv, char **env) {
     HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE), hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
     DWORD dwStdinModeOld, dwStdoutModeOld, dwStdinModeNew, dwStdoutModeNew;
@@ -68,13 +72,27 @@ int main(int argc, char **argv, char **env) {
         }
         for (int i = 0; i < 8; i++) {
             int pos[5][3] = {};
-            if (lum[i][7] > 0) { pos[0][0] += MASK_D, pos[0][1] += MASK_A + MASK_D, pos[0][2] += MASK_A; } // A SEGMENT
-            if (lum[i][6] > 0) { pos[0][2] += MASK_S, pos[1][2] += MASK_W + MASK_S, pos[2][2] += MASK_W; } // B SEGMENT
-            if (lum[i][5] > 0) { pos[2][2] += MASK_S, pos[3][2] += MASK_W + MASK_S, pos[4][2] += MASK_W; } // C SEGMENT
-            if (lum[i][4] > 0) { pos[4][0] += MASK_D, pos[4][1] += MASK_A + MASK_D, pos[4][2] += MASK_A; } // D SEGMENT
-            if (lum[i][3] > 0) { pos[2][0] += MASK_S, pos[3][0] += MASK_W + MASK_S, pos[4][0] += MASK_W; } // E SEGMENT
-            if (lum[i][2] > 0) { pos[0][0] += MASK_S, pos[1][0] += MASK_W + MASK_S, pos[2][0] += MASK_W; } // F SEGMENT
-            if (lum[i][1] > 0) { pos[2][0] += MASK_D, pos[2][1] += MASK_A + MASK_D, pos[2][2] += MASK_A; } // G SEGMENT
+            if (lum[i][7] > 0) {
+                pos[0][0] += MASK_D, pos[0][1] += MASK_A + MASK_D, pos[0][2] += MASK_A;
+            }  // A SEGMENT
+            if (lum[i][6] > 0) {
+                pos[0][2] += MASK_S, pos[1][2] += MASK_W + MASK_S, pos[2][2] += MASK_W;
+            }  // B SEGMENT
+            if (lum[i][5] > 0) {
+                pos[2][2] += MASK_S, pos[3][2] += MASK_W + MASK_S, pos[4][2] += MASK_W;
+            }  // C SEGMENT
+            if (lum[i][4] > 0) {
+                pos[4][0] += MASK_D, pos[4][1] += MASK_A + MASK_D, pos[4][2] += MASK_A;
+            }  // D SEGMENT
+            if (lum[i][3] > 0) {
+                pos[2][0] += MASK_S, pos[3][0] += MASK_W + MASK_S, pos[4][0] += MASK_W;
+            }  // E SEGMENT
+            if (lum[i][2] > 0) {
+                pos[0][0] += MASK_S, pos[1][0] += MASK_W + MASK_S, pos[2][0] += MASK_W;
+            }  // F SEGMENT
+            if (lum[i][1] > 0) {
+                pos[2][0] += MASK_D, pos[2][1] += MASK_A + MASK_D, pos[2][2] += MASK_A;
+            }  // G SEGMENT
             for (int j = 0; j < 5; j++) {
                 mv(j +  1, 44 - i * 6),
                 printf(ctable[pos[j][0]]),

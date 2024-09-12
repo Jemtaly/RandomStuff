@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/bash
+
 for file in "$@"; do
     sed -i 's/\r$//g' "$file"
     last=$(tail -c1 "$file" | od -An -tu)

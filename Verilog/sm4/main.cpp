@@ -1,24 +1,32 @@
 #include <iostream>
 #include "Vsm4.h"
 #include "verilated.h"
+
 void setk(Vsm4 &vsm4, uint8_t *key, bool mode) {
-    vsm4.mode = mode;          // set mode
-    for (int i = 0; i < 16; i++)
+    vsm4.mode = mode;  // set mode
+    for (int i = 0; i < 16; i++) {
         vsm4.key[i] = key[i];  // set key
+    }
 }
+
 void test(Vsm4 &vsm4, uint8_t *buf) {
-    for (int i = 0; i < 16; i++)
+    for (int i = 0; i < 16; i++) {
         vsm4.src[i] = buf[i];  // input
-    vsm4.eval();               // eval
-    for (int i = 0; i < 16; i++)
+    }
+    vsm4.eval();  // eval
+    for (int i = 0; i < 16; i++) {
         buf[i] = vsm4.dst[i];  // output
+    }
 }
-void dump(const char *name, uint8_t *data) {
+
+void dump(char const *name, uint8_t *data) {
     printf("%s:", name);
-    for (size_t i = 0; i < 16; i++)
+    for (size_t i = 0; i < 16; i++) {
         printf(" %02x", data[i]);
+    }
     printf("\n");
 }
+
 int main(int argc, char **argv, char **env) {
     // Example:
     // k: 01 23 45 67 89 ab cd ef fe dc ba 98 76 54 32 10

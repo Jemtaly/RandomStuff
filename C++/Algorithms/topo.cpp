@@ -1,8 +1,9 @@
-#include <iostream>
 #include <functional>
-template <int N>
+#include <iostream>
+
+template<int N>
 bool topologicalSort(bool e[N][N], int r[N]) {
-    int d[N] = {}; // in-degree
+    int d[N] = {};  // in-degree
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++) {
             if (e[i][j]) {
@@ -26,9 +27,10 @@ bool topologicalSort(bool e[N][N], int r[N]) {
     }
     return t == N;
 }
-template <int N>
+
+template<int N>
 bool topologicalFind(bool e[N][N]) {
-    char vis[N] = {}; // 0: unvisited, 1: visiting, 2: visited
+    char vis[N] = {};  // 0: unvisited, 1: visiting, 2: visited
     std::function<bool(int)> dfs = [&](int i) {
         vis[i] = 1;
         for (int j = 0; j < N; j++) {
@@ -46,6 +48,7 @@ bool topologicalFind(bool e[N][N]) {
     }
     return true;
 }
+
 int main() {
     bool e[6][6] = {
         {0, 0, 0, 1, 1, 0},

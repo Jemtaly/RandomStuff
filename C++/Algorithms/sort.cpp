@@ -1,5 +1,6 @@
 #include <iostream>
 #include <utility>
+
 void bubbleSort(int a[], int n) {
     // time complexity: O(n^2)
     for (int i = 0; i < n; i++) {
@@ -8,6 +9,7 @@ void bubbleSort(int a[], int n) {
         }
     }
 }
+
 void chooseSort(int a[], int n) {
     // time complexity: O(n^2)
     for (int i = 0; i < n; i++) {
@@ -20,6 +22,7 @@ void chooseSort(int a[], int n) {
         std::swap(a[i], a[k]);
     }
 }
+
 void shiftUp(int a[], int i) {
     // time complexity: O(logn)
     while (i > 0) {
@@ -32,6 +35,7 @@ void shiftUp(int a[], int i) {
         }
     }
 }
+
 void shiftDown(int a[], int n, int i) {
     // time complexity: O(logn)
     while (1) {
@@ -52,6 +56,7 @@ void shiftDown(int a[], int n, int i) {
         }
     }
 }
+
 void heapSort(int a[], int n) {
     // time complexity: O(n)
     for (int i = n - 1; i >= 0; i--) {
@@ -63,6 +68,7 @@ void heapSort(int a[], int n) {
         shiftDown(a, i, 0);
     }
 }
+
 int main() {
     int a[] = {3, 2, 1, 4, 5, 6, 7};
     heapSort(a, 7);

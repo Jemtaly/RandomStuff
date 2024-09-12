@@ -1,7 +1,11 @@
 #!/usr/bin/bash
+
 port=4096
 enc=""
-while getopts ":p:e" opt; do
+server=1
+client=1
+
+while getopts ":p:e:sc" opt; do
     case $opt in
     p)
         port="$OPTARG"
@@ -9,11 +13,27 @@ while getopts ":p:e" opt; do
     e)
         enc="--enc"
         ;;
+    s)
+        server=1
+        client=
+        ;;
+    c)
+        client=1
+        server=
+        ;;
     \?)
         echo "Invalid option: -$OPTARG" >&2
         ;;
     esac
 done
-python3 ./imftp.py --server localhost --port "$port" --chat $enc &
-python3 ./imftp.py --client localhost --port "$port" --chat $enc &
+
+if [ "$client" ]; then
+    echo "Starting client on port $port"
+    python3 ./imftp.py --client localhost --port "$port" --chat $enc &
+fi
+if [ "$server" ]; then
+    echo "Starting server on port $port"
+    python3 ./imftp.py --server localhost --port "$port" --chat $enc &
+fi
+
 wait

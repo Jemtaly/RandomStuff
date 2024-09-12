@@ -1,6 +1,8 @@
 #include <iostream>
 #include <vector>
+
 using data_t = int;
+
 struct Square {
     size_t t;  // top
     size_t l;  // left
@@ -8,10 +10,13 @@ struct Square {
     size_t r;  // right
     data_t height;
 };
+
 using Shape = std::vector<Square>;
-template <std::size_t M, std::size_t N>
+
+template<std::size_t M, std::size_t N>
 using Matrix = data_t[M][N];
-template <std::size_t M, std::size_t N>
+
+template<std::size_t M, std::size_t N>
 void zeroMatrix(Matrix<M, N> &matrix) {
     for (size_t i = 0; i < M; ++i) {
         for (size_t j = 0; j < N; ++j) {
@@ -19,7 +24,8 @@ void zeroMatrix(Matrix<M, N> &matrix) {
         }
     }
 }
-template <std::size_t M, std::size_t N>
+
+template<std::size_t M, std::size_t N>
 void plotMatrix(Matrix<M, N> &matrix, Shape const &shape) {
     for (auto const &square : shape) {
         matrix[square.t][square.l] += square.height;
@@ -28,7 +34,8 @@ void plotMatrix(Matrix<M, N> &matrix, Shape const &shape) {
         matrix[square.b][square.r] += square.height;
     }
 }
-template <std::size_t M, std::size_t N>
+
+template<std::size_t M, std::size_t N>
 void fillMatrix(Matrix<M, N> &matrix) {
     for (size_t i = 0; i < M; ++i) {
         for (size_t j = 1; j < N; ++j) {
@@ -41,7 +48,8 @@ void fillMatrix(Matrix<M, N> &matrix) {
         }
     }
 }
-template <std::size_t M, std::size_t N>
+
+template<std::size_t M, std::size_t N>
 void lineMatrix(Matrix<M, N> &matrix) {
     for (size_t i = 0; i < M; ++i) {
         for (size_t j = N - 1; j > 0; --j) {
@@ -54,7 +62,8 @@ void lineMatrix(Matrix<M, N> &matrix) {
         }
     }
 }
-template <std::size_t M, std::size_t N>
+
+template<std::size_t M, std::size_t N>
 void showMatrix(Matrix<M, N> const &matrix) {
     for (size_t i = 0; i < M; ++i) {
         for (size_t j = 0; j < N - 1; ++j) {
@@ -63,6 +72,7 @@ void showMatrix(Matrix<M, N> const &matrix) {
         std::cout << matrix[i][N - 1] << std::endl;
     }
 }
+
 int main() {
     Shape shape = {
         {1, 1, 4, 4, +1},

@@ -9,6 +9,8 @@ def network(n):
                     yield i, l, i & k == 0
             j //= 2
         k *= 2
+
+
 def apply(arr, net):
     for i, j, b in net:
         if (arr[i] > arr[j]) if b else (arr[i] < arr[j]):

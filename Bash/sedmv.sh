@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/bash
+
 for arg in "$@"; do
     case $arg in
     -t)
@@ -14,12 +15,14 @@ for arg in "$@"; do
         ;;
     esac
 done
+
 if [ $# -lt 1 ]; then
     echo "Usage: $0 [-t] [-s] <sed command> <file>..."
     exit 1
 fi
-CMD=$1
-shift
+
+CMD=$1 && shift
+
 for orig in "$@"; do
     dest=$(echo $orig | sed "$CMD")
     if [ "$orig" != "$dest" ]; then

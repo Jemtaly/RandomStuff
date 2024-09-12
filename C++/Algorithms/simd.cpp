@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <immintrin.h>
 #include <zmmintrin.h>
+
 void show(char const *name, __m256i mmc) {
     uint8_t *u8c = (uint8_t *)&mmc;
     printf("%s:\n", name);
@@ -13,6 +14,7 @@ void show(char const *name, __m256i mmc) {
         printf("\n");
     }
 }
+
 static const __m256i rev = _mm256_set_epi8(
     0x1c, 0x1d, 0x1e, 0x1f,
     0x18, 0x19, 0x1a, 0x1b,
@@ -22,6 +24,7 @@ static const __m256i rev = _mm256_set_epi8(
     0x08, 0x09, 0x0a, 0x0b,
     0x04, 0x05, 0x06, 0x07,
     0x00, 0x01, 0x02, 0x03); // Reverse Byte Order
+
 void test(uint32_t const *src, uint32_t *dst) {
     __m256i ss0 = _mm256_loadu_si256((__m256i *)src + 0); // 0x00 0x01 0x02 0x03 0x04 0x05 0x06 0x07
     __m256i ss1 = _mm256_loadu_si256((__m256i *)src + 1); // 0x08 0x09 0x0a 0x0b 0x0c 0x0d 0x0e 0x0f
@@ -49,6 +52,7 @@ void test(uint32_t const *src, uint32_t *dst) {
     _mm256_storeu_si256((__m256i *)dst + 2, dd2);
     _mm256_storeu_si256((__m256i *)dst + 3, dd3);
 }
+
 int main() {
     uint8_t u8a[32] = {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,

@@ -3,38 +3,48 @@
 #include <string.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include "curses.h"
+
 #include <fstream>
 #include <iostream>
 #include <stack>
-#include "curses.h"
+
 #define MIN_HEIGHT 4
 #define MIN_WIDTH 16
 #define MAX_HEIGHT 1024
 #define MAX_WIDTH 1024
 #define STD_HEIGHT ((LINES - 6) / 1)
 #define STD_WIDTH ((COLS - 3) / 2)
+
 #define REC_MOD 1
 #define REC_RUL 2
 #define REC_SPA 4
 #define REC_OPN 8
 #define REC_ERR 128
+
 uint64_t msec() {
     struct timeval tv;
     gettimeofday(&tv, nullptr);
     return (uint64_t)tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
+
 class CellAuto {
-    uint16_t height, width;
+    uint16_t height;
+    uint16_t width;
+
     struct XY {
         uint16_t x, y;
     } location, reference;
+
     struct GenerationInfo {
         bool *space;
         bool rule[2][9];
         XY *bound;
         size_t generation;
     } current;
+
     std::stack<GenerationInfo> undolog, redolog;
+
     void clear_undolog() {
         for (auto bound = current.bound; !undolog.empty(); undolog.pop()) {
             delete[] undolog.top().space;
@@ -43,6 +53,7 @@ class CellAuto {
             }
         }
     }
+
     void clear_redolog() {
         for (auto bound = current.bound; !redolog.empty(); redolog.pop()) {
             delete[] redolog.top().space;
@@ -51,6 +62,7 @@ class CellAuto {
             }
         }
     }
+
     void init_generation(bool set) {
         clear_undolog();
         clear_redolog();
@@ -58,6 +70,7 @@ class CellAuto {
             current.generation = 0;
         }
     }
+
     void copy_generation(bool set) {
         clear_redolog();
         auto space = new bool[height * width];
@@ -68,15 +81,18 @@ class CellAuto {
             current.generation++;
         }
     }
+
 public:
     CellAuto(CellAuto const &) = delete;
     CellAuto &operator=(CellAuto const &) = delete;
-    CellAuto(int h, int w):
-        height(h < MIN_HEIGHT ? MIN_HEIGHT : h > MAX_HEIGHT ? MAX_HEIGHT : h),
-        width(w < MIN_WIDTH ? MIN_WIDTH : w > MAX_WIDTH ? MAX_WIDTH : w),
-        location{0, 0},
-        reference{0, 0},
-        current{new bool[height * width]{}, {{0, 0, 0, 1, 0, 0, 0, 0, 0}, {0, 0, 1, 1, 0, 0, 0, 0, 0}}, nullptr, 0} {}
+
+    CellAuto(int h, int w)
+        : height(h < MIN_HEIGHT ? MIN_HEIGHT : h > MAX_HEIGHT ? MAX_HEIGHT : h)
+        , width(w < MIN_WIDTH ? MIN_WIDTH : w > MAX_WIDTH ? MAX_WIDTH : w)
+        , location{0, 0}
+        , reference{0, 0}
+        , current{new bool[height * width]{}, {{0, 0, 0, 1, 0, 0, 0, 0, 0}, {0, 0, 1, 1, 0, 0, 0, 0, 0}}, nullptr, 0} {}
+
     ~CellAuto() {
         init_generation(false);
         delete[] current.space;
@@ -84,6 +100,7 @@ public:
             delete current.bound;
         }
     }
+
     void resize_space(int h, int w) {
         init_generation(true);
         delete[] current.space;
@@ -95,6 +112,7 @@ public:
         width = w < MIN_WIDTH ? MIN_WIDTH : w > MAX_WIDTH ? MAX_WIDTH : w;
         current.space = new bool[height * width]{};
     }
+
     void random_space(uint8_t d) {
         init_generation(true);
         for (uint16_t i = 0; i < height; i++) {
@@ -103,6 +121,7 @@ public:
             }
         }
     }
+
     void move_location(char dir) {
         switch (dir) {
         case 'w':
@@ -127,6 +146,7 @@ public:
             break;
         }
     }
+
     void move_reference(char dir) {
         if (current.bound) {
             return;
@@ -147,13 +167,22 @@ public:
             break;
         }
     }
+
     void set_rule(std::string const &rule_str) {
         bool rule[2][9] = {};
         for (bool i = 0; auto r : rule_str) {
             switch (r) {
-            case 'b': case 'B': i = 0; break;
-            case 's': case 'S': i = 1; break;
-            case '/': i ^= 1; break;
+            case 'b':
+            case 'B':
+                i = 0;
+                break;
+            case 's':
+            case 'S':
+                i = 1;
+                break;
+            case '/':
+                i ^= 1;
+                break;
             default:
                 if (r >= '0' && r < '9') {
                     rule[i][r - '0'] = 1;
@@ -172,6 +201,7 @@ public:
             }
         }
     }
+
     auto get_rule() const {
         std::string rule_str = "B";
         for (int i = 0; i < 9; i++) {
@@ -187,27 +217,33 @@ public:
         }
         return rule_str;
     }
+
     void switch_mode() {
         copy_generation(false);
         current.bound = current.bound ? nullptr : new XY(reference);
     }
+
     void set_mode(bool n) {
         if ((bool)current.bound != n) {
             switch_mode();
         }
     }
+
     bool get_mode() const {
         return (bool)current.bound;
     }
+
     void switch_cell() {
         copy_generation(false);
         current.space[location.x * width + location.y] ^= 1;
     }
+
     void set_cell(bool n) {
         if (current.space[location.x * width + location.y] != n) {
             switch_cell();
         }
     }
+
     void step() {
         auto space = current.space;
         auto &next = current.space;
@@ -230,6 +266,7 @@ public:
             }
         }
     }
+
     bool undo() {
         if (undolog.empty()) {
             return 0;
@@ -241,6 +278,7 @@ public:
         undolog.pop();
         return 1;
     }
+
     bool redo() {
         if (redolog.empty()) {
             return 0;
@@ -252,24 +290,31 @@ public:
         redolog.pop();
         return 1;
     }
+
     auto get_generation() const {
         return current.generation;
     }
+
     auto get_ref_cell(uint16_t x, uint16_t y) const {
         return current.space[(x + reference.x) % height * width + (y + reference.y) % width];
     }
+
     uint16_t get_ref_location_x() const {
         return (height + location.x - reference.x) % height;
     }
+
     uint16_t get_ref_location_y() const {
         return (width + location.y - reference.y) % width;
     }
+
     auto get_width() const {
         return width;
     }
+
     auto get_height() const {
         return height;
     }
+
     bool save(std::string const &str) const {
         std::ofstream file(str);
         if (file.fail()) {
@@ -284,6 +329,7 @@ public:
         }
         return 1;
     }
+
     bool open(std::string const &str) {
         std::ifstream file(str);
         if (file.fail()) {
@@ -306,6 +352,7 @@ public:
         return 1;
     }
 };
+
 void game(CellAuto const &ca, uint64_t interval, bool rand, bool play) {
     uint16_t top = std::max<int16_t>((STD_HEIGHT - ca.get_height()) / 2, 0);
     uint16_t left = std::max<int16_t>((STD_WIDTH - ca.get_width()) / 1, 0);
@@ -360,6 +407,7 @@ void game(CellAuto const &ca, uint64_t interval, bool rand, bool play) {
     delwin(space);
     delwin(gen);
 }
+
 void menu(bool quit) {
     uint16_t top = std::max<int16_t>((LINES - 10) / 2, 0);
     uint16_t left = std::max<int16_t>((COLS - 18) / 2, 0);
@@ -386,6 +434,7 @@ void menu(bool quit) {
     }
     delwin(menu);
 }
+
 int main(int argc, char *argv[]) {
     if (!isatty(fileno(stdin)) || !isatty(fileno(stdout))) {
         std::cerr << "Error: unsupported stdin/stdout" << std::endl;
@@ -450,8 +499,10 @@ int main(int argc, char *argv[]) {
     init_pair(2, COLOR_GREEN, -1);
     init_pair(3, COLOR_YELLOW, -1);
     uint64_t interval = 1024, recd, next;
+
 GAME_INIT:
     game(ca, interval, 0, 0);
+
 GAME_REPT:
     switch (auto c = getch(); c) {
     case '-':
@@ -519,8 +570,10 @@ GAME_REPT:
     default:
         goto GAME_REPT;
     }
+
 RAND_INIT:
     game(ca, interval, 1, 0);
+
 RAND_REPT:
     switch (auto c = getch(); c) {
     case '0':
@@ -540,8 +593,10 @@ RAND_REPT:
     default:
         goto RAND_REPT;
     }
+
 PLAY_INIT:
     game(ca, interval, 0, 1);
+
 PLAY_REPT:
     timeout(std::max<int64_t>((next = recd + interval) - msec(), 0));
     switch (auto c = getch(); c) {
@@ -563,15 +618,17 @@ PLAY_REPT:
     case KEY_RESIZE:
         clear();
         goto PLAY_INIT;
-    case ERR: // timeout
+    case ERR:  // timeout
         ca.step();
         recd = next;
         goto PLAY_INIT;
     default:
         goto PLAY_REPT;
     }
+
 MENU_INIT:
     menu(0);
+
 MENU_REPT:
     switch (getch()) {
     case 'o': {
@@ -651,8 +708,10 @@ MENU_REPT:
     default:
         goto MENU_REPT;
     }
+
 QUIT_INIT:
     menu(1);
+
 QUIT_REPT:
     switch (getch()) {
     case 'y':

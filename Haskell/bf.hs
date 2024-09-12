@@ -1,6 +1,7 @@
 data Memo = Memo { cur :: Char, lft :: [Char], rgt :: [Char] } deriving (Eq, Show)
 data State = State { memo :: Memo, input :: [Char], output :: [Char] } deriving (Eq, Show)
 data Instr = Lft | Rgt | Inc | Dec | Inp | Out | Rpt [Instr] deriving (Eq, Show)
+
 -- Frontend
 parse :: [Char] -> [Instr]
 parse str = instrs
@@ -22,6 +23,7 @@ parse' ('[' : is) = (Rpt inner : instrs, os)
     where (inner, ']' : xs) = parse' is
           (instrs, os) = parse' xs
 parse' os = ([], os)
+
 -- Backend
 succ' :: Char -> Char
 succ' c = if c == '\255' then '\0' else succ c
@@ -43,6 +45,7 @@ fold (i : is) state = fold is $ app i state
 run :: [Instr] -> [Char] -> [Char]
 run instrs input = reverse $ output $ fold instrs (State (Memo '\0' infz infz) input [])
     where infz = repeat '\0'
+
 hw = parse "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++."
 main = do
     putStr $ run hw ""

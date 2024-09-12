@@ -1,11 +1,15 @@
 #include <iostream>
 #include "Vrc4.h"
 #include "verilated.h"
+
 using namespace std;
+
 void hexdump(uint8_t const *data, size_t len, size_t width = 16) {
-    for (size_t i = 0; i < len; ++i)
+    for (size_t i = 0; i < len; ++i) {
         printf("%02X%c", data[i], (i + 1) % width == 0 || i + 1 == len ? '\n' : ' ');
+    }
 }
+
 void test(Vrc4 &vrc4, size_t keylen, uint8_t *key, size_t msglen, uint8_t *msg, uint8_t *buf) {
     vrc4.rst = 1;  // set rst to 1, start input key
     for (int i = 0; i < keylen; i++) {
@@ -23,7 +27,7 @@ void test(Vrc4 &vrc4, size_t keylen, uint8_t *key, size_t msglen, uint8_t *msg, 
         vrc4.eval();
     }
     for (int i = 0; i < msglen; i++) {
-        vrc4.in = msg[i];   // input plaintext
+        vrc4.in = msg[i];  // input plaintext
         vrc4.clk = 0;
         vrc4.eval();
         vrc4.clk = 1;
@@ -31,6 +35,7 @@ void test(Vrc4 &vrc4, size_t keylen, uint8_t *key, size_t msglen, uint8_t *msg, 
         buf[i] = vrc4.out;  // output ciphertext
     }
 }
+
 void show(ostream &o, size_t keylen, uint8_t *key, size_t msglen, uint8_t *msg, uint8_t *buf) {
     o << "Key: " << endl;
     hexdump(key, keylen);
@@ -39,6 +44,7 @@ void show(ostream &o, size_t keylen, uint8_t *key, size_t msglen, uint8_t *msg, 
     o << "Buf: " << endl;
     hexdump(buf, msglen);
 }
+
 int main(int argc, char **argv, char **env) {
     // RC4 examples from http://en.wikipedia.org/wiki/RC4
     uint8_t keyA[] = {'K', 'e', 'y'};

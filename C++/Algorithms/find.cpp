@@ -1,5 +1,6 @@
 #include <iostream>
 #include <utility>
+
 void getNthNum(int *beg, int *end, int *idx) {
     // time complexity: O(n)
     int pivot = *beg;
@@ -18,13 +19,14 @@ void getNthNum(int *beg, int *end, int *idx) {
             std::swap(*m, *r);
         }
     }
-    if (idx <  l) {
+    if (idx < l) {
         getNthNum(beg, l, idx);
     }
     if (idx >= r) {
         getNthNum(r, end, idx);
     }
 }
+
 void quickSort(int *beg, int *end) {
     // time complexity: O(nlogn)
     if (end == beg) {
@@ -49,6 +51,7 @@ void quickSort(int *beg, int *end) {
     quickSort(beg, l);
     quickSort(r, end);
 }
+
 int *lowerBound(int *beg, int *end, int tar) {
     // time complexity: O(logn)
     if (end == beg) {
@@ -61,6 +64,7 @@ int *lowerBound(int *beg, int *end, int tar) {
         return lowerBound(beg, mid + 0, tar);
     }
 }
+
 int *upperBound(int *beg, int *end, int tar) {
     // time complexity: O(logn)
     if (end == beg) {
@@ -73,6 +77,7 @@ int *upperBound(int *beg, int *end, int tar) {
         return upperBound(mid + 1, end, tar);
     }
 }
+
 int main() {
     int arr[] = {3, 6, 4, 2, 3, 2, 5, 0, 2};
     int *beg = arr;

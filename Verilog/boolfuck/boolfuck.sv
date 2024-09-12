@@ -1,7 +1,9 @@
 `timescale 1ns / 1ps
+
 /* verilator lint_off BLKSEQ */
 /* verilator lint_off CASEINCOMPLETE */
 /* verilator lint_off WIDTH */
+
 module boolfuck
   #(
     parameter C = 8,  M = 8, S = 6

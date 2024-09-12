@@ -3,10 +3,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "curses.h"
+
 #define REC_ERR 1
 #define REC_OPN 2
 #define REC_BEG 4
 #define REC_END 8
+
 int main(int argc, char *argv[]) {
     if (!isatty(fileno(stdin)) || !isatty(fileno(stdout))) {
         fprintf(stderr, "Error: unsupported stdin/stdout\n");
@@ -64,10 +66,12 @@ int main(int argc, char *argv[]) {
     use_default_colors();
     init_pair(2, COLOR_RED, -1);
     int w, h;
+
 _INIT:
     w = (COLS  - 9) / 4;
     h = (LINES - 1) / 1;
     clear();
+
 _DRAW:
     if (itr > len) {
         itr = len;
@@ -117,6 +121,7 @@ _DRAW:
             addch(c == EOF ? ' ' : isprint(c) ? c : '.');
         }
     }
+
 _READ:
     switch (getch()) {
     case KEY_RESIZE:
@@ -151,6 +156,7 @@ _READ:
     default:
         goto _READ;
     }
+
 _QUIT:
     endwin();
     fclose(fp);

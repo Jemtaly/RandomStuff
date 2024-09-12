@@ -1,6 +1,11 @@
-#!/usr/bin/python3
-import quthon
+#!/usr/bin/env python3
+
+
 import matplotlib.pyplot as plt
+
+import quthon
+
+
 def main():
     qsta = quthon.Qubits(26)
     for i in range(0, 22, 11):
@@ -17,5 +22,7 @@ def main():
     prob = qsta.getprob(22, 23, 24, 25).T.reshape((-1,))
     plt.bar(range(16), prob)
     plt.show()
-if __name__ == '__main__':
+
+
+if __name__ == "__main__":
     main()

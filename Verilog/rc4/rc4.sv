@@ -1,5 +1,7 @@
 `timescale 1ns / 1ps
+
 /* verilator lint_off WIDTH */
+
 module RC4(
     input wire clk,
     input wire rst,

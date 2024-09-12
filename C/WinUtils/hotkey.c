@@ -1,6 +1,8 @@
 #include <Windows.h>
 #include <stdio.h>
-#define PDEBUG(...) // printf(__VA_ARGS__)
+
+#define PDEBUG(...)  // printf(__VA_ARGS__)
+
 int main() {
     BOOL b1_rec = FALSE;
     BOOL b2_rec = FALSE;

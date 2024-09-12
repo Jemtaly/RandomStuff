@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeFamilies #-}
+
 rpo opr idn inv elm eln = opr elm (inv eln)
 lpo opr idn inv elm eln = opr (inv elm) eln
 for opr idn inv elm n
@@ -10,6 +11,7 @@ for opr idn inv elm n
             0 -> pro
             1 -> pro `opr` elm
             2 -> pro `opr` inv elm
+
 -- Algebraic Structures
 class Algebraic g where
     type Elm g
@@ -42,6 +44,7 @@ exgcd x y
     | otherwise =
         let(g, (a, b)) = exgcd y (x `mod` y)
         in (g, (b, a - x `div` y * b))
+
 -- ECC AbelianGroup
 data ECC = ECC Integer Integer Integer deriving (Eq, Show)
 data Point = Point Integer Integer | Inf deriving (Eq, Show)
@@ -64,6 +67,7 @@ instance MonoId ECC where
 instance AbelianGroup ECC where
     neg (ECC a b q) Inf = Inf
     neg (ECC a b q) (Point x y) = Point x $ if y == 0 then 0 else q - y
+
 -- Galois Field
 data Gal = Gal Integer deriving (Eq, Show)
 instance Algebraic Gal where
@@ -84,6 +88,7 @@ instance Field Gal where
         in if g == 1
             then a `mod` p
             else error "not invertible"
+
 -- Fibonacci Field
 data Fib = Fib deriving (Eq, Show)
 instance Algebraic Fib where
