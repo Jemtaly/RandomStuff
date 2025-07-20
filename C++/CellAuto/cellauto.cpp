@@ -1,175 +1,167 @@
-#include <math.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/time.h>
+#include <sys/types.h>
 #include <unistd.h>
-#include "curses.h"
+#include <curses.h>
+
+#include <cstdlib>
+#include <cstdint>
+#include <cstring>
+#include <cmath>
 
 #include <fstream>
 #include <iostream>
 #include <stack>
+#include <vector>
 
-#define MIN_HEIGHT 4
-#define MIN_WIDTH 16
+#define MIN_HEIGHT    4
+#define MIN_WIDTH    16
 #define MAX_HEIGHT 1024
-#define MAX_WIDTH 1024
-#define STD_HEIGHT ((LINES - 6) / 1)
-#define STD_WIDTH ((COLS - 3) / 2)
+#define MAX_WIDTH  1024
 
-#define REC_MOD 1
-#define REC_RUL 2
-#define REC_SPA 4
-#define REC_OPN 8
+#define STD_HEIGHT ((LINES - 6) / 1)
+#define STD_WIDTH  ((COLS  - 3) / 2)
+
+#define REC_RUL   2
+#define REC_SPA   4
+#define REC_OPN   8
 #define REC_ERR 128
 
-uint64_t msec() {
+inline uint64_t msec() {
     struct timeval tv;
     gettimeofday(&tv, nullptr);
     return (uint64_t)tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
 
 class CellAuto {
-    uint16_t height;
-    uint16_t width;
+    uint16_t h;
+    uint16_t w;
+    bool rule[2][9];
 
-    struct XY {
-        uint16_t x, y;
-    } location, reference;
+    struct Coordine {
+        uint16_t x;
+        uint16_t y;
+    };
 
-    struct GenerationInfo {
-        bool *space;
-        bool rule[2][9];
-        XY *bound;
-        size_t generation;
-    } current;
+    Coordine ref;
 
-    std::stack<GenerationInfo> undolog, redolog;
+    struct Relative {
+        uint16_t x;
+        uint16_t y;
+    };
+
+    struct Absolute {
+        uint16_t x;
+        uint16_t y;
+    };
+
+    Relative to_relative(Absolute const &abs) const {
+        return {
+            .x = (uint16_t)((abs.x + h - ref.x) % h),
+            .y = (uint16_t)((abs.y + w - ref.y) % w),
+        };
+    }
+
+    Absolute to_absolute(Relative const &rel) const {
+        return {
+            .x = (uint16_t)((rel.x + ref.x) % h),
+            .y = (uint16_t)((rel.y + ref.y) % w),
+        };
+    }
+
+    Absolute loc;
+
+    struct Frame {
+        std::vector<bool> cells;
+    };
+
+    auto set_cell_of(Frame &frame, Absolute const &abs) const {
+        return frame.cells[abs.x * w + abs.y];
+    }
+
+    auto get_cell_of(Frame const &frame, Absolute const &abs) const {
+        return frame.cells[abs.x * w + abs.y];
+    }
+
+    Frame new_frame() const {
+        return Frame{std::vector<bool>(h * w)};
+    }
+
+    std::stack<Frame> undolog;
+    std::stack<Frame> redolog;
+    Frame current;
 
     void clear_undolog() {
-        for (auto bound = current.bound; !undolog.empty(); undolog.pop()) {
-            delete[] undolog.top().space;
-            if (auto rec = bound; (bound = undolog.top().bound) && !rec) {
-                delete bound;
-            }
+        while (!undolog.empty()) {
+            undolog.pop();
         }
     }
 
     void clear_redolog() {
-        for (auto bound = current.bound; !redolog.empty(); redolog.pop()) {
-            delete[] redolog.top().space;
-            if (auto rec = bound; (bound = redolog.top().bound) && !rec) {
-                delete bound;
-            }
+        while (!redolog.empty()) {
+            redolog.pop();
         }
     }
 
-    void init_generation(bool set) {
-        clear_undolog();
+    void set_generation(Frame &&next, bool init = false) {
         clear_redolog();
-        if (set) {
-            current.generation = 0;
+        if (init) {
+            clear_undolog();
+        } else {
+            undolog.push(std::move(current));
         }
+        current = std::move(next);
     }
 
-    void copy_generation(bool set) {
-        clear_redolog();
-        auto space = new bool[height * width];
-        memcpy(space, current.space, height * width);
-        undolog.push(current);
-        current.space = space;
-        if (set) {
-            current.generation++;
-        }
+    static uint16_t valid_h(int h) {
+        return h < MIN_HEIGHT ? MIN_HEIGHT : h > MAX_HEIGHT ? MAX_HEIGHT : h;
+    }
+
+    static uint16_t valid_w(int w) {
+        return w < MIN_WIDTH  ? MIN_WIDTH  : w > MAX_WIDTH  ? MAX_WIDTH  : w;
     }
 
 public:
-    CellAuto(CellAuto const &) = delete;
-    CellAuto &operator=(CellAuto const &) = delete;
-
     CellAuto(int h, int w)
-        : height(h < MIN_HEIGHT ? MIN_HEIGHT : h > MAX_HEIGHT ? MAX_HEIGHT : h)
-        , width(w < MIN_WIDTH ? MIN_WIDTH : w > MAX_WIDTH ? MAX_WIDTH : w)
-        , location{0, 0}
-        , reference{0, 0}
-        , current{new bool[height * width]{}, {{0, 0, 0, 1, 0, 0, 0, 0, 0}, {0, 0, 1, 1, 0, 0, 0, 0, 0}}, nullptr, 0} {}
-
-    ~CellAuto() {
-        init_generation(false);
-        delete[] current.space;
-        if (current.bound) {
-            delete current.bound;
+        : h(valid_h(h))
+        , w(valid_w(w))
+        , rule{
+            {0, 0, 0, 1, 0, 0, 0, 0, 0},
+            {0, 0, 1, 1, 0, 0, 0, 0, 0},
         }
-    }
+        , loc{0, 0}
+        , ref{0, 0}
+        , current(new_frame()) {}
 
-    void resize_space(int h, int w) {
-        init_generation(true);
-        delete[] current.space;
-        if (current.bound) {
-            current.bound->x = current.bound->y = 0;
-        }
-        reference.x = reference.y = location.x = location.y = 0;
-        height = h < MIN_HEIGHT ? MIN_HEIGHT : h > MAX_HEIGHT ? MAX_HEIGHT : h;
-        width = w < MIN_WIDTH ? MIN_WIDTH : w > MAX_WIDTH ? MAX_WIDTH : w;
-        current.space = new bool[height * width]{};
-    }
+    CellAuto(CellAuto const &) = delete;
+    CellAuto(CellAuto &&) = default;
+
+    CellAuto &operator=(CellAuto const &) = delete;
+    CellAuto &operator=(CellAuto &&) = default;
+
+    ~CellAuto() = default;
 
     void random_space(uint8_t d) {
-        init_generation(true);
-        for (uint16_t i = 0; i < height; i++) {
-            for (uint16_t j = 0; j < width; j++) {
-                current.space[i * width + j] = rand() % 8 < d;
+        Frame next = new_frame();
+        for (uint16_t i = 0; i < h; i++) {
+            for (uint16_t j = 0; j < w; j++) {
+                set_cell_of(next, {i, j}) = rand() % 8 < d;
             }
         }
+        set_generation(std::move(next), true);
     }
 
-    void move_location(char dir) {
-        switch (dir) {
-        case 'w':
-            if (!current.bound || location.x != reference.x) {
-                location.x = (location.x + height - 1) % height;
-            }
-            break;
-        case 's':
-            if (!current.bound || location.x != (reference.x + height - 1) % height) {
-                location.x = (location.x + 1) % height;
-            }
-            break;
-        case 'a':
-            if (!current.bound || location.y != reference.y) {
-                location.y = (location.y + width - 1) % width;
-            }
-            break;
-        case 'd':
-            if (!current.bound || location.y != (reference.y + width - 1) % width) {
-                location.y = (location.y + 1) % width;
-            }
-            break;
-        }
+    void move_ref(int16_t d, int16_t r) {
+        ref.x = (ref.x + h + d) % h;
+        ref.y = (ref.y + w + r) % w;
     }
 
-    void move_reference(char dir) {
-        if (current.bound) {
-            return;
-        }
-        move_location(dir);
-        switch (dir) {
-        case 'w':
-            reference.x = (reference.x + height - 1) % height;
-            break;
-        case 's':
-            reference.x = (reference.x + 1) % height;
-            break;
-        case 'a':
-            reference.y = (reference.y + width - 1) % width;
-            break;
-        case 'd':
-            reference.y = (reference.y + 1) % width;
-            break;
-        }
+    void move_loc(int16_t d, int16_t r) {
+        loc.x = (loc.x + h + d) % h;
+        loc.y = (loc.y + w + r) % w;
     }
 
-    void set_rule(std::string const &rule_str) {
-        bool rule[2][9] = {};
+    void set_rule(std::string_view rule_str) {
+        bool new_rule[2][9] = {};
         for (bool i = 0; auto r : rule_str) {
             switch (r) {
             case 'b':
@@ -185,96 +177,73 @@ public:
                 break;
             default:
                 if (r >= '0' && r < '9') {
-                    rule[i][r - '0'] = 1;
+                    new_rule[i][r - '0'] = 1;
+                } else {
+                    throw std::runtime_error("Invalid rule character: " + std::string(1, r));
                 }
             }
         }
-        bool changed = 0;
         for (int i = 0; i < 9; i++) {
-            changed |= current.rule[0][i] != rule[0][i] || current.rule[1][i] != rule[1][i];
-        }
-        if (changed) {
-            copy_generation(false);
-            for (int i = 0; i < 9; i++) {
-                current.rule[0][i] = rule[0][i];
-                current.rule[1][i] = rule[1][i];
-            }
+            this->rule[0][i] = new_rule[0][i];
+            this->rule[1][i] = new_rule[1][i];
         }
     }
 
     auto get_rule() const {
-        std::string rule_str = "B";
+        std::string b_str = "B";
         for (int i = 0; i < 9; i++) {
-            if (current.rule[0][i]) {
-                rule_str += char('0' + i);
+            if (this->rule[0][i]) {
+                b_str += char('0' + i);
             }
         }
-        rule_str += "/S";
+        std::string s_str = "S";
         for (int i = 0; i < 9; i++) {
-            if (current.rule[1][i]) {
-                rule_str += char('0' + i);
+            if (this->rule[1][i]) {
+                s_str += char('0' + i);
             }
         }
-        return rule_str;
+        return b_str + '/' + s_str;
     }
 
-    void switch_mode() {
-        copy_generation(false);
-        current.bound = current.bound ? nullptr : new XY(reference);
-    }
-
-    void set_mode(bool n) {
-        if ((bool)current.bound != n) {
-            switch_mode();
-        }
-    }
-
-    bool get_mode() const {
-        return (bool)current.bound;
-    }
-
-    void switch_cell() {
-        copy_generation(false);
-        current.space[location.x * width + location.y] ^= 1;
+    void flip_cell() {
+        Frame next = current;
+        set_cell_of(next, loc).flip();
+        set_generation(std::move(next));
     }
 
     void set_cell(bool n) {
-        if (current.space[location.x * width + location.y] != n) {
-            switch_cell();
+        if (get_cell_of(current, loc) != n) {
+            flip_cell();
         }
     }
 
     void step() {
-        auto space = current.space;
-        auto &next = current.space;
-        copy_generation(true);
-        for (uint16_t i = 0; i < height; i++) {
-            for (uint16_t j = 0; j < width; j++) {
-                uint16_t reference_x = reference.x == 0 ? height - 1 : reference.x - 1;
-                uint16_t reference_y = reference.y == 0 ? width - 1 : reference.y - 1;
-                uint16_t w = i == 0 ? height - 1 : i - 1, s = i == height - 1 ? 0 : i + 1;
-                uint16_t a = j == 0 ? width - 1 : j - 1, d = j == width - 1 ? 0 : j + 1;
-                bool wj = (!current.bound || i != reference.x) && space[w * width + j];
-                bool sj = (!current.bound || i != reference_x) && space[s * width + j];
-                bool ia = (!current.bound || j != reference.y) && space[i * width + a];
-                bool id = (!current.bound || j != reference_y) && space[i * width + d];
-                bool wa = (!current.bound || i != reference.x && j != reference.y) && space[w * width + a];
-                bool wd = (!current.bound || i != reference.x && j != reference_y) && space[w * width + d];
-                bool sa = (!current.bound || i != reference_x && j != reference.y) && space[s * width + a];
-                bool sd = (!current.bound || i != reference_x && j != reference_y) && space[s * width + d];
-                next[i * width + j] = current.rule[space[i * width + j]][wj + sj + ia + id + wa + wd + sa + sd];
+        Frame next = new_frame();
+        for (uint16_t i = 0; i < h; i++) {
+            for (uint16_t j = 0; j < w; j++) {
+                uint16_t u = i == 0 ? h - 1 : i - 1, d = i == h - 1 ? 0 : i + 1;
+                uint16_t l = j == 0 ? w - 1 : j - 1, r = j == w - 1 ? 0 : j + 1;
+                bool ul = get_cell_of(current, {u, l});
+                bool uj = get_cell_of(current, {u, j});
+                bool ur = get_cell_of(current, {u, r});
+                bool il = get_cell_of(current, {i, l});
+                bool ij = get_cell_of(current, {i, j});
+                bool ir = get_cell_of(current, {i, r});
+                bool dl = get_cell_of(current, {d, l});
+                bool dj = get_cell_of(current, {d, j});
+                bool dr = get_cell_of(current, {d, r});
+                set_cell_of(next, {i, j}) = rule[ij][ul + uj + ur + il + ir + dl + dj + dr];
             }
         }
+        set_generation(std::move(next));
     }
 
     bool undo() {
         if (undolog.empty()) {
             return 0;
         }
-        redolog.push(current);
-        if (auto rec = current.bound; (current = undolog.top()).bound && !rec) {
-            reference = *current.bound;
-        }
+        redolog.push(std::move(current));
+        current = std::move(undolog.top());
         undolog.pop();
         return 1;
     }
@@ -283,98 +252,99 @@ public:
         if (redolog.empty()) {
             return 0;
         }
-        undolog.push(current);
-        if (auto rec = current.bound; (current = redolog.top()).bound && !rec) {
-            reference = *current.bound;
-        }
+        undolog.push(std::move(current));
+        current = std::move(redolog.top());
         redolog.pop();
         return 1;
     }
 
-    auto get_generation() const {
-        return current.generation;
+    bool get_cell(Relative rel) const {
+        return get_cell_of(current, to_absolute(rel));
     }
 
-    auto get_ref_cell(uint16_t x, uint16_t y) const {
-        return current.space[(x + reference.x) % height * width + (y + reference.y) % width];
+    Relative get_loc() const {
+        return to_relative(loc);
     }
 
-    uint16_t get_ref_location_x() const {
-        return (height + location.x - reference.x) % height;
+    auto get_w() const {
+        return w;
     }
 
-    uint16_t get_ref_location_y() const {
-        return (width + location.y - reference.y) % width;
+    auto get_h() const {
+        return h;
     }
 
-    auto get_width() const {
-        return width;
+    auto get_undonum() const {
+        return undolog.size();
     }
 
-    auto get_height() const {
-        return height;
+    auto get_redonum() const {
+        return redolog.size();
     }
 
-    bool save(std::string const &str) const {
-        std::ofstream file(str);
+    template<typename... Args>
+    void save(Args &&...args) const {
+        std::ofstream file(std::forward<Args>(args)...);
         if (file.fail()) {
-            return 0;
+            throw std::runtime_error("Failed to open file for saving");
         }
-        file << height << ' ' << width << ' ' << get_mode() << ' ' << get_rule() << std::endl;
-        for (uint16_t i = 0; i < height; i++) {
-            for (uint16_t j = 0; j < width; j++) {
-                file << get_ref_cell(i, j);
+        file << h << ' ' << w << ' ' << get_rule() << std::endl;
+        for (uint16_t i = 0; i < h; i++) {
+            for (uint16_t j = 0; j < w; j++) {
+                file << get_cell({i, j});
             }
             file << std::endl;
         }
-        return 1;
     }
 
-    bool open(std::string const &str) {
-        std::ifstream file(str);
+    template<typename... Args>
+    static CellAuto open(Args &&...args) {
+        std::ifstream file(std::forward<Args>(args)...);
         if (file.fail()) {
-            return 0;
+            throw std::runtime_error("Failed to open file");
         }
         int h, w;
-        char b;
         std::string rule_str;
-        file >> h >> w >> b >> rule_str;
-        set_mode(b == '1');
-        set_rule(rule_str);
-        resize_space(h, w);
-        for (uint16_t i = 0; i < height; i++) {
+        file >> h >> w;
+        if (valid_h(h) != h || valid_w(w) != w) {
+            throw std::runtime_error("Invalid height or width");
+        }
+        CellAuto ca(h, w);
+        file >> rule_str;
+        ca.set_rule(rule_str);
+        for (uint16_t i = 0; i < h; i++) {
             std::string line;
             file >> line;
-            for (uint16_t j = 0; j < width; j++) {
-                current.space[i * width + j] = line[j] == '1';
+            if (line.size() != w) {
+                throw std::runtime_error("Invalid line length in file");
+            }
+            for (uint16_t j = 0; j < w; j++) {
+                ca.set_cell_of(ca.current, {i, j}) = line[j] == '1';
             }
         }
-        return 1;
+        return ca;
     }
 };
 
 void game(CellAuto const &ca, uint64_t interval, bool rand, bool play) {
-    uint16_t top = std::max<int16_t>((STD_HEIGHT - ca.get_height()) / 2, 0);
-    uint16_t left = std::max<int16_t>((STD_WIDTH - ca.get_width()) / 1, 0);
+    uint16_t top = std::max<int16_t>((STD_HEIGHT - ca.get_h()) / 2, 0);
+    uint16_t left = std::max<int16_t>((STD_WIDTH - ca.get_w()) / 1, 0);
     uint32_t population = 0;
-    WINDOW *info = newwin(3, 2 * ca.get_width() - 3, top, left);
-    WINDOW *state = newwin(3, 6, top, 2 * ca.get_width() - 3 + left);
-    WINDOW *space = newwin(ca.get_height() + 2, 2 * ca.get_width() + 3, top + 3, left);
-    WINDOW *gen = newwin(1, 2 * ca.get_width() + 3, ca.get_height() + 5 + top, left);
+    WINDOW *info = newwin(3, 2 * ca.get_w() - 3, top, left);
+    WINDOW *state = newwin(3, 6, top, 2 * ca.get_w() - 3 + left);
+    WINDOW *space = newwin(ca.get_h() + 2, 2 * ca.get_w() + 3, top + 3, left);
+    WINDOW *gen = newwin(1, 2 * ca.get_w() + 3, ca.get_h() + 5 + top, left);
     box(state, ACS_VLINE, ACS_HLINE);
-    if (ca.get_mode()) {
-        wattron(space, COLOR_PAIR(1));
-        box(space, ACS_VLINE, ACS_HLINE);
-        wattroff(space, COLOR_PAIR(1));
-    } else {
-        wattron(space, COLOR_PAIR(2));
-        box(space, ACS_VLINE, ACS_HLINE);
-        wattroff(space, COLOR_PAIR(2));
-    }
+    box(space, ACS_VLINE, ACS_HLINE);
     wattron(space, COLOR_PAIR(3));
-    for (uint16_t i = 0; i < ca.get_height(); i++) {
-        for (uint16_t j = 0; j < ca.get_width(); j++) {
-            mvwaddch(space, i + 1, j * 2 + 2, ca.get_ref_cell(i, j) ? (population++, '+') : ' ');
+    for (uint16_t i = 0; i < ca.get_h(); i++) {
+        for (uint16_t j = 0; j < ca.get_w(); j++) {
+            char c = ' ';
+            if (ca.get_cell({i, j})) {
+                c = '+';
+                population++;
+            }
+            mvwaddch(space, i + 1, j * 2 + 2, c);
         }
     }
     wattroff(space, COLOR_PAIR(3));
@@ -386,14 +356,14 @@ void game(CellAuto const &ca, uint64_t interval, bool rand, bool play) {
         wattron(state, COLOR_PAIR(1));
         mvwaddstr(state, 1, 2, "||");
         wattroff(state, COLOR_PAIR(1));
-        auto x = ca.get_ref_location_x(), y = ca.get_ref_location_y();
+        auto [x, y] = ca.get_loc();
         mvwaddch(space, x + 1, y * 2 + 1, '>');
         mvwaddch(space, x + 1, y * 2 + 3, '<');
     }
     mvwprintw(info, 0, 0, "Rule = %s", ca.get_rule().c_str());
     mvwprintw(info, 1, 0, "Speed = %.2f", 1024.0 / interval);
-    mvwprintw(info, 2, 0, "Generation = %lu", ca.get_generation());
-    mvwprintw(gen, 0, 0, "%*s%04d", 2 * ca.get_width() - 1, "Population = ", population);
+    mvwprintw(info, 2, 0, "Undo/Redo = %lu/%lu", ca.get_undonum(), ca.get_redonum());
+    mvwprintw(gen, 0, 0, "%*s%04d", 2 * ca.get_w() - 1, "Population = ", population);
     if (rand) {
         mvwprintw(gen, 0, 0, "Random...");
     }
@@ -435,30 +405,21 @@ void menu(bool quit) {
     delwin(menu);
 }
 
-int main(int argc, char *argv[]) {
-    if (!isatty(fileno(stdin)) || !isatty(fileno(stdout))) {
-        std::cerr << "Error: unsupported stdin/stdout" << std::endl;
-        return 1;
-    }
-    CellAuto ca(0, 0);
+CellAuto parse(int argc, char *argv[]) {
     int rec = 0, h, w;
+    char* rule_str = nullptr;
+    char* filename = nullptr;
     for (int i = 1; (rec & REC_ERR) == 0 && i < argc; i++) {
         if (argv[i][0] != '-') {
-            if ((rec & (REC_MOD | REC_RUL | REC_SPA | REC_OPN)) == 0 && ca.open(argv[i])) {
+            if ((rec & (REC_RUL | REC_SPA | REC_OPN)) == 0) {
+                filename = argv[i];
                 rec |= REC_OPN;
-            } else {
-                rec |= REC_ERR;
-            }
-        } else if (argv[i][1] == 'b' && argv[i][2] == '\0') {
-            if ((rec & (REC_OPN | REC_MOD)) == 0) {
-                ca.set_mode(1);
-                rec |= REC_MOD;
             } else {
                 rec |= REC_ERR;
             }
         } else if (argv[i][1] == 'r' && argv[i][2] == '\0') {
             if ((rec & (REC_OPN | REC_RUL)) == 0 && i + 1 < argc) {
-                ca.set_rule(argv[++i]);
+                rule_str = argv[++i];
                 rec |= REC_RUL;
             } else {
                 rec |= REC_ERR;
@@ -476,21 +437,51 @@ int main(int argc, char *argv[]) {
         }
     }
     if ((rec & REC_ERR) != 0) {
+        endwin();
         std::cerr << "Description: Conway's Game of Life" << std::endl
                   << "Usage: " << argv[0] << " [-b] [-r RULE] [-n H W] or " << argv[0] << " FILE" << std::endl
                   << "Options:" << std::endl
-                  << "  -b       bounded mode" << std::endl
-                  << "  -r RULE  set rule" << std::endl
+                  << "  FILE     open file" << std::endl
                   << "  -n H W   set height and width" << std::endl
-                  << "  FILE     open file" << std::endl;
-        return 1;
+                  << "  -r RULE  set rule" << std::endl;
+        exit(1);
     }
-    auto win = initscr();
-    if ((rec & REC_SPA) != 0) {
-        ca.resize_space(h, w);
-    } else if ((rec & REC_OPN) == 0) {
-        ca.resize_space(STD_HEIGHT, STD_WIDTH);
+    if ((rec & REC_OPN) != 0) {
+        try {
+            return CellAuto::open(filename);
+        } catch (const std::runtime_error &e) {
+            endwin();
+            std::cerr << "Error: " << e.what() << std::endl;
+            exit(1);
+        }
     }
+    if ((rec & REC_SPA) == 0) {
+        h = STD_HEIGHT;
+        w = STD_WIDTH;
+    }
+    auto ca = CellAuto(h, w);
+    if ((rec & REC_RUL) != 0) {
+        try {
+            ca.set_rule(rule_str);
+        } catch (const std::runtime_error &e) {
+            endwin();
+            std::cerr << "Error: " << e.what() << std::endl;
+            exit(1);
+        }
+    }
+    return ca;
+}
+
+int main(int argc, char *argv[]) {
+    if (!isatty(fileno(stdin)) || !isatty(fileno(stdout))) {
+        std::cerr << "Error: unsupported stdin/stdout" << std::endl;
+        exit(1);
+    }
+
+    WINDOW *win = initscr();
+
+    CellAuto ca = parse(argc, argv);
+
     noecho();
     curs_set(0);
     start_color();
@@ -510,9 +501,6 @@ GAME_REPT:
         goto GAME_INIT;
     case '=':
         interval = std::max<uint64_t>(interval / 2, 1);
-        goto GAME_INIT;
-    case 'b':
-        ca.switch_mode();
         goto GAME_INIT;
     case '`':
         ca.step();
@@ -542,19 +530,31 @@ GAME_REPT:
         ca.set_cell(1);
         goto GAME_INIT;
     case '*':
-        ca.switch_cell();
+        ca.flip_cell();
         goto GAME_INIT;
     case 'w':
-    case 's':
+        ca.move_loc(-1, 0);
+        goto GAME_INIT;
     case 'a':
+        ca.move_loc(0, -1);
+        goto GAME_INIT;
+    case 's':
+        ca.move_loc(+1, 0);
+        goto GAME_INIT;
     case 'd':
-        ca.move_location(c);
+        ca.move_loc(0, +1);
         goto GAME_INIT;
     case 'W':
+        ca.move_ref(-1, 0);
+        goto GAME_INIT;
     case 'A':
+        ca.move_ref(0, -1);
+        goto GAME_INIT;
     case 'S':
+        ca.move_ref(+1, 0);
+        goto GAME_INIT;
     case 'D':
-        ca.move_reference(c + 32);
+        ca.move_ref(0, +1);
         goto GAME_INIT;
     case 'R':
         goto RAND_INIT;
@@ -607,10 +607,16 @@ PLAY_REPT:
         interval = std::max<uint64_t>(interval / 2, 1);
         goto PLAY_INIT;
     case 'W':
+        ca.move_ref(-1, 0);
+        goto PLAY_INIT;
     case 'A':
+        ca.move_ref(0, -1);
+        goto PLAY_INIT;
     case 'S':
+        ca.move_ref(+1, 0);
+        goto PLAY_INIT;
     case 'D':
-        ca.move_reference(c + 32);
+        ca.move_ref(0, +1);
         goto PLAY_INIT;
     case ' ':
         timeout(-1);
@@ -639,8 +645,14 @@ MENU_REPT:
         while ((std::cin >> filename).fail()) {
             std::cin.clear();
         }
-        bool success = ca.open(filename);
-        std::cout << "=> " << (success ? "File opened successfully!" : "File open failed!") << std::endl;
+        bool success = false;
+        try {
+            ca = CellAuto::open(filename);
+            success = true;
+            std::cout << "=> File opened successfully!" << std::endl;
+        } catch (const std::runtime_error &e) {
+            std::cout << "=> Error: " << e.what() << std::endl;
+        }
         sleep(1);
         reset_prog_mode();
         if (success) {
@@ -657,8 +669,14 @@ MENU_REPT:
         while ((std::cin >> filename).fail()) {
             std::cin.clear();
         }
-        bool success = ca.save(filename);
-        std::cout << "=> " << (success ? "File saved successfully!" : "File save failed!") << std::endl;
+        bool success = false;
+        try {
+            ca.save(filename);
+            success = true;
+            std::cout << "=> File saved successfully!" << std::endl;
+        } catch (const std::runtime_error &e) {
+            std::cout << "=> Error: " << e.what() << std::endl;
+        }
         sleep(1);
         reset_prog_mode();
         if (success) {
@@ -675,9 +693,22 @@ MENU_REPT:
         while ((std::cin >> rule_str).fail()) {
             std::cin.clear();
         }
-        ca.set_rule(rule_str);
         reset_prog_mode();
-        goto GAME_INIT;
+        bool success = false;
+        try {
+            ca.set_rule(rule_str);
+            success = true;
+            std::cout << "=> Rule set successfully!" << std::endl;
+        } catch (const std::runtime_error &e) {
+            std::cout << "=> Error: " << e.what() << std::endl;
+        }
+        sleep(1);
+        reset_prog_mode();
+        if (success) {
+            goto GAME_INIT;
+        } else {
+            goto MENU_INIT;
+        }
     }
     case 'z': {
         def_prog_mode();
@@ -691,13 +722,18 @@ MENU_REPT:
         while ((std::cin >> w).fail()) {
             std::cin.clear();
         }
-        ca.resize_space(h, w);
         reset_prog_mode();
+        auto rule_str = ca.get_rule();
+        ca = CellAuto(h, w);
+        ca.set_rule(rule_str);
         goto GAME_INIT;
     }
-    case 'a':
-        ca.resize_space(STD_HEIGHT, STD_WIDTH);
+    case 'a': {
+        auto rule_str = ca.get_rule();
+        ca = CellAuto(STD_HEIGHT, STD_WIDTH);
+        ca.set_rule(rule_str);
         goto GAME_INIT;
+    }
     case 'c':
         goto GAME_INIT;
     case 'q':
