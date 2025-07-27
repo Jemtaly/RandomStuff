@@ -1,6 +1,3 @@
-#include <ctime>
-#include <sys/time.h>
-#include <sys/types.h>
 #include <unistd.h>
 #include <curses.h>
 
@@ -14,23 +11,21 @@
 #include <stack>
 #include <unordered_set>
 #include <unordered_map>
+#include <chrono>
 
 #define REC_RUL   2
 #define REC_SPA   4
 #define REC_OPN   8
 #define REC_ERR 128
 
-typedef uint64_t time64_t;
+typedef uint64_t msec_t;
 
 typedef uint16_t absolute_t;
 typedef int64_t relative_t;
 
-inline time64_t msec() {
-    struct timeval tv;
-    gettimeofday(&tv, nullptr);
-    return (time64_t)tv.tv_sec * 1000 + (time64_t)tv.tv_usec / 1000;
+inline msec_t msec() {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
-
 
 struct Absolute {
     absolute_t x;
@@ -72,18 +67,11 @@ class CellAuto {
     }
 
     Absolute to_absolute(Relative rel) const {
-        relative_t x = h == 0 ? rel.x : rel.x % h;
-        relative_t y = w == 0 ? rel.y : rel.y % w;
+        relative_t x = rel.x % (h == 0 ? ((relative_t)std::numeric_limits<absolute_t>::max() + 1) : (relative_t)h);
+        relative_t y = rel.y % (w == 0 ? ((relative_t)std::numeric_limits<absolute_t>::max() + 1) : (relative_t)w);
         return {
             .x = static_cast<absolute_t>(x < 0 ? x + h : x),
             .y = static_cast<absolute_t>(y < 0 ? y + w : y),
-        };
-    }
-
-    Relative to_relative(Absolute abs) const {
-        return {
-            .x = static_cast<relative_t>(abs.x),
-            .y = static_cast<relative_t>(abs.y),
         };
     }
 
@@ -290,10 +278,17 @@ public:
         if (file.fail()) {
             throw std::runtime_error("Failed to open file for saving");
         }
+
         file << h << ' ' << w << std::endl;
         if (file.fail()) {
             throw std::runtime_error("Failed to write dimensions");
         }
+
+        file << current.base << std::endl;
+        if (file.fail()) {
+            throw std::runtime_error("Failed to write base state");
+        }
+
         file << current.revs.size() << std::endl;
         if (file.fail()) {
             throw std::runtime_error("Failed to write cell count");
@@ -304,6 +299,7 @@ public:
                 throw std::runtime_error("Failed to write cell data");
             }
         }
+
         file << get_rule() << std::endl;
         if (file.fail()) {
             throw std::runtime_error("Failed to write rule data");
@@ -316,12 +312,21 @@ public:
         if (file.fail()) {
             throw std::runtime_error("Failed to open file");
         }
+
         absolute_t h, w;
         file >> h >> w;
         if (file.fail()) {
             throw std::runtime_error("Failed to read dimensions");
         }
         CellAuto ca(h, w);
+
+        bool base;
+        file >> base;
+        if (file.fail()) {
+            throw std::runtime_error("Failed to read base state");
+        }
+        ca.current.base = base;
+
         size_t cell_count;
         file >> cell_count;
         if (file.fail()) {
@@ -335,42 +340,66 @@ public:
             }
             ca.current.revs.insert(abs);
         }
+
         std::string rule_str;
         file >> rule_str;
         if (file.fail()) {
             throw std::runtime_error("Failed to read rule data");
         }
         ca.set_rule(rule_str);
+
         return ca;
     }
 };
 
-void game(CellAuto const &ca, Relative const &ref, Relative &loc, time64_t interval, bool rand, bool play) {
-    int top = 0;
-    int left = 0;
+struct Screen {
+    int h;
+    int w;
+};
+
+void adjust_loc(Screen const &screen, Relative const &ref, Relative &loc) {
+    if (loc.x < ref.x) { loc.x = ref.x; } else if (loc.x >= ref.x + screen.h) { loc.x = ref.x + screen.h - 1; }
+    if (loc.y < ref.y) { loc.y = ref.y; } else if (loc.y >= ref.y + screen.w) { loc.y = ref.y + screen.w - 1; }
+}
+
+void adjust_ref(Screen const &screen, Relative const &loc, Relative &ref) {
+    if (loc.x < ref.x) { ref.x = loc.x; } else if (loc.x >= ref.x + screen.h) { ref.x = loc.x - screen.h + 1; }
+    if (loc.y < ref.y) { ref.y = loc.y; } else if (loc.y >= ref.y + screen.w) { ref.y = loc.y - screen.w + 1; }
+}
+
+void move_loc(Screen const &screen, Relative &loc, Relative &ref, relative_t dx, relative_t dy) {
+    loc.x += dx;
+    loc.y += dy;
+    adjust_ref(screen, loc, ref);
+}
+
+void move_ref(Screen const &screen, Relative &ref, Relative &loc, relative_t dx, relative_t dy) {
+    ref.x += dx;
+    ref.y += dy;
+    adjust_loc(screen, ref, loc);
+}
+
+void game(CellAuto const &ca, Screen &screen, Relative &ref, Relative &loc, msec_t interval, bool rand, bool play) {
     int cols  = std::max<int>(COLS, 16);
     int lines = std::max<int>(LINES, 8);
+    screen.h = ((lines - 6) / 1);
+    screen.w = ((cols  - 3) / 2);
+    adjust_ref(screen, loc, ref);
 
-    WINDOW *info = newwin(3, cols - 6, top, left);
+    WINDOW *info = newwin(3, cols - 6, 0, 0);
     mvwprintw(info, 0, 0, "Rule = %s", ca.get_rule().c_str());
     mvwprintw(info, 1, 0, "Speed = %.2f", 1024.0 / interval);
     mvwprintw(info, 2, 0, "Undo/Redo = %lu/%lu", ca.get_undonum(), ca.get_redonum());
 
-    WINDOW *space = newwin(lines - 4, cols, top + 3, left);
+    WINDOW *space = newwin(lines - 4, cols, 3, 0);
     box(space, ACS_VLINE, ACS_HLINE);
     wattron(space, COLOR_PAIR(3));
-    int game_h = ((lines - 6) / 1);
-    int game_w = ((cols  - 3) / 2);
-    for (int i = 0; i < game_h; i++) {
-        for (int j = 0; j < game_w; j++) {
+    for (int i = 0; i < screen.h; i++) {
+        for (int j = 0; j < screen.w; j++) {
             mvwaddch(space, i + 1, j * 2 + 2, ca.get_cell({ref.x + i, ref.y + j}) ? '+' : ' ');
         }
     }
     wattroff(space, COLOR_PAIR(3));
-    if (loc.x < ref.x) { loc.x = ref.x; }
-    if (loc.x >= ref.x + game_h) { loc.x = ref.x + game_h - 1; }
-    if (loc.y < ref.y) { loc.y = ref.y; }
-    if (loc.y >= ref.y + game_w) { loc.y = ref.y + game_w - 1; }
     if (not play) {
         int x = loc.x - ref.x;
         int y = loc.y - ref.y;
@@ -378,7 +407,7 @@ void game(CellAuto const &ca, Relative const &ref, Relative &loc, time64_t inter
         mvwaddch(space, x + 1, y * 2 + 2 + 1, '<');
     }
 
-    WINDOW *state = newwin(3, 6, top, left + cols - 6);
+    WINDOW *state = newwin(3, 6, 0, cols - 6);
     box(state, ACS_VLINE, ACS_HLINE);
     if (play) {
         wattron(state, COLOR_PAIR(2));
@@ -390,7 +419,7 @@ void game(CellAuto const &ca, Relative const &ref, Relative &loc, time64_t inter
         wattroff(state, COLOR_PAIR(1));
     }
 
-    WINDOW *gen = newwin(1, cols, top + lines - 1, left);
+    WINDOW *gen = newwin(1, cols, lines - 1, 0);
     mvwprintw(gen, 0, 0, "Population = %zu", ca.population());
     if (rand) {
         mvwprintw(gen, 0, cols - 9, "Random...");
@@ -514,6 +543,7 @@ int main(int argc, char *argv[]) {
     Relative ref = {0, 0};
 
     WINDOW *win = initscr();
+    Screen screen;
     noecho();
     curs_set(0);
     start_color();
@@ -522,19 +552,19 @@ int main(int argc, char *argv[]) {
     init_pair(2, COLOR_GREEN, -1);
     init_pair(3, COLOR_YELLOW, -1);
 
-    time64_t interval = 1024;
+    msec_t interval = 1024;
 
 GAME_INIT:
-    game(ca, ref, loc, interval, 0, 0);
+    game(ca, screen, ref, loc, interval, 0, 0);
 
     for (;;) {
         auto c = getch();
         switch (c) {
         case '-':
-            interval = std::min<time64_t>(interval * 2, 4096);
+            interval = std::min<msec_t>(interval * 2, 4096);
             goto GAME_INIT;
         case '=':
-            interval = std::max<time64_t>(interval / 2, 1);
+            interval = std::max<msec_t>(interval / 2, 1);
             goto GAME_INIT;
         case '`':
             ca.step();
@@ -567,28 +597,28 @@ GAME_INIT:
             ca.flip_cell(loc);
             goto GAME_INIT;
         case 'w':
-            loc.x--;
+            move_loc(screen, loc, ref, -1, 0);
             goto GAME_INIT;
         case 'a':
-            loc.y--;
+            move_loc(screen, loc, ref, 0, -1);
             goto GAME_INIT;
         case 's':
-            loc.x++;
+            move_loc(screen, loc, ref, +1, 0);
             goto GAME_INIT;
         case 'd':
-            loc.y++;
+            move_loc(screen, loc, ref, 0, +1);
             goto GAME_INIT;
         case 'W':
-            ref.x--;
+            move_ref(screen, ref, loc, -1, 0);
             goto GAME_INIT;
         case 'A':
-            ref.y--;
+            move_ref(screen, ref, loc, 0, -1);
             goto GAME_INIT;
         case 'S':
-            ref.x++;
+            move_ref(screen, ref, loc, +1, 0);
             goto GAME_INIT;
         case 'D':
-            ref.y++;
+            move_ref(screen, ref, loc, 0, +1);
             goto GAME_INIT;
         case 'R':
             clear();
@@ -606,7 +636,7 @@ GAME_INIT:
     }
 
 RAND_INIT:
-    game(ca, ref, loc, interval, 1, 0);
+    game(ca, screen, ref, loc, interval, 1, 0);
 
     for (;;) {
         auto c = getch();
@@ -630,11 +660,11 @@ RAND_INIT:
     }
 
 PLAY_INIT:
-    game(ca, ref, loc, interval, 0, 1);
+    game(ca, screen, ref, loc, interval, 0, 1);
 
-    for (time64_t recd = msec();;) {
-        time64_t next = recd + interval;
-        time64_t time = next - msec();
+    for (msec_t recd = msec();;) {
+        msec_t next = recd + interval;
+        msec_t time = next - msec();
         timeout(time);
         auto c = getch();
         timeout(-1);
@@ -644,23 +674,23 @@ PLAY_INIT:
             recd = next;
             goto PLAY_INIT;
         case '-':
-            interval = std::min<time64_t>(interval * 2, 4096);
+            interval = std::min<msec_t>(interval * 2, 4096);
             goto PLAY_INIT;
         case '=':
-            interval = std::max<time64_t>(interval / 2, 1);
+            interval = std::max<msec_t>(interval / 2, 1);
             goto PLAY_INIT;
         case 'W':
-            ref.x--;
-            goto PLAY_INIT;
+            move_ref(screen, ref, loc, -1, 0);
+            goto GAME_INIT;
         case 'A':
-            ref.y--;
-            goto PLAY_INIT;
+            move_ref(screen, ref, loc, 0, -1);
+            goto GAME_INIT;
         case 'S':
-            ref.x++;
-            goto PLAY_INIT;
+            move_ref(screen, ref, loc, +1, 0);
+            goto GAME_INIT;
         case 'D':
-            ref.y++;
-            goto PLAY_INIT;
+            move_ref(screen, ref, loc, 0, +1);
+            goto GAME_INIT;
         case ' ':
             clear();
             goto GAME_INIT;
@@ -671,7 +701,7 @@ PLAY_INIT:
     }
 
 MENU_INIT:
-    game(ca, ref, loc, interval, 0, 0);
+    game(ca, screen, ref, loc, interval, 0, 0);
     menu();
 
     for (;;) {
@@ -791,7 +821,7 @@ MENU_INIT:
     }
 
 QUIT_INIT:
-    game(ca, ref, loc, interval, 0, 0);
+    game(ca, screen, ref, loc, interval, 0, 0);
     menu();
     quit();
 
