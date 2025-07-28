@@ -681,16 +681,16 @@ PLAY_INIT:
             goto PLAY_INIT;
         case 'W':
             move_ref(screen, ref, loc, -1, 0);
-            goto GAME_INIT;
+            goto PLAY_INIT;
         case 'A':
             move_ref(screen, ref, loc, 0, -1);
-            goto GAME_INIT;
+            goto PLAY_INIT;
         case 'S':
             move_ref(screen, ref, loc, +1, 0);
-            goto GAME_INIT;
+            goto PLAY_INIT;
         case 'D':
             move_ref(screen, ref, loc, 0, +1);
-            goto GAME_INIT;
+            goto PLAY_INIT;
         case ' ':
             clear();
             goto GAME_INIT;
