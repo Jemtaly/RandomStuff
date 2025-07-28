@@ -380,8 +380,8 @@ void move_ref(Screen const &screen, Relative &ref, Relative &loc, relative_t dx,
 }
 
 void game(CellAuto const &ca, Screen &screen, Relative &ref, Relative &loc, msec_t interval, bool rand, bool play) {
-    int cols  = std::max<int>(COLS, 16);
-    int lines = std::max<int>(LINES, 8);
+    int lines = std::max<int>(LINES, 10);
+    int cols  = std::max<int>(COLS,  18);
     screen.h = ((lines - 6) / 1);
     screen.w = ((cols  - 3) / 2);
     adjust_ref(screen, loc, ref);
@@ -785,11 +785,12 @@ MENU_INIT:
         case 'z': {
             def_prog_mode();
             endwin();
-            int h, w;
+            absolute_t h = 0;
             std::cout << ">> Height: ";
             while ((std::cin >> h).fail()) {
                 std::cin.clear();
             }
+            absolute_t w = 0;
             std::cout << ">> Width: ";
             while ((std::cin >> w).fail()) {
                 std::cin.clear();
@@ -802,8 +803,10 @@ MENU_INIT:
             goto GAME_INIT;
         }
         case 'a': {
+            absolute_t h = screen.h > std::numeric_limits<absolute_t>::max() ? 0 : screen.h;
+            absolute_t w = screen.w > std::numeric_limits<absolute_t>::max() ? 0 : screen.w;
             auto rule_str = ca.get_rule();
-            ca = CellAuto(0, 0);
+            ca = CellAuto(h, w);
             ca.set_rule(rule_str);
             clear();
             goto GAME_INIT;
