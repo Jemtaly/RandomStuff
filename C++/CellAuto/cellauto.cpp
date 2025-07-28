@@ -18,7 +18,7 @@
 #define REC_OPN   8
 #define REC_ERR 128
 
-typedef uint64_t msec_t;
+typedef int64_t msec_t;
 
 typedef uint16_t absolute_t;
 typedef int64_t relative_t;
@@ -552,9 +552,9 @@ int main(int argc, char *argv[]) {
     init_pair(2, COLOR_GREEN, -1);
     init_pair(3, COLOR_YELLOW, -1);
 
-    msec_t interval = 1024;
+    msec_t interval = 1024, last;
 
-GAME_INIT:
+GAME_REFRESH:
     game(ca, screen, ref, loc, interval, 0, 0);
 
     for (;;) {
@@ -562,80 +562,80 @@ GAME_INIT:
         switch (c) {
         case '-':
             interval = std::min<msec_t>(interval * 2, 4096);
-            goto GAME_INIT;
+            goto GAME_REFRESH;
         case '=':
             interval = std::max<msec_t>(interval / 2, 1);
-            goto GAME_INIT;
+            goto GAME_REFRESH;
         case '`':
             ca.step();
-            goto GAME_INIT;
+            goto GAME_REFRESH;
         case ',':
             ca.undo();
-            goto GAME_INIT;
+            goto GAME_REFRESH;
         case '.':
             ca.redo();
-            goto GAME_INIT;
+            goto GAME_REFRESH;
         case '<':
             while (ca.undo()) {}
-            goto GAME_INIT;
+            goto GAME_REFRESH;
         case '>':
             while (ca.redo()) {}
-            goto GAME_INIT;
+            goto GAME_REFRESH;
         case 'c':
             ca.random_space(0);
-            goto GAME_INIT;
+            goto GAME_REFRESH;
         case 'r':
             ca.random_space(2);
-            goto GAME_INIT;
+            goto GAME_REFRESH;
         case '0':
             ca.set_cell(loc, 0);
-            goto GAME_INIT;
+            goto GAME_REFRESH;
         case '1':
             ca.set_cell(loc, 1);
-            goto GAME_INIT;
+            goto GAME_REFRESH;
         case '*':
             ca.flip_cell(loc);
-            goto GAME_INIT;
+            goto GAME_REFRESH;
         case 'w':
             move_loc(screen, loc, ref, -1, 0);
-            goto GAME_INIT;
+            goto GAME_REFRESH;
         case 'a':
             move_loc(screen, loc, ref, 0, -1);
-            goto GAME_INIT;
+            goto GAME_REFRESH;
         case 's':
             move_loc(screen, loc, ref, +1, 0);
-            goto GAME_INIT;
+            goto GAME_REFRESH;
         case 'd':
             move_loc(screen, loc, ref, 0, +1);
-            goto GAME_INIT;
+            goto GAME_REFRESH;
         case 'W':
             move_ref(screen, ref, loc, -1, 0);
-            goto GAME_INIT;
+            goto GAME_REFRESH;
         case 'A':
             move_ref(screen, ref, loc, 0, -1);
-            goto GAME_INIT;
+            goto GAME_REFRESH;
         case 'S':
             move_ref(screen, ref, loc, +1, 0);
-            goto GAME_INIT;
+            goto GAME_REFRESH;
         case 'D':
             move_ref(screen, ref, loc, 0, +1);
-            goto GAME_INIT;
+            goto GAME_REFRESH;
         case 'R':
             clear();
-            goto RAND_INIT;
+            goto RAND_REFRESH;
         case ' ':
             clear();
-            goto PLAY_INIT;
+            goto PLAY_START;
         case 'm':
             clear();
-            goto MENU_INIT;
+            goto MENU_REFRESH;
         case KEY_RESIZE:
             clear();
-            goto GAME_INIT;
+            goto GAME_REFRESH;
         }
     }
 
-RAND_INIT:
+RAND_REFRESH:
     game(ca, screen, ref, loc, interval, 1, 0);
 
     for (;;) {
@@ -652,55 +652,58 @@ RAND_INIT:
         case '8':
             ca.random_space(c - '0');
             clear();
-            goto GAME_INIT;
+            goto GAME_REFRESH;
         case KEY_RESIZE:
             clear();
-            goto RAND_INIT;
+            goto RAND_REFRESH;
         }
     }
 
-PLAY_INIT:
+PLAY_START:
+    last = msec();
+
+PLAY_REFRESH:
     game(ca, screen, ref, loc, interval, 0, 1);
 
-    for (msec_t recd = msec();;) {
-        msec_t next = recd + interval;
-        msec_t time = next - msec();
+    for (;;) {
+        msec_t next = last + interval;
+        msec_t time = std::max<msec_t>(next - msec(), 0);
         timeout(time);
         auto c = getch();
         timeout(-1);
         switch (c) {
         case ERR:  // timeout
             ca.step();
-            recd = next;
-            goto PLAY_INIT;
+            last = next;
+            goto PLAY_REFRESH;
         case '-':
             interval = std::min<msec_t>(interval * 2, 4096);
-            goto PLAY_INIT;
+            goto PLAY_REFRESH;
         case '=':
             interval = std::max<msec_t>(interval / 2, 1);
-            goto PLAY_INIT;
+            goto PLAY_REFRESH;
         case 'W':
             move_ref(screen, ref, loc, -1, 0);
-            goto PLAY_INIT;
+            goto PLAY_REFRESH;
         case 'A':
             move_ref(screen, ref, loc, 0, -1);
-            goto PLAY_INIT;
+            goto PLAY_REFRESH;
         case 'S':
             move_ref(screen, ref, loc, +1, 0);
-            goto PLAY_INIT;
+            goto PLAY_REFRESH;
         case 'D':
             move_ref(screen, ref, loc, 0, +1);
-            goto PLAY_INIT;
+            goto PLAY_REFRESH;
         case ' ':
             clear();
-            goto GAME_INIT;
+            goto GAME_REFRESH;
         case KEY_RESIZE:
             clear();
-            goto PLAY_INIT;
+            goto PLAY_REFRESH;
         }
     }
 
-MENU_INIT:
+MENU_REFRESH:
     game(ca, screen, ref, loc, interval, 0, 0);
     menu();
 
@@ -727,9 +730,9 @@ MENU_INIT:
             reset_prog_mode();
             clear();
             if (success) {
-                goto GAME_INIT;
+                goto GAME_REFRESH;
             } else {
-                goto MENU_INIT;
+                goto MENU_REFRESH;
             }
         }
         case 's': {
@@ -752,9 +755,9 @@ MENU_INIT:
             reset_prog_mode();
             clear();
             if (success) {
-                goto GAME_INIT;
+                goto GAME_REFRESH;
             } else {
-                goto MENU_INIT;
+                goto MENU_REFRESH;
             }
         }
         case 'r': {
@@ -777,9 +780,9 @@ MENU_INIT:
             reset_prog_mode();
             clear();
             if (success) {
-                goto GAME_INIT;
+                goto GAME_REFRESH;
             } else {
-                goto MENU_INIT;
+                goto MENU_REFRESH;
             }
         }
         case 'z': {
@@ -800,7 +803,7 @@ MENU_INIT:
             ca = CellAuto(h, w);
             ca.set_rule(rule_str);
             clear();
-            goto GAME_INIT;
+            goto GAME_REFRESH;
         }
         case 'a': {
             absolute_t h = screen.h > std::numeric_limits<absolute_t>::max() ? 0 : screen.h;
@@ -809,21 +812,21 @@ MENU_INIT:
             ca = CellAuto(h, w);
             ca.set_rule(rule_str);
             clear();
-            goto GAME_INIT;
+            goto GAME_REFRESH;
         }
         case 'c':
             clear();
-            goto GAME_INIT;
+            goto GAME_REFRESH;
         case 'q':
             clear();
-            goto QUIT_INIT;
+            goto QUIT_REFRESH;
         case KEY_RESIZE:
             clear();
-            goto MENU_INIT;
+            goto MENU_REFRESH;
         }
     }
 
-QUIT_INIT:
+QUIT_REFRESH:
     game(ca, screen, ref, loc, interval, 0, 0);
     menu();
     quit();
@@ -836,10 +839,10 @@ QUIT_INIT:
             goto END;
         case 'n':
             clear();
-            goto MENU_INIT;
+            goto MENU_REFRESH;
         case KEY_RESIZE:
             clear();
-            goto QUIT_INIT;
+            goto QUIT_REFRESH;
         }
     }
 
