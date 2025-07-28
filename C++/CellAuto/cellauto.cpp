@@ -117,7 +117,11 @@ public:
 
     void random_space(uint8_t d) {
         Frame next = new_frame();
-        if (h > 0 && w > 0) {
+        if (d == 0) {
+            next.base = 0;
+        } else if (d >= 8) {
+            next.base = 1;
+        } else if (h > 0 && w > 0) {
             for (absolute_t i = 0; i < h; ++i) {
                 for (absolute_t j = 0; j < w; ++j) {
                     if (rand() % 8 < d) {
@@ -175,6 +179,12 @@ public:
             }
         }
         return b_str + '/' + s_str;
+    }
+
+    void flip_base() {
+        Frame next = current;
+        next.base = !next.base;
+        set_generation(std::move(next));
     }
 
     void flip_cell(Relative loc) {
@@ -595,6 +605,9 @@ GAME_REFRESH:
             goto GAME_REFRESH;
         case '*':
             ca.flip_cell(loc);
+            goto GAME_REFRESH;
+        case '@':
+            ca.flip_base();
             goto GAME_REFRESH;
         case 'w':
             move_loc(screen, loc, ref, -1, 0);
