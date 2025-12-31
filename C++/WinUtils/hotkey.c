@@ -1,7 +1,11 @@
 #include <Windows.h>
-#include <stdio.h>
 
-#define PDEBUG(...)  // printf(__VA_ARGS__)
+#ifdef DEBUG
+#include <stdio.h>
+#define PDEBUG(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define PDEBUG(...)
+#endif
 
 int main() {
     BOOL b1_rec = FALSE;
@@ -22,39 +26,39 @@ int main() {
                 if (b1_cur) {
                     mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
                     b1_rec = TRUE;
-                    PDEBUG("Pressed L (GetAsyncKeyState)\n");
+                    PDEBUG("Pressed %s (GetAsyncKeyState)\n", "L");
                 }
             } else {
                 if (!b1_cur) {
                     mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
                     b1_rec = FALSE;
-                    PDEBUG("Released L (GetAsyncKeyState)\n");
+                    PDEBUG("Released %s (GetAsyncKeyState)\n", "L");
                 }
             }
             if (!b2_rec) {
                 if (b2_cur) {
                     mouse_event(MOUSEEVENTF_MIDDLEDOWN, 0, 0, 0, 0);
                     b2_rec = TRUE;
-                    PDEBUG("Pressed M (GetAsyncKeyState)\n");
+                    PDEBUG("Pressed %s (GetAsyncKeyState)\n", "M");
                 }
             } else {
                 if (!b2_cur) {
                     mouse_event(MOUSEEVENTF_MIDDLEUP, 0, 0, 0, 0);
                     b2_rec = FALSE;
-                    PDEBUG("Released M (GetAsyncKeyState)\n");
+                    PDEBUG("Released %s (GetAsyncKeyState)\n", "M");
                 }
             }
             if (!b3_rec) {
                 if (b3_cur) {
                     mouse_event(MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, 0);
                     b3_rec = TRUE;
-                    PDEBUG("Pressed R (GetAsyncKeyState)\n");
+                    PDEBUG("Pressed %s (GetAsyncKeyState)\n", "R");
                 }
             } else {
                 if (!b3_cur) {
                     mouse_event(MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0);
                     b3_rec = FALSE;
-                    PDEBUG("Released R (GetAsyncKeyState)\n");
+                    PDEBUG("Released %s (GetAsyncKeyState)\n", "R");
                 }
             }
         } else {
@@ -65,22 +69,20 @@ int main() {
             }
             // using GetMessage when no button is pressed to avoid busy waiting
             if (GetMessage(&msg, NULL, 0, 0) != 0 && msg.message == WM_HOTKEY) {
-                switch (msg.wParam) {
-                case 1:
+                if (msg.wParam == 1) {
                     mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
                     b1_rec = TRUE;
-                    PDEBUG("Pressed L (GetMessage)\n");
-                    break;
-                case 2:
+                    PDEBUG("Pressed %s (GetMessage)\n", "L");
+                }
+                if (msg.wParam == 2) {
                     mouse_event(MOUSEEVENTF_MIDDLEDOWN, 0, 0, 0, 0);
                     b2_rec = TRUE;
-                    PDEBUG("Pressed M (GetMessage)\n");
-                    break;
-                case 3:
+                    PDEBUG("Pressed %s (GetMessage)\n", "M");
+                }
+                if (msg.wParam == 3) {
                     mouse_event(MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, 0);
                     b3_rec = TRUE;
-                    PDEBUG("Pressed R (GetMessage)\n");
-                    break;
+                    PDEBUG("Pressed %s (GetMessage)\n", "R");
                 }
             }
         }

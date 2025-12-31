@@ -1,4 +1,7 @@
-def network(n):
+from typing import Iterable
+
+
+def network(n: int) -> Iterable[tuple[int, int, bool]]:
     k = 2
     while k <= n:
         j = k // 2
@@ -11,7 +14,7 @@ def network(n):
         k *= 2
 
 
-def apply(arr, net):
+def apply(arr: list[int], net: Iterable[tuple[int, int, bool]]):
     for i, j, b in net:
         if (arr[i] > arr[j]) if b else (arr[i] < arr[j]):
             arr[i], arr[j] = arr[j], arr[i]

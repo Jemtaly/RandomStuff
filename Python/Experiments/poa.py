@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-
 import Crypto.Cipher.AES as AES
 import Crypto.Random as Random
 import Crypto.Util.Padding as Padding

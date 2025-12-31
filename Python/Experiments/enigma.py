@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-
 class Rotor:
     def __init__(self, wiring, position):
         assert set(wiring) == set(range(26))

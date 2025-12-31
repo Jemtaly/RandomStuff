@@ -18,16 +18,16 @@ Some small, personal projects that are hard to categorize, including some toyish
 + **[Quthon](Python/Quthon):** 
   + A simple quantum simulator implemented in python. 
   + 量子计算模拟器，使用 Python 实现。
-+ **[PyCrypto](Python/Crypto):** 
++ **[PyNTL](Python/PyNTL):** 
   + Some cryptographic algorithms and protocols implemented in python.
   + 使用 Python 实现的一些加密算法和协议。
 + **[CellAuto](C++/CellAuto):**
   + A cellular automata written in C++.
   + 使用 C++ 实现的元胞自动机。
-+ **[HexViewer](C/HexViewer):**
++ **[HexViewer](C++/HexViewer):**
   + Command-line binary viewer for windows and linux.
   + 命令行二进制文件查看器，支持 Windows 和 Linux。
-+ **[WinUtils](C/WinUtils):**
++ **[WinUtils](C++/WinUtils):**
   + Windows Utilities. Including a tool to prevent Windows from turning off your screen / sleeping for a while, and a tool to simulate the mouse buttons using keyboard keys.
   + Windows 实用工具。包括一个防止 Windows 屏幕关闭或休眠的工具，及一个使用键盘模拟鼠标按键的工具。
 + **[Bash Tools](Bash):**

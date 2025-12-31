@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 
-
 import argparse
 
 import numpy as np
 import PIL.Image as Image
 
 
-def sixel(image, size):
-    if size:
+def sixel(image: Image.Image, size: tuple[int, int] | None = None):
+    if size is not None:
         image.thumbnail(size, Image.LANCZOS)
     image = image.convert("1")
     pixel = np.array(image)

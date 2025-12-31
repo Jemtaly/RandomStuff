@@ -389,6 +389,19 @@ void move_ref(Screen const &screen, Relative &ref, Relative &loc, relative_t dx,
     adjust_loc(screen, ref, loc);
 }
 
+void box(WINDOW *win) {
+    cchar_t l_, r_, _t, _b, tl, tr, bl, br;
+    setcchar(&l_, L"│", A_NORMAL, 0, NULL);
+    setcchar(&r_, L"│", A_NORMAL, 0, NULL);
+    setcchar(&_t, L"─", A_NORMAL, 0, NULL);
+    setcchar(&_b, L"─", A_NORMAL, 0, NULL);
+    setcchar(&tl, L"╭", A_NORMAL, 0, NULL);
+    setcchar(&tr, L"╮", A_NORMAL, 0, NULL);
+    setcchar(&bl, L"╰", A_NORMAL, 0, NULL);
+    setcchar(&br, L"╯", A_NORMAL, 0, NULL);
+    wborder_set(win, &l_, &r_, &_t, &_b, &tl, &tr, &bl, &br);
+}
+
 void game(CellAuto const &ca, Screen &screen, Relative &ref, Relative &loc, msec_t interval, bool rand, bool play) {
     int lines = std::max<int>(LINES, 10);
     int cols  = std::max<int>(COLS,  18);
@@ -402,7 +415,7 @@ void game(CellAuto const &ca, Screen &screen, Relative &ref, Relative &loc, msec
     mvwprintw(info, 2, 0, "Undo/Redo = %lu/%lu", ca.get_undonum(), ca.get_redonum());
 
     WINDOW *space = newwin(lines - 4, cols, 3, 0);
-    box(space, ACS_VLINE, ACS_HLINE);
+    box(space);
     wattron(space, COLOR_PAIR(3));
     for (int i = 0; i < screen.h; i++) {
         for (int j = 0; j < screen.w; j++) {
@@ -418,7 +431,7 @@ void game(CellAuto const &ca, Screen &screen, Relative &ref, Relative &loc, msec
     }
 
     WINDOW *state = newwin(3, 6, 0, cols - 6);
-    box(state, ACS_VLINE, ACS_HLINE);
+    box(state);
     if (play) {
         wattron(state, COLOR_PAIR(2));
         mvwaddstr(state, 1, 2, "|>");
@@ -450,7 +463,7 @@ void menu() {
     int top = std::max<int>((LINES - 10) / 2, 0);
     int left = std::max<int>((COLS - 18) / 2, 0);
     WINDOW *menu = newwin(10, 18, top, left);
-    box(menu, ACS_VLINE, ACS_HLINE);
+    box(menu);
     mvwaddstr(menu, 0, 6, " Menu ");
     mvwaddstr(menu, 2, 1, "[O]         Open");
     mvwaddstr(menu, 3, 1, "[S]         Save");
@@ -468,7 +481,7 @@ void quit() {
     int top = std::max<int>((LINES -  5) / 2, 0);
     int left = std::max<int>((COLS - 18) / 2, 0);
     WINDOW *exit = newwin(5, 18, top, left);
-    box(exit, ACS_VLINE, ACS_HLINE);
+    box(exit);
     mvwaddstr(exit, 0, 6, " Quit ");
     mvwaddstr(exit, 2, 1, "[Y]          Yes");
     mvwaddstr(exit, 3, 1, "[N]           No");
@@ -548,12 +561,13 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
+    setlocale(LC_ALL, "");
+
     CellAuto ca = parse(argc, argv);
     Relative loc = {0, 0};
     Relative ref = {0, 0};
 
     WINDOW *win = initscr();
-    Screen screen;
     noecho();
     curs_set(0);
     start_color();
@@ -561,6 +575,8 @@ int main(int argc, char *argv[]) {
     init_pair(1, COLOR_RED, -1);
     init_pair(2, COLOR_GREEN, -1);
     init_pair(3, COLOR_YELLOW, -1);
+
+    Screen screen;
 
     msec_t interval = 1024, last;
 

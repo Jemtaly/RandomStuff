@@ -2,34 +2,32 @@
 
 #include <compare>
 
+template<typename N>
 class Rational {
 private:
-    int n;
-    int d;
+    N n;
+    N d;
 
     void reduce() {
-        int a = n < 0 ? -n : n;
-        int b = d;
+        N a = n < 0 ? -n : n;
+        N b = d < 0 ? -d : d;
         while (b) {
-            int t = a;
+            N t = a;
             a = b;
             b = t % b;
         }
+        if (d < 0) {
+            a = -a;
+        }
         if (a) {
-            n /= a;
-            d /= a;
+            n = n / a;
+            d = d / a;
         }
     }
 
 public:
-    Rational(int numerator = 0, int denominator = 1) {
-        if (denominator < 0) {
-            n = -numerator;
-            d = -denominator;
-        } else {
-            n = numerator;
-            d = denominator;
-        }
+    Rational(N numerator = 0, N denominator = 1)
+        : n(numerator), d(denominator) {
         reduce();
     }
 
@@ -41,7 +39,7 @@ public:
         return d;
     }
 
-    int floor() const {
+    N floor() const {
         return d ? n < 0 ? (n + 1) / d - 1 : n / d : 0;
     }
 
@@ -49,7 +47,7 @@ public:
         return (double)n / d;
     }
 
-    operator int() const {
+    operator N() const {
         return floor();
     }
 
@@ -73,84 +71,28 @@ public:
         return Rational(l.n * r.d + r.n * l.d, l.d * r.d);
     }
 
-    friend Rational operator+(Rational const &l, int n) {
-        return Rational(l.n + l.d * n, l.d);
-    }
-
-    friend Rational operator+(int n, Rational const &r) {
-        return Rational(r.n + r.d * n, r.d);
-    }
-
     friend Rational operator-(Rational const &l, Rational const &r) {
         return Rational(l.n * r.d - r.n * l.d, l.d * r.d);
-    }
-
-    friend Rational operator-(Rational const &l, int n) {
-        return Rational(l.n - l.d * n, l.d);
-    }
-
-    friend Rational operator-(int n, Rational const &r) {
-        return Rational(r.d * n - r.n, r.d);
     }
 
     friend Rational operator*(Rational const &l, Rational const &r) {
         return Rational(l.n * r.n, l.d * r.d);
     }
 
-    friend Rational operator*(Rational const &l, int n) {
-        return Rational(l.n * n, l.d);
-    }
-
-    friend Rational operator*(int n, Rational const &r) {
-        return Rational(r.n * n, r.d);
-    }
-
     friend Rational operator/(Rational const &l, Rational const &r) {
         return Rational(l.n * r.d, r.n * l.d);
-    }
-
-    friend Rational operator/(Rational const &l, int n) {
-        return Rational(l.n, l.d * n);
-    }
-
-    friend Rational operator/(int n, Rational const &r) {
-        return Rational(r.d * n, r.n);
     }
 
     friend Rational operator%(Rational const &l, Rational const &r) {
         return l - (l / r).floor() * r;
     }
 
-    friend Rational operator%(Rational const &l, int n) {
-        return l % Rational(n);
-    }
-
-    friend Rational operator%(int n, Rational const &r) {
-        return Rational(n) % r;
-    }
-
     friend bool operator==(Rational const &l, Rational const &r) {
         return l.n * r.d == r.n * l.d;
     }
 
-    friend bool operator==(Rational const &l, int n) {
-        return l.n == n * l.d;
-    }
-
-    friend bool operator==(int n, Rational const &r) {
-        return n * r.d == r.n;
-    }
-
     friend auto operator<=>(Rational const &l, Rational const &r) {
         return l.n * r.d <=> r.n * l.d;
-    }
-
-    friend auto operator<=>(Rational const &l, int n) {
-        return l.n <=> n * l.d;
-    }
-
-    friend auto operator<=>(int n, Rational const &r) {
-        return n * r.d <=> r.n;
     }
 
     template<typename T>

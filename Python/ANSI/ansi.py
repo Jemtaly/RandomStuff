@@ -1,3 +1,6 @@
+from dataclasses import dataclass
+
+
 class State:
     def __init__(self, enter="", exit=""):
         self.enter = enter
@@ -62,7 +65,7 @@ DECPNM = "\033>".format  # Normal Keypad
 DECSTR = "\033[!p".format  # Soft Terminal Reset
 
 
-Styles = {
+STYLES = {
     "bold": 1,
     "dim": 2,
     "normal": 22,
@@ -84,7 +87,7 @@ Styles = {
 }
 
 
-Colors = {
+COLORS = {
     "black": 0,
     "red": 1,
     "green": 2,
@@ -93,33 +96,59 @@ Colors = {
     "magenta": 5,
     "cyan": 6,
     "white": 7,
-    "default": 9,
+    "bright": 60,
 }
 
 
-class RGB:
-    def __init__(self, r, g, b):
-        assert (r | g | b) >> 8 == 0
-        self.r = r
-        self.g = g
-        self.b = b
+@dataclass
+class DefaultColor:
+    pass
+
+
+@dataclass
+class BaseColor:
+    code: int
+
+
+@dataclass
+class UserColor:
+    name: int
+
+
+@dataclass
+class RGBColor:
+    r: int
+    g: int
+    b: int
+
+    def __post_init__(self):
+        assert (self.r | self.g | self.b) >> 8 == 0
 
     def __repr__(self):
         return "#{:02x}{:02x}{:02x}".format(self.r, self.g, self.b)
 
     def __invert__(self):
-        return RGB(255 - self.r, 255 - self.g, 255 - self.b)
+        return RGBColor(255 - self.r, 255 - self.g, 255 - self.b)
 
 
-def SGR(*style, fgc=None, bgc=None):  # Select Graphic Rendition
-    n = [Styles[s.lower()] for s in style]
+Color = BaseColor | UserColor | RGBColor
+
+
+def SGR(
+    *style: str,
+    fgc: Color | None = None,
+    bgc: Color | None = None,
+):  # Select Graphic Rendition
+    n = [STYLES[s.lower()] for s in style]
     for i, c in (30, fgc), (40, bgc):
         if c is None:
             continue
-        elif isinstance(c, str):
-            n.extend([i + Colors[c.lower()] + c.isupper() * 60])
-        elif isinstance(c, int):
-            n.extend([i + 8, 5, c])
-        elif isinstance(c, RGB):
+        elif isinstance(c, DefaultColor):
+            n.extend([i + 9])
+        elif isinstance(c, BaseColor):
+            n.extend([i + c.code])
+        elif isinstance(c, UserColor):
+            n.extend([i + 8, 5, c.name])
+        elif isinstance(c, RGBColor):
             n.extend([i + 8, 2, c.r, c.g, c.b])
     return "\033[" + ";".join(map(str, n)) + "m"

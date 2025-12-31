@@ -1,12 +1,10 @@
-#!/usr/bin/env python3
-
-
 import argparse
 
 import cv2
 import numpy as np
 import PIL.Image as Image
-from core import encrypt
+
+from .core import encrypt
 
 
 def generate(key, len, nSrc, nDst, num, red):

@@ -1,11 +1,8 @@
-#!/usr/bin/env python3
-
-
 import time
 
 
 class Montgomery:
-    def __init__(self, N):
+    def __init__(self, N: int):
         R, B = 1, 0
         while R < N:
             R *= 2
@@ -17,18 +14,18 @@ class Montgomery:
         self.K = R - pow(N, -1, R)
         self.Q = R * R % N
 
-    def redc(self, T):
+    def redc(self, T: int) -> int:
         # returns T / R (mod N), where T < R * N
         t = T + ((T & self.M) * self.K & self.M) * self.N >> self.B
         return t - self.N if t >= self.N else t
 
-    def encode(self, x):
+    def encode(self, x: int) -> int:
         return self.redc(x * self.Q)
 
-    def decode(self, x):
+    def decode(self, x: int) -> int:
         return self.redc(x)
 
-    def mult(self, x, y):
+    def mult(self, x, y: int) -> int:
         return self.redc(x * y)
 
 
@@ -44,11 +41,11 @@ def test():
     assert z == x * y % m
     print("Test passed")
     start = time.time()
-    for i in range(1000000):
+    for _ in range(1000000):
         Z = mont.mult(X, Y)
     print("Montgomery multiplication:", time.time() - start)
     start = time.time()
-    for i in range(1000000):
+    for _ in range(1000000):
         z = x * y % m
     print("Modular multiplication:", time.time() - start)
 

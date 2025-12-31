@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 
-
+from dataclasses import dataclass
 import math
 import tkinter as tk
 
 
+@dataclass
 class RGB:
-    def __init__(self, r, g, b):
-        assert (r | g | b) >> 8 == 0
-        self.r = r
-        self.g = g
-        self.b = b
+    r: int
+    g: int
+    b: int
+
+    def __post_init__(self):
+        assert (self.r | self.g | self.b) >> 8 == 0
 
     def __repr__(self):
         return "#{:02x}{:02x}{:02x}".format(self.r, self.g, self.b)
@@ -19,7 +21,7 @@ class RGB:
         return RGB(255 - self.r, 255 - self.g, 255 - self.b)
 
 
-def HSB(hues, saturation=math.inf, brightness=0.0):
+def HSB(hues: float, saturation: float = math.inf, brightness: float = 0.0):
     S = (math.exp(+saturation) - math.exp(-saturation)) / (math.exp(+saturation) + math.exp(-saturation))
     H = 1 / (1 + math.exp(-brightness))
     R = S / (1 + math.exp(-brightness) + math.exp(+brightness))
@@ -37,8 +39,8 @@ def RGB_main():
     def change(value=None):
         colour = RGB(R.get(), G.get(), B.get())
         canvas.delete(tk.ALL)
-        canvas.configure(background=colour)
-        canvas.create_text(0.0, 0.0, text=colour, fill=~colour, anchor=tk.NW)
+        canvas.configure(background=str(colour))
+        canvas.create_text(0.0, 0.0, text=str(colour), fill=str(~colour), anchor=tk.NW)
 
     R = tk.IntVar()
     G = tk.IntVar()
@@ -62,14 +64,14 @@ def HSB_main():
     def change(value=None):
         colour = HSB(H.get(), math.tan(S.get()), math.tan(B.get()))
         canvas.delete(tk.ALL)
-        canvas.configure(background=colour)
-        canvas.create_text(0.0, 0.0, text=colour, fill=~colour, anchor=tk.NW)
+        canvas.configure(background=str(colour))
+        canvas.create_text(0.0, 0.0, text=str(colour), fill=str(~colour), anchor=tk.NW)
 
     H = tk.DoubleVar()
     S = tk.DoubleVar()
     B = tk.DoubleVar()
     H_scaler = tk.Scale(root, variable=H, from_=+3.14, to=-3.14, resolution=0.01, showvalue=False, command=change)
-    S_scaler = tk.Scale(root, variable=S, from_=+1.56, to=-1.56, resolution=0.01, showvalue=False, command=change)
+    S_scaler = tk.Scale(root, variable=S, from_=+1.56, to=+0.00, resolution=0.01, showvalue=False, command=change)
     B_scaler = tk.Scale(root, variable=B, from_=+1.56, to=-1.56, resolution=0.01, showvalue=False, command=change)
     H_scaler.pack(fill=tk.Y, side=tk.LEFT)
     S_scaler.pack(fill=tk.Y, side=tk.LEFT)

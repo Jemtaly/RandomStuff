@@ -29,10 +29,14 @@ class Quaternion:
         return (self.w**2 + self.x**2 + self.y**2 + self.z**2) ** 0.5
 
     def __add__(self, fles):
-        return Quaternion(self.w + fles.w, self.x + fles.x, self.y + fles.y, self.z + fles.z)
+        return Quaternion(
+            self.w + fles.w, self.x + fles.x, self.y + fles.y, self.z + fles.z
+        )
 
     def __sub__(self, fles):
-        return Quaternion(self.w - fles.w, self.x - fles.x, self.y - fles.y, self.z - fles.z)
+        return Quaternion(
+            self.w - fles.w, self.x - fles.x, self.y - fles.y, self.z - fles.z
+        )
 
     def __rmul__(self, num):
         return Quaternion(self.w * num, self.x * num, self.y * num, self.z * num)
@@ -81,8 +85,20 @@ class Quaternion:
         S, C = np.sin(H), np.cos(H)
         return absv * np.array(
             [
-                [x * x * (1 - C) + 1 * C, x * y * (1 - C) + z * S, x * z * (1 - C) - y * S],
-                [y * x * (1 - C) - z * S, y * y * (1 - C) + 1 * C, y * z * (1 - C) + x * S],
-                [z * x * (1 - C) + y * S, z * y * (1 - C) - x * S, z * z * (1 - C) + 1 * C],
+                [
+                    x * x * (1 - C) + 1 * C,
+                    x * y * (1 - C) + z * S,
+                    x * z * (1 - C) - y * S,
+                ],
+                [
+                    y * x * (1 - C) - z * S,
+                    y * y * (1 - C) + 1 * C,
+                    y * z * (1 - C) + x * S,
+                ],
+                [
+                    z * x * (1 - C) + y * S,
+                    z * y * (1 - C) - x * S,
+                    z * z * (1 - C) + 1 * C,
+                ],
             ]
         )

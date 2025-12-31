@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-
 import argparse
 import os
 
@@ -10,12 +9,12 @@ import PIL.Image as Image
 import ansi
 
 
-def imcat(image, size):
+def imcat(file: Image.Image, size: tuple[int, int]):
     cols, rows = size
-    image.thumbnail((cols * 1, rows * 2), Image.LANCZOS)
-    image = image.convert("RGB")
+    file.thumbnail((cols * 1, rows * 2), Image.LANCZOS)
+    image = file.convert("RGB")
     R, G, B = np.array(image).transpose((2, 0, 1))
-    pixel = np.vectorize(ansi.RGB)(R, G, B)
+    pixel = np.vectorize(ansi.RGBColor)(R, G, B)
     h, w = pixel.shape
     pixel = np.pad(pixel, ((0, -h % 2), (0, 0)), "constant").reshape((-1, 2, w)).transpose((0, 2, 1))
     for twoln in pixel:

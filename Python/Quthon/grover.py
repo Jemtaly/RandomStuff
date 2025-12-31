@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
+from typing import Callable
 
 import numpy as np
 
 import quthon
 
 
-def grover(func, d):
+def grover(func: Callable[[int], int], d: int):
     qsta = quthon.Qubits(d + 1)
     for i in range(d):
         qsta.H(i)

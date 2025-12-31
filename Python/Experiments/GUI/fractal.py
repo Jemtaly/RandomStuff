@@ -1,11 +1,19 @@
 #!/usr/bin/env python3
 
-
+from dataclasses import dataclass
+from typing import Protocol
 import tkinter as tk
 
 
 class Canvas(tk.Canvas):
-    def __init__(self, graph, master=None, width=800, height=800, scale=800):
+    def __init__(
+        self,
+        graph: "Drawable",
+        master=None,
+        width=800,
+        height=800,
+        scale=800,
+    ):
         super().__init__(master, width=width, height=height)
         graph.draw(self)
         self.scale(tk.ALL, 0, 0, scale, scale)
@@ -49,17 +57,17 @@ class Canvas(tk.Canvas):
         self.height = event.height
 
 
+@dataclass(frozen=True)
 class Affine:
-    def __init__(self, b=0, u=1, v=0):
-        self.b = b
-        self.u = u
-        self.v = v
+    b: complex = 0
+    u: complex = 1
+    v: complex = 0
 
-    def __call__(self, p):
+    def __call__(self, p: complex) -> tuple[float, float]:
         p = self.u * p + self.v * p.conjugate() + self.b
         return p.real, -p.imag
 
-    def __mul__(self, other):
+    def __mul__(self, other: "Affine") -> "Affine":
         return Affine(
             b=self.u * other.b + self.v * other.b.conjugate() + self.b,
             u=self.u * other.u + self.v * other.v.conjugate(),
@@ -67,11 +75,15 @@ class Affine:
         )
 
 
+class Drawable(Protocol):
+    def draw(self, canvas: Canvas, affine=Affine()): ...
+
+
 class Polygon:
-    def __init__(self, *points):
+    def __init__(self, *points: complex):
         self.points = points
 
-    def draw(self, canvas, affine=Affine()):
+    def draw(self, canvas: Canvas, affine=Affine()):
         floats = sum(map(affine, self.points), ())
         if len(self.points) == 0:
             pass
@@ -84,10 +96,10 @@ class Polygon:
 
 
 class Compound:
-    def __init__(self, *components):
+    def __init__(self, *components: tuple[Drawable, Affine]):
         self.components = components
 
-    def draw(self, canvas, affine=Affine()):
+    def draw(self, canvas: Canvas, affine=Affine()):
         for component, other in self.components:
             component.draw(canvas, affine * other)
 
@@ -103,7 +115,7 @@ def test():
         +0.5,
         -0.5j,
     )
-    for _ in range(10):
+    for _ in range(8):
         poly = Compound(
             (line, Affine(-0.25, -0.5, 0)),
             (poly, Affine(+0.25, +0.5, 0)),

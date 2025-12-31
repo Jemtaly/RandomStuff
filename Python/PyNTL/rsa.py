@@ -1,31 +1,30 @@
 #!/usr/bin/env python3
 
-
 import random
 
-import util
+from pyntl import genprime, modinv
 
 
 class RSAPubl:
-    def __init__(self, n, e):
+    def __init__(self, n: int, e: int):
         self.n = n
         self.e = e
 
-    def encrypt(self, x):
+    def encrypt(self, x: int) -> int:
         return pow(x, self.e, self.n)
 
 
 class RSAPriv:
-    def __init__(self, l):
-        p = util.genprime(l)
-        q = util.genprime(l)
+    def __init__(self, l: int):
+        p = genprime(l)
+        q = genprime(l)
         phi = (p - 1) * (q - 1)
         while True:
             e = random.randrange(0, phi)
             try:
-                d = util.modinv(e, phi)
+                d = modinv(e, phi)
                 break
-            except AssertionError:
+            except ZeroDivisionError:
                 pass
         self.p = p
         self.q = q
@@ -33,17 +32,17 @@ class RSAPriv:
         self.d = d
         self.e = e
         # CRT optimization parameters
-        self.r = p * util.modinv(p, q)
-        self.s = q * util.modinv(q, p)
+        self.r = p * modinv(p, q)
+        self.s = q * modinv(q, p)
         self.u = d % (p - 1)
         self.v = d % (q - 1)
 
-    def decrypt(self, x):
+    def decrypt(self, x: int) -> int:
         m = pow(x % self.p, self.u, self.p)
         n = pow(x % self.q, self.v, self.q)
         return (m * self.s + n * self.r) % self.n
 
-    def genpubl(self):
+    def genpubl(self) -> RSAPubl:
         return RSAPubl(self.n, self.e)
 
 

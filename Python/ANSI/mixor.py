@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 
-
 import argparse
 
 import numpy as np
 import PIL.Image as Image
 
 
-def xor(*images):
+def xor(*images: Image.Image) -> Image.Image:
     sizes = set(image.size for image in images)
     modes = set(image.mode for image in images)
     if len(sizes) > 1 or len(modes) > 1:

@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
+from typing import Callable
 
 import quthon
 
 
-def simon(func, i, o):
+def simon(func: Callable[[int], int], i: int, o: int):
     qsta = quthon.Qubits(i + o)
     for j in range(i):
         qsta.H(j)

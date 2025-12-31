@@ -1,12 +1,10 @@
-#!/usr/bin/env python3
-
-
 import argparse
 import tkinter as tk
 
 import PIL.ImageGrab as ImageGrab
 import PIL.ImageTk as ImageTk
-from core import decrypt
+
+from .core import decrypt
 
 
 class Selecter(tk.Toplevel):

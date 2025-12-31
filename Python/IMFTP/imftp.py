@@ -8,7 +8,7 @@ import socket
 import sys
 import threading
 
-from messager import Messager
+from .messager import Messager
 
 import Crypto.Cipher.AES as AES
 import Crypto.Hash.SHA224 as SHA224

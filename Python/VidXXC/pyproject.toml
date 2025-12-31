@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "VidXXC"
+description = "Video Encrypt and Decrypt Tool."
+version = "0.1.0"
+authors = [
+  { name = "Jemtaly" },
+]
+license = { file = "LICENSE" }
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "pycryptodome",
+]
+
+[project.optional-dependencies]
+enc = [
+  "Pillow",
+  "numpy",
+  "opencv-python",
+]
+dec = [
+  "Pillow",
+]
+
+[project.scripts]
+videnc = "vidxxc.videnc:main [enc]"
+viddec = "vidxxc.viddec:main [dec]"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
