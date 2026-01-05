@@ -2,7 +2,7 @@
 
 import random
 
-from pyntl import FiniteField, genprime, sample, polyval, recover
+from pyntl import FiniteField, genprime, sample, polymap, lagrage_interpolation
 
 
 def genshares(f: FiniteField, secret: int, k: int, n: int) -> list[tuple[int, int]]:
@@ -10,11 +10,11 @@ def genshares(f: FiniteField, secret: int, k: int, n: int) -> list[tuple[int, in
     for _ in range(1, k - 1):
         coeffs.append(random.randrange(0, f.p))
     coeffs.append(random.randrange(1, f.p))  # leading coeff must be non-zero
-    return [(x, polyval(f, coeffs, x)) for x in sample(1, f.p, n)]
+    return [(x, polymap(f, coeffs, x)) for x in sample(1, f.p, n)]
 
 
 def recsecret(f: FiniteField, shares: list[tuple[int, int]]) -> int:
-    return recover(f, shares, 0)
+    return lagrage_interpolation(f, shares, 0)
 
 
 def test():

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar, NewType, Literal, TypeGuard, overload
+from typing import Iterable, Generic, TypeVar, NewType, Literal, TypeGuard, overload
+from fractions import Fraction
 
 import random
 import sys
@@ -39,56 +40,6 @@ def root(x: int, n: int) -> int:
         else:
             l = m
     return l
-
-
-def exgcd(a: int, b: int) -> tuple[int, tuple[int, int]]:
-    """
-    - input: a, b
-    - output: d, (x, y) such that d == (a, b) == a * x + b * y
-    """
-    if b == 0:
-        return abs(a), ((a > 0) - (a < 0), 0)
-    d, (x, y) = exgcd(b, a % b)
-    return d, (y, x - a // b * y)
-
-
-def modinv(a: int, m: int) -> int:
-    """
-    - input: a, m such that (a, m) == 1
-    - output: the inverse of a modulo m
-    """
-    d, (r, _) = exgcd(a, m)
-    if d != 1:
-        raise ZeroDivisionError
-    return r % m
-
-
-def moddiv(a: int, b: int, m: int) -> tuple[int, int]:
-    """
-    - input: a, b, m such that (b, m) | a
-    - output: k, n such that c == a / b (mod m) if and only if c == k (mod n)
-    """
-    d, (r, _) = exgcd(b, m)
-    if a % d != 0:
-        raise ZeroDivisionError
-    k = a // d * r
-    n = m // d
-    return k % n, n
-
-
-def modpow(a: int, n: int, m: int) -> int:
-    """
-    - input: a, n, m
-    - output: a**n (mod m)
-    """
-    if n < 0:
-        a, n = modinv(a, m), -n
-    r = 1
-    while n:
-        if n % 2 == 1:
-            r = r * a % m
-        a, n = a * a % m, n // 2
-    return r
 
 
 Remainder = tuple[int, int]  # (remainder, modulus)
@@ -145,18 +96,66 @@ def chkprime(n: int, *, k: int = 16, odd: bool = False) -> bool:
 
 
 @overload
-def genprime(l: int, *, k: int = 16, odd: Literal[True]) -> OddPrime: ...
+def genprime(w: int, *, k: int = 16, odd: Literal[True]) -> OddPrime: ...
 
 
 @overload
-def genprime(l: int, *, k: int = 16, odd: Literal[False] = False) -> AnyPrime: ...
+def genprime(w: int, *, k: int = 16, odd: Literal[False] = False) -> AnyPrime: ...
 
 
-def genprime(l: int, *, k: int = 16, odd: bool = False) -> int:
+def genprime(w: int, *, k: int = 16, odd: bool = False) -> int:
     while True:
-        n = random.randrange(1 << l - 1, 1 << l)
+        n = random.randrange(1 << w - 1, 1 << w)
         if chkprime(n, k=k, odd=odd):
             return n
+
+
+def exgcd(a: int, b: int) -> tuple[int, tuple[int, int]]:
+    """
+    - input: a, b
+    - output: d, (x, y) such that d == (a, b) == a * x + b * y
+    """
+    if b == 0:
+        return abs(a), ((a > 0) - (a < 0), 0)
+    d, (x, y) = exgcd(b, a % b)
+    return d, (y, x - a // b * y)
+
+
+def modinv(a: int, m: int) -> int:
+    """
+    - input: a, m such that (a, m) == 1
+    - output: the inverse of a modulo m
+    """
+    d, (r, _) = exgcd(a, m)
+    if d != 1:
+        raise ZeroDivisionError
+    return r % m
+
+
+def moddiv(a: int, b: int, m: int) -> tuple[int, int]:
+    """
+    - input: a, b, m such that (b, m) | a
+    - output: k, n such that c == a / b (mod m) if and only if c == k (mod n)
+    """
+    d, (r, _) = exgcd(b, m)
+    if a % d != 0:
+        raise ZeroDivisionError
+    k = a // d * r
+    n = m // d
+    return k % n, n
+
+
+def modpow(a: int, n: int, m: int) -> int:
+    """
+    - input: a, n, m, such that m > 0
+    - output: a**n (mod m)
+    """
+    r = 1
+    while n:
+        if n % 2 == 1:
+            r = r * a % m
+        a, n = a * a % m, n // 2
+    return r
 
 
 Factorization = dict[AnyPrime, int]  # {prime: exponent}
@@ -280,18 +279,24 @@ def binroot(x: int, k: int, t: int) -> tuple[tuple[int, int], int]:
 T = TypeVar("T")
 
 
-class Group(Generic[T], ABC):
+class Monoid(Generic[T], ABC):
     @abstractmethod
     def zero(self, /) -> T: ...
 
     @abstractmethod
-    def neg(self, a: T, /) -> T: ...
-
-    @abstractmethod
     def add(self, a: T, b: T, /) -> T: ...
 
-    @abstractmethod
-    def sub(self, a: T, b: T, /) -> T: ...
+    def lsum(self, args: Iterable[T]) -> T:
+        r = self.zero()
+        for a in args:
+            r = self.add(r, a)
+        return r
+
+    def rsum(self, args: Iterable[T]) -> T:
+        r = self.zero()
+        for a in args:
+            r = self.add(a, r)
+        return r
 
     def dot(self, a: T, n: int, /) -> T:
         r = self.zero()
@@ -302,12 +307,40 @@ class Group(Generic[T], ABC):
         return r
 
 
-class Ring(Group[T]):
+class Group(Monoid[T], ABC):
+    @abstractmethod
+    def neg(self, a: T, /) -> T: ...
+
+    def lsub(self, a: T, b: T, /) -> T:
+        return self.add(self.neg(b), a)
+
+    def rsub(self, a: T, b: T, /) -> T:
+        return self.add(a, self.neg(b))
+
+
+class AbelianGroup(Group[T], ABC):
+    @abstractmethod
+    def sub(self, a: T, b: T, /) -> T: ...
+
+
+class Ring(AbelianGroup[T], ABC):
     @abstractmethod
     def one(self, /) -> T: ...
 
     @abstractmethod
     def mul(self, a: T, b: T, /) -> T: ...
+
+    def lprod(self, args: Iterable[T]) -> T:
+        r = self.one()
+        for a in args:
+            r = self.mul(r, a)
+        return r
+
+    def rprod(self, args: Iterable[T]) -> T:
+        r = self.one()
+        for a in args:
+            r = self.mul(a, r)
+        return r
 
     def pow(self, a: T, n: int, /) -> T:
         r = self.one()
@@ -318,10 +351,18 @@ class Ring(Group[T]):
         return r
 
 
-class Field(Ring[T]):
+class DivisionRing(Ring[T], ABC):
     @abstractmethod
     def inv(self, a: T, /) -> T: ...
 
+    def ldiv(self, a: T, b: T, /) -> T:
+        return self.mul(self.inv(b), a)
+
+    def rdiv(self, a: T, b: T, /) -> T:
+        return self.mul(a, self.inv(b))
+
+
+class Field(DivisionRing[T], ABC):
     @abstractmethod
     def div(self, a: T, b: T, /) -> T: ...
 
@@ -329,7 +370,7 @@ class Field(Ring[T]):
 Matrix = list[list[T]]  # m * n matrix
 
 
-def matadd(f: Group[T], a: Matrix[T], b: Matrix[T], h: int, w: int) -> Matrix[T]:
+def matadd(f: AbelianGroup[T], a: Matrix[T], b: Matrix[T], h: int, w: int) -> Matrix[T]:
     """
     - input: a, b, h, w such that a and b are h * w matrices over Z / q
     - output: the sum of a and b
@@ -337,7 +378,7 @@ def matadd(f: Group[T], a: Matrix[T], b: Matrix[T], h: int, w: int) -> Matrix[T]
     return [[f.add(a[i][j], b[i][j]) for j in range(w)] for i in range(h)]
 
 
-def matsub(f: Group[T], a: Matrix[T], b: Matrix[T], h: int, w: int) -> Matrix[T]:
+def matsub(f: AbelianGroup[T], a: Matrix[T], b: Matrix[T], h: int, w: int) -> Matrix[T]:
     """
     - input: a, b, h, w such that a and b are h * w matrices over Z / q
     - output: the difference of a and b
@@ -393,7 +434,49 @@ def matinv(f: Field[T], m: Matrix[T], r: int) -> Matrix[T]:
 Polynomial = list[T]  # coefficients list
 
 
-def lagrange(f: Field[T], points: list[tuple[T, T]]) -> Polynomial[T]:
+def polyadd(f: AbelianGroup[T], a: Polynomial[T], b: Polynomial[T]) -> Polynomial[T]:
+    n = max(len(a), len(b))
+    a = a + [f.zero() for _ in range(n - len(a))]
+    b = b + [f.zero() for _ in range(n - len(b))]
+    return [f.add(a[i], b[i]) for i in range(n)]
+
+
+def polysub(f: AbelianGroup[T], a: Polynomial[T], b: Polynomial[T]) -> Polynomial[T]:
+    n = max(len(a), len(b))
+    a = a + [f.zero() for _ in range(n - len(a))]
+    b = b + [f.zero() for _ in range(n - len(b))]
+    return [f.sub(a[i], b[i]) for i in range(n)]
+
+
+def polymul(f: Ring[T], a: Polynomial[T], b: Polynomial[T]) -> Polynomial[T]:
+    res = [f.zero()] * (len(a) + len(b) - 1)
+    for i in range(len(a)):
+        for j in range(len(b)):
+            res[i + j] = f.add(res[i + j], f.mul(a[i], b[j]))
+    return res
+
+
+def polydivmod(f: Field[T], a: Polynomial[T], b: Polynomial[T]) -> tuple[Polynomial[T], Polynomial[T]]:
+    q = []
+    r = a[::-1]
+    d = b[::-1]
+    for _ in range(len(a) - len(d) + 1):
+        t = f.div(r[0], d[0])
+        for i in range(len(d)):
+            r[i] = f.sub(r[i], f.mul(t, d[i]))
+        q.append(t)
+        r.pop(0)
+    return q[::-1], r[::-1]
+
+
+def polymap(f: Ring[T], coeffs: Polynomial[T], x: T) -> T:
+    r = f.zero()
+    for i, c in enumerate(coeffs):
+        r = f.add(r, f.mul(c, f.pow(x, i)))
+    return r
+
+
+def lagrange_polynomial(f: Field[T], points: list[tuple[T, T]]) -> Polynomial[T]:
     """
     - input: n points, each of which is a pair of x and y
     - output: coefficients list of the n - 1 degree polynomial that passes through all the points
@@ -417,69 +500,27 @@ def lagrange(f: Field[T], points: list[tuple[T, T]]) -> Polynomial[T]:
     return Y
 
 
-def recover(f: Field[T], shares: list[tuple[T, T]], t: T) -> T:
-    for x, y in shares:
+def lagrage_interpolation(f: Field[T], points: list[tuple[T, T]], t: T) -> T:
+    """
+    - input: n points, each of which is a pair of x and y, and t
+    - output: the value of the polynomial that passes through all the points at x == t
+    """
+    for x, y in points:
         if x == t:
             return y
     Z = f.one()
-    for x, y in shares:
+    for x, y in points:
         Z = f.mul(Z, f.sub(t, x))
     Y = f.zero()
-    for j, (x, y) in enumerate(shares):
+    for j, (x, y) in enumerate(points):
         d = f.one()
-        for m, (u, v) in enumerate(shares):
+        for m, (u, v) in enumerate(points):
             if m != j:
                 d = f.mul(d, f.sub(x, u))
         k = f.div(y, d)
         r = f.inv(f.sub(t, x))
         Y = f.add(Y, f.mul(k, r))
     return f.mul(Y, Z)
-
-
-def polyadd(f: Group[T], a: Polynomial[T], b: Polynomial[T]) -> Polynomial[T]:
-    res = [f.zero()] * max(len(a), len(b))
-    for i in range(len(a)):
-        res[i] = f.add(res[i], a[i])
-    for i in range(len(b)):
-        res[i] = f.add(res[i], b[i])
-    return res
-
-
-def polysub(f: Group[T], a: Polynomial[T], b: Polynomial[T]) -> Polynomial[T]:
-    res = [f.zero()] * max(len(a), len(b))
-    for i in range(len(a)):
-        res[i] = f.add(res[i], a[i])
-    for i in range(len(b)):
-        res[i] = f.sub(res[i], b[i])
-    return res
-
-
-def polymul(f: Ring[T], a: Polynomial[T], b: Polynomial[T]) -> Polynomial[T]:
-    res = [f.zero()] * (len(a) + len(b) - 1)
-    for i in range(len(a)):
-        for j in range(len(b)):
-            res[i + j] = f.add(res[i + j], f.mul(a[i], b[j]))
-    return res
-
-
-def polydm(f: Field[T], a: Polynomial[T], b: Polynomial[T]) -> tuple[Polynomial[T], Polynomial[T]]:
-    q = []
-    r = a[::-1]
-    d = b[::-1]
-    for _ in range(len(a) - len(d) + 1):
-        t = f.div(r[0], d[0])
-        for i in range(len(d)):
-            r[i] = f.sub(r[i], f.mul(t, d[i]))
-        q.append(t)
-        r.pop(0)
-    return q[::-1], r[::-1]
-
-
-def polyval(f: Ring[T], coeffs: Polynomial[T], x: T) -> T:
-    r = f.zero()
-    for i, c in enumerate(coeffs):
-        r = f.add(r, f.mul(c, f.pow(x, i)))
-    return r
 
 
 class FiniteField(Field[int]):
@@ -508,10 +549,88 @@ class FiniteField(Field[int]):
         return (a * b) % self.p
 
     def div(self, a: int, b: int, /) -> int:
-        return moddiv(a, b, self.p)[0]
+        return modinv(b, self.p) * a % self.p
 
 
-class CyclicGroup(Group[T]):
+class RationalField(Field[Fraction]):
+    def zero(self, /) -> Fraction:
+        return Fraction(0)
+
+    def neg(self, a: Fraction, /) -> Fraction:
+        return -a
+
+    def add(self, a: Fraction, b: Fraction, /) -> Fraction:
+        return a + b
+
+    def sub(self, a: Fraction, b: Fraction, /) -> Fraction:
+        return a - b
+
+    def one(self, /) -> Fraction:
+        return Fraction(1)
+
+    def inv(self, a: Fraction, /) -> Fraction:
+        return 1 / a
+
+    def mul(self, a: Fraction, b: Fraction, /) -> Fraction:
+        return a * b
+
+    def div(self, a: Fraction, b: Fraction, /) -> Fraction:
+        return a / b
+
+
+class RealField(Field[float]):
+    def zero(self, /) -> float:
+        return 0.0
+
+    def neg(self, a: float, /) -> float:
+        return -a
+
+    def add(self, a: float, b: float, /) -> float:
+        return a + b
+
+    def sub(self, a: float, b: float, /) -> float:
+        return a - b
+
+    def one(self, /) -> float:
+        return 1.0
+
+    def inv(self, a: float, /) -> float:
+        return 1.0 / a
+
+    def mul(self, a: float, b: float, /) -> float:
+        return a * b
+
+    def div(self, a: float, b: float, /) -> float:
+        return a / b
+
+
+class ComplexField(Field[complex]):
+    def zero(self, /) -> complex:
+        return 0.0 + 0.0j
+
+    def neg(self, a: complex, /) -> complex:
+        return -a
+
+    def add(self, a: complex, b: complex, /) -> complex:
+        return a + b
+
+    def sub(self, a: complex, b: complex, /) -> complex:
+        return a - b
+
+    def one(self, /) -> complex:
+        return 1.0 + 0.0j
+
+    def inv(self, a: complex, /) -> complex:
+        return 1.0 / a
+
+    def mul(self, a: complex, b: complex, /) -> complex:
+        return a * b
+
+    def div(self, a: complex, b: complex, /) -> complex:
+        return a / b
+
+
+class CyclicGroup(AbelianGroup[T], ABC):
     @abstractmethod
     def order(self, /) -> int: ...
 
@@ -548,7 +667,7 @@ class ECCGroup(CyclicGroup[ECCPoint]):
             return P
         if P is None:
             return Q
-        if P[0] == Q[0]:
+        if (P[0] - Q[0]) % self.p == 0:
             if (P[1] + Q[1]) % self.p == 0:
                 return None
             tan = modinv(P[1] + Q[1], self.p) * (P[0] * Q[0] * 3 + self.a)
@@ -563,12 +682,12 @@ class ECCGroup(CyclicGroup[ECCPoint]):
             return P
         if P is None:
             return Q[0], Q[1] and self.p - Q[1]
-        if P[0] == Q[0]:
-            if P[1] == Q[1]:
+        if (P[0] - Q[0]) % self.p == 0:
+            if (P[1] - Q[1]) % self.p == 0:
                 return None
             tan = modinv(P[1] - Q[1], self.p) * (P[0] * Q[0] * 3 + self.a)
         else:
-            tan = modinv(P[0] - Q[0], self.p) * (Q[1] + P[1])
+            tan = modinv(P[0] - Q[0], self.p) * (P[1] + Q[1])
         x = (tan * tan - P[0] - Q[0]) % self.p
         y = (tan * (P[0] - x) - P[1]) % self.p
         return x, y
@@ -598,4 +717,4 @@ class UnitGroup(CyclicGroup[int]):
         return (a * b) % self.m
 
     def sub(self, a: int, b: int, /) -> int:
-        return moddiv(a, b, self.m)[0]
+        return modinv(b, self.m) * a % self.m
