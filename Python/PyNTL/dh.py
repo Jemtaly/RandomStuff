@@ -2,38 +2,38 @@ import random
 
 from typing import TypeVar, Generic
 
-from pyntl import CyclicGroup, ECCGroup, ECCPoint
+from pyntl import FiniteGroup, ECCGroup, ECCPoint
 
 
 T = TypeVar("T")
 
 
-class DiffieHellman(Generic[T]):
-    def __init__(self, group: CyclicGroup[T], generator: T) -> None:
+class DiffieHellmanFactory(Generic[T]):
+    def __init__(self, group: FiniteGroup[T], generator: T) -> None:
         self._group = group
-        self._gen = generator
+        self._generator = generator
 
-    def gen_sec_key(self) -> int:
-        return random.randrange(1, self._group.order())
+    def gen_secret_key(self) -> int:
+        return random.randrange(1, self._group.order(self._generator))
 
-    def gen_pub_key(self, sec_key: int) -> T:
-        return self._group.dot(self._gen, sec_key)
+    def gen_public_key(self, secret_key: int) -> T:
+        return self._group.dot(self._generator, secret_key)
 
-    def gen_shared_key(self, pub_key: T, sec_key: int) -> T:
-        return self._group.dot(pub_key, sec_key)
+    def gen_shared_key(self, secret_key: int, public_key: T) -> T:
+        return self._group.dot(public_key, secret_key)
 
 
-def test_diffie_hellman(dh: DiffieHellman[T]) -> None:
+def test_diffie_hellman(factory: DiffieHellmanFactory[T]) -> None:
     # Alice
-    a_sec = dh.gen_sec_key()
-    a_pub = dh.gen_pub_key(a_sec)
+    a_secret_key = factory.gen_secret_key()
+    a_public_key = factory.gen_public_key(a_secret_key)
     # Bob
-    b_sec = dh.gen_sec_key()
-    b_pub = dh.gen_pub_key(b_sec)
+    b_secret_key = factory.gen_secret_key()
+    b_public_key = factory.gen_public_key(b_secret_key)
     # Shared Key
-    a_shared = dh.gen_shared_key(b_pub, a_sec)
-    b_shared = dh.gen_shared_key(a_pub, b_sec)
-    assert a_shared == b_shared
+    a_shared_key = factory.gen_shared_key(a_secret_key, b_public_key)
+    b_shared_key = factory.gen_shared_key(b_secret_key, a_public_key)
+    assert a_shared_key == b_shared_key
 
 
 # Public Parameters (secp256k1)
@@ -45,10 +45,11 @@ X = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798
 Y = 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8
 G: ECCPoint = (X, Y)
 F: ECCGroup = ECCGroup(A, B, P, N)
+SECP256K1 = DiffieHellmanFactory(F, G)
 
 
 def test():
-    test_diffie_hellman(DiffieHellman(F, G))
+    test_diffie_hellman(SECP256K1)
 
 
 if __name__ == "__main__":

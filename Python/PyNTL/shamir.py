@@ -2,10 +2,10 @@
 
 import random
 
-from pyntl import FiniteField, genprime, sample, polymap, lagrage_interpolation
+from pyntl import FiniteField, gen_prime, sample, polymap, lagrage_interpolation
 
 
-def genshares(f: FiniteField, secret: int, k: int, n: int) -> list[tuple[int, int]]:
+def generate_shares(f: FiniteField, secret: int, k: int, n: int) -> list[tuple[int, int]]:
     coeffs = [secret]
     for _ in range(1, k - 1):
         coeffs.append(random.randrange(0, f.p))
@@ -13,22 +13,22 @@ def genshares(f: FiniteField, secret: int, k: int, n: int) -> list[tuple[int, in
     return [(x, polymap(f, coeffs, x)) for x in sample(1, f.p, n)]
 
 
-def recsecret(f: FiniteField, shares: list[tuple[int, int]]) -> int:
+def retrieve_secret(f: FiniteField, shares: list[tuple[int, int]]) -> int:
     return lagrage_interpolation(f, shares, 0)
 
 
 def test():
-    f = FiniteField(genprime(16))
+    f = FiniteField(gen_prime(16))
     print("GF({})".format(f.p))
     K, N = 3, 5
     secret = random.randrange(0, f.p)
     print("secret:", secret)
-    shares = genshares(f, secret, K, N)
+    shares = generate_shares(f, secret, K, N)
     print("shares:", ", ".join("({}, {})".format(x, y) for x, y in shares))
     sample = random.sample(shares, K)
     print("sample:", ", ".join("({}, {})".format(x, y) for x, y in sample))
-    recons = recsecret(f, sample)
-    print("recons:", recons)
+    secret = retrieve_secret(f, sample)
+    print("secret:", secret)
 
 
 if __name__ == "__main__":
