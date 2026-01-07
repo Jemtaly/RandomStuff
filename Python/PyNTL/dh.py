@@ -2,19 +2,19 @@ import random
 
 from typing import TypeVar, Generic
 
-from pyntl import FiniteGroup, ECCGroup, ECCPoint
+from pyntl import CyclicTorsionGroup, ECCGroup, ECCPoint
 
 
 T = TypeVar("T")
 
 
 class DiffieHellmanFactory(Generic[T]):
-    def __init__(self, group: FiniteGroup[T], generator: T) -> None:
+    def __init__(self, group: CyclicTorsionGroup[T]) -> None:
         self._group = group
-        self._generator = generator
+        self._generator = group.generator()
 
     def gen_secret_key(self) -> int:
-        return random.randrange(1, self._group.order(self._generator))
+        return random.randrange(1, self._group.order())
 
     def gen_public_key(self, secret_key: int) -> T:
         return self._group.dot(self._generator, secret_key)
@@ -44,8 +44,8 @@ N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
 X = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798
 Y = 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8
 G: ECCPoint = (X, Y)
-F: ECCGroup = ECCGroup(A, B, P, N)
-SECP256K1 = DiffieHellmanFactory(F, G)
+F: ECCGroup = ECCGroup(A, B, P, N, G)
+SECP256K1 = DiffieHellmanFactory(F)
 
 
 def test():

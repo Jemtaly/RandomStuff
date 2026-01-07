@@ -3,13 +3,12 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import (
-    # Basic types
-    Iterable,
     # Strictness-related
     NewType,
     Literal,
     TypeGuard,
     # Generic programming-related
+    Callable,
     Generic,
     TypeVar,
     overload,
@@ -165,6 +164,17 @@ class Factorization:
     data: dict[AnyPrime, int]
 
     @property
+    def num(self) -> int:
+        """Compute the number n where n's prime factorization is self."""
+        N = 1
+        for p, k in self.data.items():
+            if k == 0:
+                continue
+            n = p**k
+            N *= n
+        return N
+
+    @property
     def phi(self) -> int:
         """Compute Euler's totient function φ(n) where n's prime factorization is self."""
         F = 1
@@ -182,20 +192,9 @@ class Factorization:
         for p, k in self.data.items():
             if k == 0:
                 continue
-            l = 2 ** (k - 2) if p == 2 and k >= 3 else p**k - p**k // p
+            l = p**k - p**k // p if p != 2 or k <= 2 else 2 ** (k - 2)
             L = lcm(L, l)
         return L
-
-    @property
-    def num(self) -> int:
-        """Compute the number n where n's prime factorization is self."""
-        N = 1
-        for p, k in self.data.items():
-            if k == 0:
-                continue
-            n = p**k
-            N *= n
-        return N
 
 
 def binsqrt(k: int, x: int) -> int:
@@ -290,6 +289,7 @@ def generator(p: OddPrime, k: int, n: Factorization) -> int:
     :rtype: int
     """
     q, f = p**k, p**k - p**k // p
+    assert f % n.num == 0
     g = 1
     for r, a in n.data.items():
         if a == 0:
@@ -309,47 +309,43 @@ def generator(p: OddPrime, k: int, n: Factorization) -> int:
 T = TypeVar("T")
 
 
+def times(f: Callable[[T, T], T], unit: T, base: T, n: int) -> T:
+    t = unit
+    while n:
+        n, r = divmod(n, 2)
+        if r == 1:
+            t = f(t, base)
+        base = f(base, base)
+    return t
+
+
 class AlgebraicStructure(Generic[T], ABC):
     @abstractmethod
     def eq(self, a: T, b: T, /) -> bool: ...
+
+    def neq(self, a: T, b: T, /) -> bool:
+        return not self.eq(a, b)
 
 
 class Monoid(AlgebraicStructure[T], ABC):
     @abstractmethod
     def zero(self, /) -> T: ...
+
     @abstractmethod
     def add(self, a: T, b: T, /) -> T: ...
 
-    def lsum(self, args: Iterable[T]) -> T:
-        r = self.zero()
-        for a in args:
-            r = self.add(r, a)
-        return r
-
-    def rsum(self, args: Iterable[T]) -> T:
-        r = self.zero()
-        for a in args:
-            r = self.add(a, r)
-        return r
-
     def dot(self, a: T, n: int, /) -> T:
-        r = self.zero()
-        while n:
-            if n % 2 == 1:
-                r = self.add(r, a)
-            a = self.add(a, a)
-            n = n // 2
-        return r
+        return times(self.add, self.zero(), a, n)
 
 
 class Group(Monoid[T], ABC):
     @abstractmethod
     def neg(self, a: T, /) -> T: ...
 
-    def lsub(self, a: T, b: T, /) -> T:
+    def subl(self, a: T, b: T, /) -> T:
         return self.add(self.neg(b), a)
 
-    def rsub(self, a: T, b: T, /) -> T:
+    def subr(self, a: T, b: T, /) -> T:
         return self.add(a, self.neg(b))
 
 
@@ -361,39 +357,22 @@ class AbelianGroup(Group[T], ABC):
 class Ring(AbelianGroup[T], ABC):
     @abstractmethod
     def one(self, /) -> T: ...
+
     @abstractmethod
     def mul(self, a: T, b: T, /) -> T: ...
 
-    def lprod(self, args: Iterable[T]) -> T:
-        r = self.one()
-        for a in args:
-            r = self.mul(r, a)
-        return r
-
-    def rprod(self, args: Iterable[T]) -> T:
-        r = self.one()
-        for a in args:
-            r = self.mul(a, r)
-        return r
-
     def pow(self, a: T, n: int, /) -> T:
-        r = self.one()
-        while n:
-            if n % 2 == 1:
-                r = self.mul(r, a)
-            a = self.mul(a, a)
-            n = n // 2
-        return r
+        return times(self.mul, self.one(), a, n)
 
 
 class DivisionRing(Ring[T], ABC):
     @abstractmethod
     def inv(self, a: T, /) -> T: ...
 
-    def ldiv(self, a: T, b: T, /) -> T:
+    def divl(self, a: T, b: T, /) -> T:
         return self.mul(self.inv(b), a)
 
-    def rdiv(self, a: T, b: T, /) -> T:
+    def divr(self, a: T, b: T, /) -> T:
         return self.mul(a, self.inv(b))
 
 
@@ -456,7 +435,7 @@ def matinv(f: Field[T], m: Matrix[T], r: int) -> Matrix[T]:
     e = mateye(f, r)
     m = [m[i] + e[i] for i in range(r)]
     m = rref(f, m, r, r * 2)
-    s = [next((i, f.inv(m[i][j])) for i in range(r) if m[i][j] != 0) for j in range(r)]
+    s = [next((i, f.inv(m[i][j])) for i in range(r) if f.neq(m[i][j], f.zero())) for j in range(r)]
     return [[f.mul(x, t) for x in m[i][r:]] for i, t in s]
 
 
@@ -732,24 +711,18 @@ DivisionResult = tuple[T, T]  # (quotient, remainder)
 
 class EuclideanDomain(Ring[T], ABC):
     @abstractmethod
-    def divmod(self, a: T, b: T, /) -> DivisionResult[T]: ...
+    def divmod(self, d: T, m: T, /) -> DivisionResult[T]: ...
 
-    def div(self, a: T, b: T, /) -> T:
-        q, _ = self.divmod(a, b)
+    def div(self, d: T, m: T, /) -> T:
+        q, _ = self.divmod(d, m)
         return q
 
-    def mod(self, a: T, b: T, /) -> T:
-        _, r = self.divmod(a, b)
+    def mod(self, d: T, m: T, /) -> T:
+        _, r = self.divmod(d, m)
         return r
 
-    def modpow(self, a: T, n: int, m: T, /) -> T:
-        r = self.one()
-        while n:
-            if n % 2 == 1:
-                r = self.mod(self.mul(r, a), m)
-            a = self.mod(self.mul(a, a), m)
-            n = n // 2
-        return r
+    def is_unit(self, a: T, /) -> bool:
+        return self.eq(self.mod(self.one(), a), self.zero())
 
     def exgcd(self, a: T, b: T, /) -> tuple[T, tuple[T, T]]:
         if self.eq(b, self.zero()):
@@ -758,32 +731,46 @@ class EuclideanDomain(Ring[T], ABC):
         d, (x, y) = self.exgcd(b, r)
         return d, (y, self.sub(x, self.mul(q, y)))
 
+    def gcd(self, *args: T) -> T:
+        d = self.zero()
+        for a in args:
+            d, _ = self.exgcd(a, d)
+            d = d
+        return d
+
+    def lcm(self, *args: T) -> T:
+        m = self.one()
+        for a in args:
+            d = self.gcd(a, m)
+            m = self.div(self.mul(a, m), d)
+        return m
+
     def modinv(self, a: T, m: T, /) -> T:
         d, (x, _) = self.exgcd(a, m)
-        if d != self.one():
+        if self.neq(d, self.one()):
             raise ZeroDivisionError
         return x
 
     def moddiv(self, a: T, b: T, m: T, /) -> Remainder[T]:
         d, (x, _) = self.exgcd(b, m)
         q, r = self.divmod(a, d)
-        if r != self.zero():
+        if self.neq(r, self.zero()):
             raise ZeroDivisionError
         k = self.mul(q, x)
         n = self.div(m, d)
         return k, n
 
-    def crt(self, *D: Remainder[T]) -> Remainder[T]:
-        R, M = self.zero(), self.one()
-        for r, m in D:
-            d, (N, _) = self.exgcd(M, m)
-            c = self.sub(r, R)
-            q, t = self.divmod(c, d)
-            if t != self.zero():
+    def crt(self, *args: Remainder[T]) -> Remainder[T]:
+        Ri, Mi = self.zero(), self.one()
+        for ri, mi in args:
+            gi, (Ti, ti) = self.exgcd(Mi, mi)
+            di = self.sub(ri, Ri)
+            qi, ci = self.divmod(di, gi)
+            if self.neq(ci, self.zero()):
                 raise ZeroDivisionError
-            R = self.add(R, self.mul(self.mul(N, M), q))
-            M = self.mul(M, self.div(m, d))
-        return self.mod(R, M), M
+            Ri = self.add(Ri, self.mul(self.mul(Ti, Mi), qi))
+            Mi = self.mul(Mi, self.div(mi, gi))
+        return self.mod(Ri, Mi), Mi
 
 
 class IntegerRing(EuclideanDomain[int]):
@@ -813,6 +800,9 @@ class IntegerRing(EuclideanDomain[int]):
 
 
 class PolynomialRing(EuclideanDomain[Polynomial[T]]):
+    def __init__(self, base: Field[T]):
+        self.base = base
+
     def eq(self, a: Polynomial[T], b: Polynomial[T], /) -> bool:
         n = max(len(a), len(b))
         a = a + [self.base.zero() for _ in range(n - len(a))]
@@ -821,9 +811,6 @@ class PolynomialRing(EuclideanDomain[Polynomial[T]]):
             if not self.base.eq(a[i], b[i]):
                 return False
         return True
-
-    def __init__(self, base: Field[T]):
-        self.base = base
 
     def zero(self, /) -> Polynomial[T]:
         return []
@@ -852,31 +839,70 @@ class PolynomialRing(EuclideanDomain[Polynomial[T]]):
 ################
 
 
-class FiniteGroup(AbelianGroup[T], ABC):
-    @abstractmethod
-    def order(self, a: T, /) -> int: ...
+class RelaxedTorsionGroup(AbelianGroup[T], ABC):
     @abstractmethod
     def check(self, a: T, /) -> bool: ...
 
+    @abstractmethod
+    def annihilator(self, a: T, /) -> int: ...
+
     def div(self, a: T, n: int, /) -> T:
-        return self.dot(a, pow(n, -1, self.order(a)))
+        return self.dot(a, pow(n, -1, self.annihilator(a)))
+
+
+class StrictTorsionGroup(RelaxedTorsionGroup[T], ABC):
+    @abstractmethod
+    def order(self, a: T, /) -> int: ...
+
+    def annihilator(self, a: T, /) -> int:
+        return self.order(a)
+
+
+class FiniteTorsionGroup(RelaxedTorsionGroup[T]):
+    @abstractmethod
+    def exponent(self, /) -> int: ...
+
+    def annihilator(self, a: T, /) -> int:
+        return self.exponent()
+
+
+class CyclicTorsionGroup(FiniteTorsionGroup[T]):
+    @abstractmethod
+    def generator(self, /) -> T: ...
+
+    @abstractmethod
+    def order(self, /) -> int: ...
+
+    def exponent(self, /) -> int:
+        return self.order()
 
 
 ECCPoint = tuple[int, int] | None
 
 
-class ECCGroup(FiniteGroup[ECCPoint]):
-    def __init__(self, a: int, b: int, p: int, n: int):
+class ECCGroup(CyclicTorsionGroup[ECCPoint]):
+    def __init__(self, a: int, b: int, p: int, n: int, g: ECCPoint):
         self.a = a
         self.b = b
         self.p = p
         self.n = n
+        self.g = g
 
     def check(self, P: ECCPoint, /) -> bool:
         return P is None or (P[0] * P[0] * P[0] - P[1] * P[1] + self.a * P[0] + self.b) % self.p == 0
 
-    def order(self, P: ECCPoint, /) -> int:
+    def generator(self, /) -> ECCPoint:
+        return self.g
+
+    def order(self, /) -> int:
         return self.n
+
+    def eq(self, P: ECCPoint, Q: ECCPoint, /) -> bool:
+        if P is None and Q is None:
+            return True
+        if P is None or Q is None:
+            return False
+        return P[0] % self.p == Q[0] % self.p and P[1] % self.p == Q[1] % self.p
 
     def zero(self, /) -> ECCPoint:
         return None
@@ -917,19 +943,27 @@ class ECCGroup(FiniteGroup[ECCPoint]):
         return x, y
 
 
-class UnitGroup(FiniteGroup[int]):
-    def __init__(self, p: AnyPrime, k: int = 1, double: bool = False):
+class UnitGroup(CyclicTorsionGroup[int]):
+    def __init__(self, p: AnyPrime, k: int = 1, d: Literal[1, 2] = 1, *, g: int):
         assert p != 2 and k >= 1 or p == 2 and k == 1
         self.p = p
         self.k = k
-        self.m = p**k * (2 if double else 1)
-        self.n = p**k - p**k // k
+        self.d = d
+        self.m = p**k * d
+        self.f = p**k - p**k // k
+        self.g = g
 
     def check(self, a: int, /) -> bool:
         return a % self.p != 0
 
+    def generator(self, /) -> int:
+        return self.g
+
     def order(self, a: int, /) -> int:
-        return self.n
+        return self.f
+    
+    def eq(self, a: int, b: int, /) -> bool:
+        return a % self.m == b % self.m
 
     def zero(self, /) -> int:
         return 1
@@ -960,11 +994,11 @@ if __name__ == "__main__":
         b = [*(random.randrange(0, p) for _ in range(b_len)), random.randrange(1, p)]
         d, (x, y) = P.exgcd(a, b)
         assert P.eq(P.add(P.mul(x, a), P.mul(y, b)), d)
-        if P.eq(d, P.one()):
+        if P.is_unit(d):
             break
 
     A = P.mul(k, a)
     B = P.mul(k, b)
     D, (X, Y) = P.exgcd(A, B)
     assert P.eq(P.add(P.mul(X, A), P.mul(Y, B)), D)
-    assert P.eq(D, k)
+    assert P.eq(D, P.mul(k, d))
