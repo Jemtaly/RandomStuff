@@ -87,8 +87,8 @@ def test():
 
     # 1-out-of-n oblivious transfer
     n = 10
-    M = [random.randrange(sk.n) for i in range(n)]  # secret messages
-    X = [random.randrange(sk.n) for i in range(n)]  # random messages
+    M = [random.randrange(sk.n) for _ in range(n)]  # secret messages
+    X = [random.randrange(sk.n) for _ in range(n)]  # random messages
     b = random.randrange(n)  # secret choice
     k = random.randrange(pk.n)  # random key
     q = (X[b] + pk.encrypt(k)) % pk.n  # blinded query

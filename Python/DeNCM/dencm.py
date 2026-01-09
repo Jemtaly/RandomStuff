@@ -18,7 +18,7 @@ core_cryptor = AES.new(core_key, AES.MODE_ECB)
 meta_cryptor = AES.new(meta_key, AES.MODE_ECB)
 
 
-def dump(ncm_path, original_name=False):
+def dump(ncm_path: str, original_name: bool = False):
     print("{}:".format(ncm_path))
     with open(ncm_path, "rb") as ncm_file:
         if ncm_file.read(8) != b"CTENFDAM":

@@ -9,10 +9,10 @@ class Canvas(tk.Canvas):
     def __init__(
         self,
         graph: "Drawable",
-        master=None,
-        width=800,
-        height=800,
-        scale=800,
+        master: tk.Misc | None = None,
+        width: int = 800,
+        height: int = 800,
+        scale: int = 800,
     ):
         super().__init__(master, width=width, height=height)
         graph.draw(self)
@@ -28,22 +28,22 @@ class Canvas(tk.Canvas):
         self.bind("<MouseWheel>", self.zoom)
         self.bind("<Configure>", self.change)
 
-    def drag_start(self, event):
+    def drag_start(self, event: tk.Event):
         self.x_start = event.x
         self.y_start = event.y
 
-    def drag_end(self, event):
+    def drag_end(self, event: tk.Event):
         del self.x_start
         del self.y_start
 
-    def drag(self, event):
+    def drag(self, event: tk.Event):
         x = event.x - self.x_start
         y = event.y - self.y_start
         self.move(tk.ALL, x, y)
         self.x_start = event.x
         self.y_start = event.y
 
-    def zoom(self, event):
+    def zoom(self, event: tk.Event):
         x = event.x
         y = event.y
         if event.delta > 0 or event.num == 4:
@@ -51,7 +51,7 @@ class Canvas(tk.Canvas):
         if event.delta < 0 or event.num == 5:
             self.scale(tk.ALL, x, y, 0.80, 0.80)
 
-    def change(self, event):
+    def change(self, event: tk.Event):
         self.move(tk.ALL, (event.width - self.width) / 2, (event.height - self.height) / 2)
         self.width = event.width
         self.height = event.height
@@ -76,14 +76,14 @@ class Affine:
 
 
 class Drawable(Protocol):
-    def draw(self, canvas: Canvas, affine=Affine()): ...
+    def draw(self, canvas: Canvas, affine: Affine = Affine()) -> None: ...
 
 
 class Polygon:
     def __init__(self, *points: complex):
         self.points = points
 
-    def draw(self, canvas: Canvas, affine=Affine()):
+    def draw(self, canvas: Canvas, affine: Affine = Affine()) -> None:
         floats = sum(map(affine, self.points), ())
         if len(self.points) == 0:
             pass
@@ -99,7 +99,7 @@ class Compound:
     def __init__(self, *components: tuple[Drawable, Affine]):
         self.components = components
 
-    def draw(self, canvas: Canvas, affine=Affine()):
+    def draw(self, canvas: Canvas, affine: Affine = Affine()) -> None:
         for component, other in self.components:
             component.draw(canvas, affine * other)
 

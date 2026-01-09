@@ -4,12 +4,14 @@
 
 A file transfer and instant messager program based on TCP/IP, supporting encryption with DHKE and AES-CTR.
 
-## Requirements
+## Installation
 
-- Python 3.6+
-- PyCryptodome
-- tkinter
-- Pillow
+1. In current directory, run:
+
+```shell
+pip install .
+imftp -h
+```
 
 ## Usage
 
@@ -37,10 +39,10 @@ options:
 
 ```shell
 # Server
-$ python3 imftp.py --server --send server_test.txt --size 1024 --enc
+$ imftp --server --send server_test.txt --size 1024 --enc
 
 # Client
-$ python3 imftp.py --client $SERVER_IP --recv client_test.txt --enc
+$ imftp --client $SERVER_IP --recv client_test.txt --enc
 ```
 
 Send the first 1024 bytes of `server_test.txt` from the server to the client and save it as `client_test.txt`, encrypting the connection with DHKE and AES-CTR.
@@ -49,10 +51,10 @@ Send the first 1024 bytes of `server_test.txt` from the server to the client and
 
 ```shell
 # Server
-$ python3 imftp.py --server --chat --enc
+$ imftp --server --chat --enc
 
 # Client
-$ python3 imftp.py --client $SERVER_IP --chat --enc
+$ imftp --client $SERVER_IP --chat --enc
 ```
 
 Start an instant messager between the server and the client, encrypting the connection with DHKE and AES-CTR.

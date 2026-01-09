@@ -142,7 +142,7 @@ class MyFS(Operations):
     def __init__(self, root: Directory):
         self.root = root
 
-    def getattr(self, path, fh=None):
+    def getattr(self, path: str, fh: int | None = None):
         parts = split_path(path)
         try:
             node = self.root.get_node(*parts)
@@ -175,7 +175,7 @@ class MyFS(Operations):
             raise FuseOSError(errno.ENOENT)
         return attr
 
-    def readdir(self, path, fh):
+    def readdir(self, path: str, fh: int):
         parts = split_path(path)
         try:
             node = self.root.get_node(*parts)
@@ -185,7 +185,7 @@ class MyFS(Operations):
             raise FuseOSError(errno.ENOTDIR)
         return [".", ".."] + list(node.children.keys())
 
-    def mkdir(self, path, mode):
+    def mkdir(self, path: str, mode: int):
         parts = split_path(path)
         try:
             self.root.add_node(*parts, node=Directory())
@@ -193,7 +193,7 @@ class MyFS(Operations):
             raise e
         return 0
 
-    def rmdir(self, path):
+    def rmdir(self, path: str):
         parts = split_path(path)
         try:
             self.root.pop_node(*parts)
@@ -201,7 +201,7 @@ class MyFS(Operations):
             raise e
         return 0
 
-    def create(self, path, mode, fi=None):
+    def create(self, path: str, mode: int, fi: int | None = None):
         parts = split_path(path)
         try:
             self.root.add_node(*parts, node=File())
@@ -209,7 +209,7 @@ class MyFS(Operations):
             raise e
         return 0
 
-    def unlink(self, path):
+    def unlink(self, path: str):
         parts = split_path(path)
         try:
             self.root.pop_node(*parts)
@@ -217,7 +217,7 @@ class MyFS(Operations):
             raise e
         return 0
 
-    def rename(self, old, new):
+    def rename(self, old: str, new: str):
         old_parts = split_path(old)
         new_parts = split_path(new)
         try:
@@ -227,7 +227,7 @@ class MyFS(Operations):
             raise e
         return 0
 
-    def read(self, path, size, offset, fh):
+    def read(self, path: str, size: int, offset: int, fh: int):
         parts = split_path(path)
         try:
             node = self.root.get_node(*parts)
@@ -237,7 +237,7 @@ class MyFS(Operations):
             raise FuseOSError(errno.EISDIR)
         return node.read(size, offset)
 
-    def write(self, path, data, offset, fh):
+    def write(self, path: str, data: bytes, offset: int, fh: int):
         parts = split_path(path)
         try:
             node = self.root.get_node(*parts)
@@ -247,7 +247,7 @@ class MyFS(Operations):
             raise FuseOSError(errno.EISDIR)
         return node.write(data, offset)
 
-    def truncate(self, path, length, fh=None):
+    def truncate(self, path: str, length: int, fh: int | None = None):
         parts = split_path(path)
         try:
             node = self.root.get_node(*parts)

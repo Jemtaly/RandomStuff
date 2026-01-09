@@ -13,22 +13,21 @@ license = { file = "LICENSE" }
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-  "pycryptodome",
+  "cryptography",
+  "Pillow",
+  "numpy",
 ]
 
 [project.optional-dependencies]
-enc = [
-  "Pillow",
-  "numpy",
-  "opencv-python",
+cli = [
 ]
-dec = [
-  "Pillow",
+gui = [
+  "opencv-python",
 ]
 
 [project.scripts]
-videnc = "vidxxc.videnc:main [enc]"
-viddec = "vidxxc.viddec:main [dec]"
+vidxxc-cli = "vidxxc.cli:main [cli]"
+vidxxc-gui = "vidxxc.gui:main [gui]"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

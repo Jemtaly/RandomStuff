@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 class Rotor:
-    def __init__(self, wiring, position):
+    def __init__(self, wiring: list[int], position: int):
         assert set(wiring) == set(range(26))
         assert position in range(26)
         self._dec = wiring.__getitem__
@@ -9,63 +9,63 @@ class Rotor:
         self._pos = position
         self._rec = 0
 
-    def reset(self, position):
+    def reset(self, position: int) -> None:
         self._pos = position
         self._rec = 0
 
-    def rotate(self):
+    def rotate(self) -> bool:
         self._pos = (self._pos - 1) % 26
         self._rec = (self._rec + 1) % 26
         return self._rec == 0
 
-    def encrypt(self, ordr):
-        return (self._enc((ordr + self._pos) % 26) - self._pos) % 26
+    def encrypt(self, order: int) -> int:
+        return (self._enc((order + self._pos) % 26) - self._pos) % 26
 
-    def decrypt(self, ordr):
-        return (self._dec((ordr + self._pos) % 26) - self._pos) % 26
+    def decrypt(self, order: int) -> int:
+        return (self._dec((order + self._pos) % 26) - self._pos) % 26
 
 
 class Reflector:
-    def __init__(self, wiring):
+    def __init__(self, wiring: list[int]):
         assert set(wiring) == set(range(26))
         assert all(wiring[wiring[i]] == i for i in range(26))
         self._ref = wiring.__getitem__
 
-    def reflect(self, char):
+    def reflect(self, char: int) -> int:
         return self._ref(char)
 
 
 class Plugboard:
-    def __init__(self, wiring):
+    def __init__(self, wiring: list[int]):
         assert set(wiring) == set(range(26))
         self._dec = wiring.__getitem__
         self._enc = wiring.index
 
-    def encrypt(self, char):
+    def encrypt(self, char: int) -> int:
         return self._enc(char)
 
-    def decrypt(self, char):
+    def decrypt(self, char: int) -> int:
         return self._dec(char)
 
 
 class Enigma:
-    def __init__(self, rotors, reflector, plugboard):
+    def __init__(self, rotors: list[Rotor], reflector: Reflector, plugboard: Plugboard):
         self._rotors = rotors
         self._reflector = reflector
         self._plugboard = plugboard
 
-    def crypt(self, ordr):
-        ordr = self._plugboard.encrypt(ordr)
+    def crypt(self, order: int) -> int:
+        order = self._plugboard.encrypt(order)
         for rotor in self._rotors[::+1]:
-            ordr = rotor.encrypt(ordr)
-        ordr = self._reflector.reflect(ordr)
+            order = rotor.encrypt(order)
+        order = self._reflector.reflect(order)
         for rotor in self._rotors[::-1]:
-            ordr = rotor.decrypt(ordr)
-        ordr = self._plugboard.decrypt(ordr)
+            order = rotor.decrypt(order)
+        order = self._plugboard.decrypt(order)
         for rotor in self._rotors:
             if not rotor.rotate():
                 break
-        return ordr
+        return order
 
 
 def test():

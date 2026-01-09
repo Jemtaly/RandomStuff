@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 
+from typing import Callable
+
 import Crypto.Cipher.AES as AES
 import Crypto.Random as Random
 import Crypto.Util.Padding as Padding
 import Crypto.Util.strxor as strxor
 
 
-def padding_oracle_attack_one(iv, ct, oracle):
+def padding_oracle_attack_one(iv: bytes, ct: bytes, oracle: Callable[[bytes, bytes], bool]) -> bytes:
     bs = len(iv)
     assert len(ct) == bs
     while True:
@@ -25,7 +27,7 @@ def padding_oracle_attack_one(iv, ct, oracle):
     return strxor.strxor(iv, dx)
 
 
-def padding_oracle_attack_any(iv, ct, oracle):
+def padding_oracle_attack_any(iv: bytes, ct: bytes, oracle: Callable[[bytes, bytes], bool]) -> bytes:
     bs = len(iv)
     assert len(ct) % bs == 0
     pt = bytearray()
@@ -39,18 +41,18 @@ class Server:
     def __init__(self):
         self.key = Random.get_random_bytes(16)
 
-    def encrypt(self, pt):
+    def encrypt(self, pt: bytes) -> tuple[bytes, bytes]:
         iv = Random.get_random_bytes(16)
         pt = Padding.pad(pt, 16)
         ct = AES.new(self.key, AES.MODE_CBC, iv).encrypt(pt)
         return iv, ct
 
-    def decrypt(self, iv, ct):
+    def decrypt(self, iv: bytes, ct: bytes) -> bytes:
         pt = AES.new(self.key, AES.MODE_CBC, iv).decrypt(ct)
         pt = Padding.unpad(pt, 16)
         return pt
 
-    def oracle(self, iv, ct):
+    def oracle(self, iv: bytes, ct: bytes) -> bool:
         try:
             self.decrypt(iv, ct)
         except ValueError:

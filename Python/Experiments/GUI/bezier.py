@@ -29,19 +29,19 @@ class BezierApp(tk.Tk):
         self.canvas.bind("<Button-3>", self.init_canvas)
         self.init_canvas()
 
-    def init_canvas(self, event=None):
+    def init_canvas(self, event: tk.Event | None = None):
         self.points: list[tuple[float, float]] = []
         self.canvas.delete(tk.ALL)
         self.canvas.bind("<Button-1>", self.draw_point)
         self.canvas.bind("<Double-1>", self.draw_curve)
 
-    def draw_point(self, event):
+    def draw_point(self, event: tk.Event):
         self.canvas.create_text(event.x, event.y, text=str((event.x, event.y)), fill="blue")
         if self.points:
             self.canvas.create_line(*self.points[-1], event.x, event.y)
         self.points.append((event.x, event.y))
 
-    def draw_curve(self, event):
+    def draw_curve(self, event: tk.Event):
         self.canvas.unbind("<Button-1>")
         self.canvas.unbind("<Double-1>")
         curve = bezier(256, self.points)

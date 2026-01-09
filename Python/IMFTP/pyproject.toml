@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "imftp"
+description = "A simple instant messenger."
+version = "0.1.0"
+authors = [
+  { name = "Jemtaly" },
+]
+license = { file = "LICENSE" }
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "pycryptodome>=3.17.0",
+  "Pillow>=9.0.0",
+]
+
+[project.scripts]
+imftp = "imftp.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

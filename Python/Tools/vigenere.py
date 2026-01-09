@@ -10,7 +10,7 @@ freq = [
 ]
 
 
-def analysis_with_len(carr, l):
+def analysis_with_len(carr: list[int], l: int) -> tuple[list[int], float]:
     kcur = []
     scur = 0
     for n in range(l):
@@ -25,7 +25,7 @@ def analysis_with_len(carr, l):
     return kcur, vcur
 
 
-def analysis(carr):
+def analysis(carr: list[int]) -> tuple[list[int], float]:
     d = 1
     l = 0
     vrec = float("inf")
@@ -40,15 +40,15 @@ def analysis(carr):
             d = l
 
 
-def encrypt(karr, parr):
+def encrypt(karr: list[int], parr: list[int]) -> list[int]:
     return [(p + karr[i % len(karr)]) % 26 for i, p in enumerate(parr)]
 
 
-def decrypt(karr, carr):
+def decrypt(karr: list[int], carr: list[int]) -> list[int]:
     return [(c - karr[i % len(karr)]) % 26 for i, c in enumerate(carr)]
 
 
-def decode(txt):
+def decode(txt: str) -> list[int]:
     arr = []
     for c in txt:
         if c.isupper():
@@ -58,7 +58,7 @@ def decode(txt):
     return arr
 
 
-def encode(fmt, arr):
+def encode(fmt: str, arr: list[int]) -> str:
     txt, i = "", iter(arr)
     for c in fmt:
         if c.isupper():

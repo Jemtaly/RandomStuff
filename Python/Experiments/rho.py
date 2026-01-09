@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
+from typing import Callable
+
 import sys
 
 
-def get_rho(hash, seed):
+def get_rho(hash: Callable[[bytes], bytes], seed: bytes) -> int:
     i = seed
     time = 1
     while True:
@@ -15,7 +17,7 @@ def get_rho(hash, seed):
         time <<= 1
 
 
-def collide(hash, seed):
+def collide(hash: Callable[[bytes], bytes], seed: bytes) -> tuple[bytes, bytes]:
     x = seed
     y = seed
     r = get_rho(hash, seed)

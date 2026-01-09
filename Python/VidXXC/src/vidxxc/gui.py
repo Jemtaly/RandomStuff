@@ -4,19 +4,21 @@ import tkinter as tk
 import PIL.ImageGrab as ImageGrab
 import PIL.ImageTk as ImageTk
 
-from .core import decrypt
+from .core import ImageProcessor, ImageEncrypter, ImageDecrypter
 
 
 class Selecter(tk.Toplevel):
-    def __init__(self, parent, res, len):
-        super().__init__(parent)
+    def __init__(self, master: tk.Misc | None, size: tuple[int, int], length: int):
+        super().__init__(master)
         self.overrideredirect(True)
         self.attributes("-topmost", True)
         self.attributes("-alpha", 0.5)
         self.attributes("-transparentcolor", "#000000")
         self.n = 4
-        self.a = 8 * len / res[0]
-        self.b = 8 * len / res[1]
+        edge = 8 * length
+        w, h = size
+        self.a = edge / w
+        self.b = edge / h
         self.ml = tk.Frame(self, bg="#ff0000", width=self.n, cursor="left_side")
         self.mr = tk.Frame(self, bg="#ff0000", width=self.n, cursor="right_side")
         self.tm = tk.Frame(self, bg="#ff0000", height=self.n, cursor="top_side")
@@ -25,8 +27,8 @@ class Selecter(tk.Toplevel):
         self.tr = tk.Frame(self, bg="#ff0000", width=self.n, height=self.n, cursor="top_right_corner")
         self.bl = tk.Frame(self, bg="#ff0000", width=self.n, height=self.n, cursor="bottom_left_corner")
         self.br = tk.Frame(self, bg="#ff0000", width=self.n, height=self.n, cursor="bottom_right_corner")
-        self.mm = tk.Frame(self, bg="#808080", width=res[0], height=res[1], cursor="fleur")
-        self.nonce = tk.Frame(self.mm, bg="#000000", width=8 * len, height=8 * len)
+        self.mm = tk.Frame(self, bg="#808080", width=w, height=h, cursor="fleur")
+        self.nonce = tk.Frame(self.mm, bg="#000000", width=edge, height=edge)
         self.tl.grid(row=0, column=0, sticky="nw")
         self.tm.grid(row=0, column=1, sticky="ew")
         self.tr.grid(row=0, column=2, sticky="ne")
@@ -41,7 +43,7 @@ class Selecter(tk.Toplevel):
         self.bind("<Button1-Motion>", self.drag)
         self.bind("<ButtonRelease-1>", self.release)
 
-    def click(self, event):
+    def click(self, event: tk.Event):
         self.x = self.winfo_pointerx()
         self.y = self.winfo_pointery()
         self.l = self.mm.winfo_rootx()
@@ -49,7 +51,7 @@ class Selecter(tk.Toplevel):
         self.w = self.mm.winfo_width()
         self.h = self.mm.winfo_height()
 
-    def drag(self, event):
+    def drag(self, event: tk.Event):
         dx = self.winfo_pointerx() - self.x
         dy = self.winfo_pointery() - self.y
         if event.widget == self.mr or event.widget == self.br or event.widget == self.tr:
@@ -73,7 +75,7 @@ class Selecter(tk.Toplevel):
         elif event.widget == self.ml or event.widget == self.bl:
             self.geometry("+{}+{}".format(self.l + min(dx, self.w) - self.n, self.t - self.n))
 
-    def release(self, event):
+    def release(self, event: tk.Event):
         del self.l
         del self.t
         del self.h
@@ -89,28 +91,27 @@ class Selecter(tk.Toplevel):
         return ImageGrab.grab((l, t, l + w, t + h))
 
 
-class Decrypter(tk.Tk):
-    def __init__(self, key, len, res):
+class App(tk.Tk):
+    def __init__(self, processor: ImageProcessor, size: tuple[int, int], length: int):
         super().__init__()
         self.title("Video Decrypter")
         self.resizable(False, False)
         self.label = tk.Label(self, bd=0)
         self.label.pack(fill="both", expand=1)
         self.bind("<Double-Button-1>", self.select)
-        self.selecter = Selecter(self, res, len)
-        self.key = key
-        self.len = len
-        self.res = res
+        self.selecter = Selecter(self, size, length)
+        self.processor = processor
+        self.size = size
         self.after(20, self.refresh)
 
     def refresh(self):
-        iSrc = self.selecter.grab().resize(self.res)
-        iDst = decrypt(self.key, iSrc, self.len)
-        self.imgtk = ImageTk.PhotoImage(iDst)
+        src = self.selecter.grab().resize(self.size)
+        dst = self.processor.process(src)
+        self.imgtk = ImageTk.PhotoImage(dst)
         self.label.configure(image=self.imgtk)
         self.after(20, self.refresh)
 
-    def select(self, event=None):
+    def select(self, event: tk.Event | None = None):
         if self.selecter.mm.cget("bg") == "#808080":
             self.selecter.mm.configure(bg="#000000")
         else:
@@ -120,11 +121,24 @@ class Decrypter(tk.Tk):
 def main():
     parser = argparse.ArgumentParser()
     parser = argparse.ArgumentParser(description="Video Encrypter/Decrypter")
-    parser.add_argument("-k", "--key", type=bytes.fromhex, default=bytes(16), help="16/24/32-byte key in hex")
-    parser.add_argument("-l", "--len", type=int, default=2, help="ratio of the edge length of each pixel in the nonce marker to each pixel in the ciphertext (default: 2)")
-    parser.add_argument("-r", "--res", type=int, required=True, nargs=2, metavar=("WIDTH", "HEIGHT"), help="ciphertext resolution")
+    parser.add_argument("-p", "--password", required=True, help="Password")
+    parser.add_argument("-s", "--size", type=int, nargs=2, metavar=("W", "H"), required=True)
+    parser.add_argument("-l", "--length", type=int, default=2)
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--enc", action="store_true", help="Encrypt the video.")
+    mode.add_argument("--dec", action="store_true", help="Decrypt the video.")
+
     args = parser.parse_args()
-    Decrypter(args.key, args.len, args.res).mainloop()
+
+    salt = b"fixed_salt_for_demo"
+    if not (args.enc or args.dec):
+        parser.error("Either --enc or --dec must be specified.")
+    elif args.enc:
+        processor = ImageEncrypter(args.password, salt, args.length)
+    elif args.dec:
+        processor = ImageDecrypter(args.password, salt, args.length)
+
+    App(processor, args.size, args.length).mainloop()
 
 
 if __name__ == "__main__":

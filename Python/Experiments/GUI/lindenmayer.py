@@ -5,7 +5,13 @@ import turtle as tt
 
 
 class StoreKVPairs(argparse.Action):
-    def __call__(self, parser, namespace, values, option_string=None):
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: list[str],
+        option_string: str | None = None,
+    ):
         result = {}
         for value in values:
             k, _, v = value.partition("=")
@@ -26,7 +32,7 @@ class LSystem:
 
 
 def draw(turtle: tt.Turtle, sentence: str, instructions: dict[str, str], length: float, angle: float):
-    stack = []
+    stack: list[tuple[tt.Vec2D, float]] = []
     turtle.penup()
     for x in sentence:
         for c in instructions[x]:

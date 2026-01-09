@@ -34,7 +34,7 @@ def sample(a: int, b: int, n: int) -> set[int]:
     :return: a set of n distinct random integers in [a, b)
     :rtype: set[int]
     """
-    res = set()
+    res = set[int]()
     while len(res) < n:
         res.add(random.randrange(a, b))
     return res
@@ -52,7 +52,7 @@ def choice(a: int, b: int, n: int) -> list[int]:
     :return: a list of n random integers in [a, b)
     :rtype: list[int]
     """
-    res = []
+    res = list[int]()
     while len(res) < n:
         res.append(random.randrange(a, b))
     return res
@@ -197,7 +197,7 @@ class Factorization:
         return L
 
 
-def binsqrt(k: int, x: int) -> int:
+def sqrt_mod_2k(k: int, x: int) -> int:
     """Square root modulo 2^k.
 
     :param k: the exponent of 2
@@ -216,7 +216,7 @@ def binsqrt(k: int, x: int) -> int:
     return a
 
 
-def binroot(k: int, t: int, x: int) -> tuple[tuple[int, int], int]:
+def root_mod_2k(k: int, t: int, x: int) -> tuple[tuple[int, int], int]:
     """2^t-th root modulo 2^k.
 
     :param k: the exponent of 2
@@ -231,12 +231,12 @@ def binroot(k: int, t: int, x: int) -> tuple[tuple[int, int], int]:
     assert k >= t + 2 >= 3
     assert x % 2 ** (t + 2) == 1
     for i in range(t):
-        x = binsqrt(k - i, x)
+        x = sqrt_mod_2k(k - i, x)
     c = 2 ** (k - t)
     return (x, c - x), c
 
 
-def ammroot(p: OddPrime, k: int, r: AnyPrime, x: int) -> int:
+def root_mod_pk(p: OddPrime, k: int, r: AnyPrime, x: int) -> int:
     """Compute the r-th root modulo p^k.
 
     :param p: an odd prime
@@ -276,8 +276,8 @@ def ammroot(p: OddPrime, k: int, r: AnyPrime, x: int) -> int:
     return h
 
 
-def generator(p: OddPrime, k: int, n: Factorization) -> int:
-    """Compute a generator of the cyclic group of order n modulo p^k.
+def nth_generator_mod_pk(p: OddPrime, k: int, n: Factorization) -> int:
+    """Compute a generator of a cyclic group of order n modulo p^k.
 
     :param p: an odd prime
     :type p: OddPrime
@@ -285,7 +285,7 @@ def generator(p: OddPrime, k: int, n: Factorization) -> int:
     :type k: int
     :param n: the factorization of the order of the cyclic group
     :type n: Factorization
-    :return: a generator of the cyclic group of order n modulo p^k
+    :return: g, a generator of the cyclic group of order n modulo p^k
     :rtype: int
     """
     q, f = p**k, p**k - p**k // p
@@ -309,13 +309,13 @@ def generator(p: OddPrime, k: int, n: Factorization) -> int:
 T = TypeVar("T")
 
 
-def times(f: Callable[[T, T], T], unit: T, base: T, n: int) -> T:
+def times(op: Callable[[T, T], T], unit: T, base: T, n: int) -> T:
     t = unit
     while n:
         n, r = divmod(n, 2)
         if r == 1:
-            t = f(t, base)
-        base = f(base, base)
+            t = op(t, base)
+        base = op(base, base)
     return t
 
 
@@ -381,6 +381,41 @@ class Field(DivisionRing[T], ABC):
     def div(self, a: T, b: T, /) -> T: ...
 
 
+@dataclass(frozen=True)
+class NestedAlgebraicStructure(AlgebraicStructure[T]):
+    f: AlgebraicStructure[T]
+
+    def eq(self, a: T, b: T, /) -> bool:
+        return self.f.eq(a, b)
+
+
+@dataclass(frozen=True)
+class RingAsMonoid(NestedAlgebraicStructure[T], Monoid[T]):
+    f: Ring[T]
+
+    def zero(self, /) -> T:
+        return self.f.one()
+
+    def add(self, a: T, b: T, /) -> T:
+        return self.f.mul(a, b)
+
+
+@dataclass(frozen=True)
+class DivisionRingAsGroup(RingAsMonoid[T], Group[T]):
+    f: DivisionRing[T]
+
+    def neg(self, a: T, /) -> T:
+        return self.f.inv(a)
+
+
+@dataclass(frozen=True)
+class FieldAsAbelianGroup(DivisionRingAsGroup[T], AbelianGroup[T]):
+    f: Field[T]
+
+    def sub(self, a: T, b: T, /) -> T:
+        return self.f.div(a, b)
+
+
 Matrix = list[list[T]]  # m * n matrix
 
 
@@ -413,7 +448,7 @@ def matmul(f: Ring[T], a: Matrix[T], b: Matrix[T], h: int, m: int, w: int) -> Ma
     return res
 
 
-def rref(f: Field[T], m: Matrix[T], h: int, w: int) -> Matrix:
+def rref(f: Field[T], m: Matrix[T], h: int, w: int) -> Matrix[T]:
     m = [[m[i][j] for j in range(w)] for i in range(h)]
     for J in range(w):
         I = next((I for I in range(h) if all(f.eq(m[I][j], f.zero()) for j in range(J)) and not f.eq(m[I][J], f.zero())), None)
@@ -545,6 +580,93 @@ def lagrage_interpolation(f: Field[T], points: list[tuple[T, T]], t: T) -> T:
         r = f.inv(f.sub(t, x))
         Y = f.add(Y, f.mul(k, r))
     return f.mul(Y, Z)
+
+
+def ntt(f: Field[T], a: list[T], w: T) -> list[T]:
+    """Number-Theoretic Transform (NTT).
+
+    :param f: the field
+    :type f: Field[T]
+    :param a: input list of length n
+    :type a: list[T]
+    :param w: primitive n-th root of unity
+    :type w: T
+    :return: transformed list
+    :rtype: list[T]
+    """
+    N = len(a)
+    A = [f.zero() for _ in range(N)]
+    for k in range(N):
+        for i in range(N):
+            A[k] = f.add(A[k], f.mul(a[i], f.pow(w, i * k)))
+    return A
+
+
+def intt(f: Field[T], a: list[T], w: T) -> list[T]:
+    """Inverse Number-Theoretic Transform (iFNTT).
+
+    :param f: the field
+    :type f: Field[T]
+    :param a: input list of length n
+    :type a: list[T]
+    :param w: primitive n-th root of unity
+    :type w: T
+    :return: inverse transformed list
+    :rtype: list[T]
+    """
+    N = len(a)
+    n = f.dot(f.one(), N)
+    m = f.inv(n)
+    t = f.inv(w)
+    A = ntt(f, a, t)
+    return [f.mul(x, m) for x in A]
+
+
+
+def fntt(f: Field[T], a: list[T], w: T) -> list[T]:
+    """Fast Number-Theoretic Transform (FNTT).
+
+    :param f: the field
+    :type f: Field[T]
+    :param a: input list of length n (n must be a power of 2)
+    :type a: list[T]
+    :param w: primitive n-th root of unity
+    :type w: T
+    :return: transformed list
+    :rtype: list[T]
+    """
+    N = len(a)
+    if N == 1:
+        return a
+    t = f.mul(w, w)
+    b = fntt(f, a[0::2], t)
+    c = fntt(f, a[1::2], t)
+    k = f.one()
+    for i in range(N // 2):
+        b[i], c[i], k = f.add(b[i], f.mul(k, c[i])), f.sub(b[i], f.mul(k, c[i])), f.mul(k, w)
+    if N % 2 == 1:
+        c[-1] = f.mul(c[-1], k)
+    return b + c
+
+
+def ifntt(f: Field[T], a: list[T], w: T) -> list[T]:
+    """Inverse Fast Number-Theoretic Transform (iFNTT).
+
+    :param f: the field
+    :type f: Field[T]
+    :param a: input list of length n (n must be a power of 2)
+    :type a: list[T]
+    :param w: primitive n-th root of unity
+    :type w: T
+    :return: inverse transformed list
+    :rtype: list[T]
+    """
+    N = len(a)
+    n = f.dot(f.one(), N)
+    m = f.inv(n)
+    t = f.inv(w)
+    A = fntt(f, a, t)
+    return [f.mul(x, m) for x in A]
 
 
 class FiniteField(Field[int]):
@@ -839,63 +961,58 @@ class PolynomialRing(EuclideanDomain[Polynomial[T]]):
 ################
 
 
-class RelaxedTorsionGroup(AbelianGroup[T], ABC):
-    @abstractmethod
-    def check(self, a: T, /) -> bool: ...
+@dataclass
+class CyclicGroup(Generic[T]):
+    group: Group[T]
+    generator: T
+    order: int
 
-    @abstractmethod
-    def annihilator(self, a: T, /) -> int: ...
+    def element(self, n: int, /) -> T:
+        """Returns g * n in the cyclic group.
 
-    def div(self, a: T, n: int, /) -> T:
-        return self.dot(a, pow(n, -1, self.annihilator(a)))
+        :param n: the exponent
+        :type n: int
+        :return: g * n
+        :rtype: T
+        """
+        return self.group.dot(self.generator, n)
 
+    def inverse(self, n: int, /) -> int:
+        """Returns r such that g * r * n = g in the cyclic group.
 
-class StrictTorsionGroup(RelaxedTorsionGroup[T], ABC):
-    @abstractmethod
-    def order(self, a: T, /) -> int: ...
+        :param n: the exponent
+        :type n: int
+        :return: r such that g * r * n = g
+        :rtype: int
+        """
+        return pow(n, -1, self.order)
 
-    def annihilator(self, a: T, /) -> int:
-        return self.order(a)
+    def subgroup(self, factor: int, /):
+        """Returns the cyclic subgroup generated by g^factor.
 
-
-class FiniteTorsionGroup(RelaxedTorsionGroup[T]):
-    @abstractmethod
-    def exponent(self, /) -> int: ...
-
-    def annihilator(self, a: T, /) -> int:
-        return self.exponent()
-
-
-class CyclicTorsionGroup(FiniteTorsionGroup[T]):
-    @abstractmethod
-    def generator(self, /) -> T: ...
-
-    @abstractmethod
-    def order(self, /) -> int: ...
-
-    def exponent(self, /) -> int:
-        return self.order()
+        :param factor: the factor
+        :type factor: int
+        :return: the cyclic subgroup generated by g^factor
+        :rtype: CyclicGroup[T]
+        """
+        return CyclicGroup(
+            group=self.group,
+            generator=self.group.dot(self.generator, factor),
+            order=self.order // gcd(self.order, factor),
+        )
 
 
 ECCPoint = tuple[int, int] | None
 
 
-class ECCGroup(CyclicTorsionGroup[ECCPoint]):
-    def __init__(self, a: int, b: int, p: int, n: int, g: ECCPoint):
+class ECCGroup(AbelianGroup[ECCPoint]):
+    def __init__(self, a: int, b: int, p: int):
         self.a = a
         self.b = b
         self.p = p
-        self.n = n
-        self.g = g
 
     def check(self, P: ECCPoint, /) -> bool:
         return P is None or (P[0] * P[0] * P[0] - P[1] * P[1] + self.a * P[0] + self.b) % self.p == 0
-
-    def generator(self, /) -> ECCPoint:
-        return self.g
-
-    def order(self, /) -> int:
-        return self.n
 
     def eq(self, P: ECCPoint, Q: ECCPoint, /) -> bool:
         if P is None and Q is None:
@@ -943,42 +1060,8 @@ class ECCGroup(CyclicTorsionGroup[ECCPoint]):
         return x, y
 
 
-class UnitGroup(CyclicTorsionGroup[int]):
-    def __init__(self, p: AnyPrime, k: int = 1, d: Literal[1, 2] = 1, *, g: int):
-        assert p != 2 and k >= 1 or p == 2 and k == 1
-        self.p = p
-        self.k = k
-        self.d = d
-        self.m = p**k * d
-        self.f = p**k - p**k // k
-        self.g = g
-
-    def check(self, a: int, /) -> bool:
-        return a % self.p != 0
-
-    def generator(self, /) -> int:
-        return self.g
-
-    def order(self, a: int, /) -> int:
-        return self.f
-    
-    def eq(self, a: int, b: int, /) -> bool:
-        return a % self.m == b % self.m
-
-    def zero(self, /) -> int:
-        return 1
-
-    def neg(self, a: int, /) -> int:
-        return pow(a, -1, self.m)
-
-    def add(self, a: int, b: int, /) -> int:
-        return (a * b) % self.m
-
-    def sub(self, a: int, b: int, /) -> int:
-        return pow(b, -1, self.m) * a % self.m
-
-
 if __name__ == "__main__":
+    # test Polynomial
     p = gen_prime(16)
     F = FiniteField(p)
     P = PolynomialRing(F)
@@ -1002,3 +1085,21 @@ if __name__ == "__main__":
     D, (X, Y) = P.exgcd(A, B)
     assert P.eq(P.add(P.mul(X, A), P.mul(Y, B)), D)
     assert P.eq(D, P.mul(k, d))
+
+    # test NTT and inverse NTT
+    n = 1 << 4
+    while True:
+        p = gen_prime(16, require_odd=True)
+        if (p - 1) % n == 0:
+            break
+    F = FiniteField(p)
+    w = nth_generator_mod_pk(p, 1, Factorization({2: 4}))
+    a = [random.randrange(0, p) for _ in range(n)]
+
+    A = fntt(F, a, w)
+    y = ifntt(F, A, w)
+    assert all(F.eq(a[i], y[i]) for i in range(n))
+
+    A = ntt(F, a, w)
+    y = intt(F, A, w)
+    assert all(F.eq(a[i], y[i]) for i in range(n))

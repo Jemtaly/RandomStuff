@@ -36,7 +36,7 @@ def RGB_main():
     root.title("RGB")
     canvas = tk.Canvas(root)
 
-    def change(value=None):
+    def change(value: str | None = None):
         colour = RGB(R.get(), G.get(), B.get())
         canvas.delete(tk.ALL)
         canvas.configure(background=str(colour))
@@ -61,7 +61,7 @@ def HSB_main():
     root.title("HSB")
     canvas = tk.Canvas(root)
 
-    def change(value=None):
+    def change(value: str | None = None):
         colour = HSB(H.get(), math.tan(S.get()), math.tan(B.get()))
         canvas.delete(tk.ALL)
         canvas.configure(background=str(colour))

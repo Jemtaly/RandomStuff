@@ -25,7 +25,7 @@ class Montgomery:
     def decode(self, x: int) -> int:
         return self.redc(x)
 
-    def mult(self, x, y: int) -> int:
+    def mult(self, x: int, y: int) -> int:
         return self.redc(x * y)
 
 

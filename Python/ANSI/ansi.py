@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 
 class State:
-    def __init__(self, enter="", exit=""):
+    def __init__(self, enter: str = "", exit: str = ""):
         self.enter = enter
         self.exit = exit
 
@@ -131,7 +131,7 @@ class RGBColor:
         return RGBColor(255 - self.r, 255 - self.g, 255 - self.b)
 
 
-Color = BaseColor | UserColor | RGBColor
+Color = DefaultColor | BaseColor | UserColor | RGBColor
 
 
 def SGR(
@@ -141,14 +141,15 @@ def SGR(
 ):  # Select Graphic Rendition
     n = [STYLES[s.lower()] for s in style]
     for i, c in (30, fgc), (40, bgc):
-        if c is None:
-            continue
-        elif isinstance(c, DefaultColor):
-            n.extend([i + 9])
-        elif isinstance(c, BaseColor):
-            n.extend([i + c.code])
-        elif isinstance(c, UserColor):
-            n.extend([i + 8, 5, c.name])
-        elif isinstance(c, RGBColor):
-            n.extend([i + 8, 2, c.r, c.g, c.b])
+        match c:
+            case DefaultColor():
+                n.extend([i + 9])
+            case BaseColor(code):
+                n.extend([i + code])
+            case UserColor(name):
+                n.extend([i + 8, 5, name])
+            case RGBColor(r, g, b):
+                n.extend([i + 8, 2, r, g, b])
+            case _:
+                pass
     return "\033[" + ";".join(map(str, n)) + "m"

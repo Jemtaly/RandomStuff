@@ -1,17 +1,25 @@
 #!/usr/bin/env python3
 
-import collections
-import contextlib
-import threading
+from dataclasses import dataclass
+from typing import Callable, TypeVar, ParamSpec, Generic
+
+from collections import deque
+from contextlib import ExitStack
+from threading import Condition, Thread
 
 
+@dataclass
 class Signal:
-    def __init__(self, *exc):
-        self.type, self.value, self.traceback = exc
+    exc_type: type | None
+    exc_val: BaseException | None
+    exc_tb: object | None
 
 
-class Putter:
-    def __init__(self, cond, queue, broken):
+T = TypeVar("T")
+
+
+class Putter(Generic[T]):
+    def __init__(self, cond: Condition, queue: deque[T | Signal], broken: list[Signal | None]):
         self.cond = cond
         self.queue = queue
         self.broken = broken
@@ -22,21 +30,21 @@ class Putter:
             raise RuntimeError
         self.context = True
 
-    def __exit__(self, *exc):
+    def __exit__(self, exc_type, exc_val, exc_tb):
         with self.cond:
-            self.queue.append(Signal(*exc))
+            self.queue.append(Signal(exc_type, exc_val, exc_tb))
             self.cond.notify()
 
-    def __call__(self, data):
+    def __call__(self, data: T):
         with self.cond:
             if isinstance(self.broken[0], Signal):
-                raise BrokenPipeError if self.broken[0].type is None else RuntimeError from self.broken[0].value
+                raise BrokenPipeError if self.broken[0].exc_type is None else RuntimeError from self.broken[0].exc_val
             self.queue.append(data)
             self.cond.notify()
 
 
-class Getter:
-    def __init__(self, cond, queue, broken):
+class Getter(Generic[T]):
+    def __init__(self, cond: Condition, queue: deque[T | Signal], broken: list[Signal | None]):
         self.cond = cond
         self.queue = queue
         self.broken = broken
@@ -47,32 +55,35 @@ class Getter:
             raise RuntimeError
         self.context = True
 
-    def __exit__(self, *exc):
+    def __exit__(self, exc_type, exc_val, exc_tb):
         with self.cond:
-            self.broken[0] = Signal(*exc)
+            self.broken[0] = Signal(exc_type, exc_val, exc_tb)
 
     def __iter__(self):
         return self
 
-    def __next__(self):
+    def __next__(self) -> T:
         with self.cond:
             while not self.queue:
                 self.cond.wait()
             if isinstance(self.queue[0], Signal):
-                raise StopIteration if self.queue[0].type is None else RuntimeError from self.queue[0].value
+                raise StopIteration if self.queue[0].exc_type is None else RuntimeError from self.queue[0].exc_val
             return self.queue.popleft()
 
 
-def mkfifo(Deque=collections.deque):
-    cond = threading.Condition()
-    queue = Deque()
+def mkfifo(factory: Callable[[], deque[T | Signal]]) -> tuple[Getter[T], Putter[T]]:
+    cond = Condition()
+    queue = factory()
     broken = [None]
     return Getter(cond, queue, broken), Putter(cond, queue, broken)
 
 
-def foreground(func):
-    def wrapper(*args, **kwargs):
-        with contextlib.ExitStack() as stack:
+P = ParamSpec("P")
+
+
+def foreground(func: Callable[P, None]) -> Callable[P, None]:
+    def wrapper(*args: P.args, **kwargs: P.kwargs):
+        with ExitStack() as stack:
             for arg in *args, *kwargs.values():
                 if isinstance(arg, Putter | Getter):
                     stack.enter_context(arg)
@@ -81,28 +92,28 @@ def foreground(func):
     return wrapper
 
 
-def background(func):
-    def wrapper(*args, **kwargs):
-        threading.Thread(target=foreground(func), args=args, kwargs=kwargs).start()
+def background(func: Callable[P, None]) -> Callable[P, None]:
+    def wrapper(*args: P.args, **kwargs: P.kwargs):
+        Thread(target=foreground(func), args=args, kwargs=kwargs).start()
 
     return wrapper
 
 
 @background
-def tee(getter, *putters):
+def tee(getter: Getter[T], *putters: Putter[T]):
     for i in getter:
         for putter in putters:
             putter(i)
 
 
 @background
-def producer(putter):
+def producer(putter: Putter[int]):
     for i in range(10):
         putter(i)
 
 
 @background
-def consumer(j, getter):
+def consumer(j: int, getter: Getter[int]):
     for i in getter:
         print(f"consumer {j}: {i}")
 
@@ -110,10 +121,10 @@ def consumer(j, getter):
 def main():
     putters = []
     for j in range(10):
-        getter, putter = mkfifo()
+        getter, putter = mkfifo(deque[int | Signal])
         consumer(j, getter)
         putters.append(putter)
-    getter, putter = mkfifo()
+    getter, putter = mkfifo(deque[int | Signal])
     tee(getter, *putters)
     producer(putter)
 
