@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
-from typing import ClassVar, TypeVar
+from typing import ClassVar, TypeVar, Callable
 
-import tkinter as tk
-import tkinter.filedialog as filedialog
-import tkinter.messagebox as messagebox
 from datetime import datetime
 from pathlib import Path
 from io import BytesIO
 
+import tkinter as tk
+import tkinter.filedialog as filedialog
+import tkinter.messagebox as messagebox
 import PIL.Image as Image
 import PIL.ImageTk as ImageTk
 
@@ -24,7 +24,7 @@ from .cryption import TwoWayKeyExchanger
 class QuitNotification:
     def after_received(self, app: "MessagerFrontend"):
         app.text.config(state=tk.NORMAL)
-        app.text.insert(tk.END, datetime.now().strftime("%Y-%m-%d %H:%M:%S - Peer has quit the chat"), "Info")
+        app.text.insert(tk.END, datetime.now().strftime("%Y-%m-%d %H:%M:%S - Remote has quit the chat"), app.INFO_TAG)
         app.text.insert(tk.END, "\n")
         app.text.see(tk.END)
         app.text.config(state=tk.DISABLED)
@@ -64,7 +64,7 @@ class KeyExchangeRequestMessage(SerializableMessage):
 
     def after_sent(self, app: "MessagerFrontend", sec_key: ECC.EccKey):
         app.text.config(state=tk.NORMAL)
-        app.text.insert(tk.END, datetime.now().strftime("%Y-%m-%d %H:%M:%S - Sent key exchange request"), "Info")
+        app.text.insert(tk.END, datetime.now().strftime("%Y-%m-%d %H:%M:%S - Sent key exchange request"), app.INFO_TAG)
         app.text.insert(tk.END, "\n")
         app.text.see(tk.END)
         app.text.config(state=tk.DISABLED)
@@ -72,19 +72,36 @@ class KeyExchangeRequestMessage(SerializableMessage):
 
     def after_received(self, app: "MessagerFrontend"):
         app.text.config(state=tk.NORMAL)
-        app.text.insert(tk.END, datetime.now().strftime("%Y-%m-%d %H:%M:%S - Received key exchange request: "), "Info")
-        link = tk.Label(app.text, text="[accept]", fg="blue", cursor="hand2", font=app.URLF, bg="white")
+        app.text.insert(tk.END, datetime.now().strftime("%Y-%m-%d %H:%M:%S - Received key exchange request: "), app.INFO_TAG)
+        link = tk.Label(app.text, text="[accept]", font=app.TXT_FONT, bg="white", fg="gray", cursor="arrow")
+        next_enable = None
+
+        def register(enable: Callable[[], None]):
+            nonlocal next_enable
+            next_enable = enable
 
         def response(event: tk.Event | None = None):
-            app.on_key_exchange_response(event)
-            link.config(fg="gray", cursor="arrow")
+            link.config(fg="green", cursor="arrow")
             link.unbind("<Enter>")
             link.unbind("<Leave>")
             link.unbind("<Button-1>")
+            app.on_key_exchange_response(event)
+            if next_enable is not None:
+                next_enable()
+            else:
+                app.last_register = None
 
-        link.bind("<Enter>", lambda event, link=link: link.config(font=app.URLF + ("underline",)))
-        link.bind("<Leave>", lambda event, link=link: link.config(font=app.URLF))
-        link.bind("<Button-1>", response)
+        def enable():
+            link.config(fg="blue", cursor="hand2")
+            link.bind("<Enter>", lambda event, link=link: link.config(font=app.URL_FONT))
+            link.bind("<Leave>", lambda event, link=link: link.config(font=app.TXT_FONT))
+            link.bind("<Button-1>", response)
+
+        if app.last_register is None:
+            enable()
+        else:
+            app.last_register(enable)
+        app.last_register = register
         app.text.window_create(tk.END, window=link)
         app.text.insert(tk.END, "\n")
         app.text.see(tk.END)
@@ -107,7 +124,7 @@ class KeyExchangeResponseMessage(SerializableMessage):
 
     def after_sent(self, app: "MessagerFrontend"):
         app.text.config(state=tk.NORMAL)
-        app.text.insert(tk.END, datetime.now().strftime("%Y-%m-%d %H:%M:%S - Sent key exchange response"), "Info")
+        app.text.insert(tk.END, datetime.now().strftime("%Y-%m-%d %H:%M:%S - Sent key exchange response"), app.INFO_TAG)
         app.text.insert(tk.END, "\n")
         app.text.see(tk.END)
         app.text.config(state=tk.DISABLED)
@@ -115,7 +132,7 @@ class KeyExchangeResponseMessage(SerializableMessage):
 
     def after_received(self, app: "MessagerFrontend"):
         app.text.config(state=tk.NORMAL)
-        app.text.insert(tk.END, datetime.now().strftime("%Y-%m-%d %H:%M:%S - Received key exchange response"), "Info")
+        app.text.insert(tk.END, datetime.now().strftime("%Y-%m-%d %H:%M:%S - Received key exchange response"), app.INFO_TAG)
         app.text.insert(tk.END, "\n")
         app.text.see(tk.END)
         app.text.config(state=tk.DISABLED)
@@ -142,7 +159,7 @@ class TextMessage(SerializableMessage):
     def after_sent(self, app: "MessagerFrontend"):
         app.entr.delete(0, tk.END)  # Clear input after sending
         app.text.config(state=tk.NORMAL)
-        app.text.insert(tk.END, datetime.now().strftime("%Y-%m-%d %H:%M:%S - Local: "), "Local")
+        app.text.insert(tk.END, datetime.now().strftime("%Y-%m-%d %H:%M:%S - Local: "), app.SOCK_TAG)
         app.text.insert(tk.END, "\n")
         app.text.insert(tk.END, self.text)
         app.text.insert(tk.END, "\n")
@@ -151,7 +168,7 @@ class TextMessage(SerializableMessage):
 
     def after_received(self, app: "MessagerFrontend"):
         app.text.config(state=tk.NORMAL)
-        app.text.insert(tk.END, datetime.now().strftime("%Y-%m-%d %H:%M:%S - Remote: "), "Remote")
+        app.text.insert(tk.END, datetime.now().strftime("%Y-%m-%d %H:%M:%S - Remote: "), app.PEER_TAG)
         app.text.insert(tk.END, "\n")
         app.text.insert(tk.END, self.text)
         app.text.insert(tk.END, "\n")
@@ -176,23 +193,23 @@ class ImageMessage(SerializableMessage):
 
     def after_sent(self, app: "MessagerFrontend"):
         app.text.config(state=tk.NORMAL)
-        app.text.insert(tk.END, datetime.now().strftime("%Y-%m-%d %H:%M:%S - Local: "), "Local")
+        app.text.insert(tk.END, datetime.now().strftime("%Y-%m-%d %H:%M:%S - Local: "), app.SOCK_TAG)
         app.text.insert(tk.END, "\n")
         app.text.image_create(tk.END, image=self.imgtk)
         app.text.insert(tk.END, "\n")
         app.text.see(tk.END)
         app.text.config(state=tk.DISABLED)
-        app.cache.append(self.imgtk)
+        app.imgtk_storage.append(self.imgtk)
 
     def after_received(self, app: "MessagerFrontend"):
         app.text.config(state=tk.NORMAL)
-        app.text.insert(tk.END, datetime.now().strftime("%Y-%m-%d %H:%M:%S - Remote: "), "Remote")
+        app.text.insert(tk.END, datetime.now().strftime("%Y-%m-%d %H:%M:%S - Remote: "), app.PEER_TAG)
         app.text.insert(tk.END, "\n")
         app.text.image_create(tk.END, image=self.imgtk)
         app.text.insert(tk.END, "\n")
         app.text.see(tk.END)
         app.text.config(state=tk.DISABLED)
-        app.cache.append(self.imgtk)
+        app.imgtk_storage.append(self.imgtk)
 
 
 class FileMessage(SerializableMessage):
@@ -217,10 +234,10 @@ class FileMessage(SerializableMessage):
 
     def after_sent(self, app: "MessagerFrontend"):
         app.text.config(state=tk.NORMAL)
-        app.text.insert(tk.END, datetime.now().strftime("%Y-%m-%d %H:%M:%S - Sent file: "), "Local")
-        link = tk.Label(app.text, text=self.name, fg="blue", cursor="hand2", font=("Consolas", 10), bg="white")
-        link.bind("<Enter>", lambda event, link=link: link.config(font=("Consolas", 10, "underline")))
-        link.bind("<Leave>", lambda event, link=link: link.config(font=("Consolas", 10)))
+        app.text.insert(tk.END, datetime.now().strftime("%Y-%m-%d %H:%M:%S - Sent file: "), app.SOCK_TAG)
+        link = tk.Label(app.text, text=self.name, font=app.TXT_FONT, bg="white", fg="blue", cursor="hand2")
+        link.bind("<Enter>", lambda event, link=link: link.config(font=app.URL_FONT))
+        link.bind("<Leave>", lambda event, link=link: link.config(font=app.TXT_FONT))
         link.bind("<Button-1>", self.save)
         app.text.window_create(tk.END, window=link)
         app.text.insert(tk.END, "\n")
@@ -229,10 +246,10 @@ class FileMessage(SerializableMessage):
 
     def after_received(self, app: "MessagerFrontend"):
         app.text.config(state=tk.NORMAL)
-        app.text.insert(tk.END, datetime.now().strftime("%Y-%m-%d %H:%M:%S - Received file: "), "Remote")
-        link = tk.Label(app.text, text=self.name, fg="blue", cursor="hand2", font=("Consolas", 10), bg="white")
-        link.bind("<Enter>", lambda event, link=link: link.config(font=("Consolas", 10, "underline")))
-        link.bind("<Leave>", lambda event, link=link: link.config(font=("Consolas", 10)))
+        app.text.insert(tk.END, datetime.now().strftime("%Y-%m-%d %H:%M:%S - Received file: "), app.PEER_TAG)
+        link = tk.Label(app.text, text=self.name, font=app.TXT_FONT, bg="white", fg="blue", cursor="hand2")
+        link.bind("<Enter>", lambda event, link=link: link.config(font=app.URL_FONT))
+        link.bind("<Leave>", lambda event, link=link: link.config(font=app.TXT_FONT))
         link.bind("<Button-1>", self.save)
         app.text.window_create(tk.END, window=link)
         app.text.insert(tk.END, "\n")
@@ -252,10 +269,10 @@ class UnknownMessage(ReceivedMessage):
 
     def after_received(self, app: "MessagerFrontend"):
         app.text.config(state=tk.NORMAL)
-        app.text.insert(tk.END, datetime.now().strftime("%Y-%m-%d %H:%M:%S - Received unknown message: "), "Remote")
-        link = tk.Label(app.text, text=f"[tag = {self.tag}]", fg="blue", cursor="hand2", font=("Consolas", 10), bg="white")
-        link.bind("<Enter>", lambda event, link=link: link.config(font=("Consolas", 10, "underline")))
-        link.bind("<Leave>", lambda event, link=link: link.config(font=("Consolas", 10)))
+        app.text.insert(tk.END, datetime.now().strftime("%Y-%m-%d %H:%M:%S - Received unknown message: "), app.PEER_TAG)
+        link = tk.Label(app.text, text=f"[tag = {self.tag}]", font=app.TXT_FONT, bg="white", fg="blue", cursor="hand2")
+        link.bind("<Enter>", lambda event, link=link: link.config(font=app.URL_FONT))
+        link.bind("<Leave>", lambda event, link=link: link.config(font=app.TXT_FONT))
         link.bind("<Button-1>", lambda event: self.save(app))
         app.text.window_create(tk.END, window=link)
         app.text.insert(tk.END, "\n")
@@ -269,7 +286,7 @@ class CorruptedMessage(ReceivedMessage):
 
     def after_received(self, app: "MessagerFrontend"):
         app.text.config(state=tk.NORMAL)
-        app.text.insert(tk.END, datetime.now().strftime("%Y-%m-%d %H:%M:%S - Received corrupted message: "), "Remote")
+        app.text.insert(tk.END, datetime.now().strftime("%Y-%m-%d %H:%M:%S - Received corrupted message: "), app.PEER_TAG)
         app.text.insert(tk.END, str(self.error))
         app.text.insert(tk.END, "\n")
         app.text.see(tk.END)
@@ -289,6 +306,14 @@ MESSAGE_KINDS: dict[int, type[SerializableMessage]] = {
 
 
 class MessagerFrontend(tk.Tk, AbstractMessagerFrontend):
+    BTN_FONT = ("Consolas", 10)
+    TXT_FONT = ("Consolas", 10)
+    URL_FONT = ("Consolas", 10, "underline")
+
+    SOCK_TAG = "Sock"
+    PEER_TAG = "Peer"
+    INFO_TAG = "Info"
+
     def __init__(self, factory: AbstractMessagerBackendFactory):
         super().__init__()
         self.backend = factory.create(self)
@@ -313,23 +338,20 @@ class MessagerFrontend(tk.Tk, AbstractMessagerFrontend):
 
         self.title(f"Chat - {self.backend.descriptor}")
         self.minsize(640, 480)
-        TXTF = ("Consolas", 10)
-        BTNF = ("Consolas", 10)
-        URLF = ("Consolas", 10, "underline")
         topf = tk.Frame(self)
         botf = tk.Frame(self)
-        text = tk.Text(topf, font=TXTF, height=10, bg="white")
+        text = tk.Text(topf, font=self.TXT_FONT, height=10, bg="white")
         scrl = tk.Scrollbar(topf, command=text.yview)
         text.config(yscrollcommand=scrl.set)
-        text.tag_config("Local", foreground="blue")
-        text.tag_config("Remote", foreground="red")
-        text.tag_config("Info", foreground="green")
+        text.tag_config(self.SOCK_TAG, foreground="blue")
+        text.tag_config(self.PEER_TAG, foreground="red")
+        text.tag_config(self.INFO_TAG, foreground="green")
         text.config(state=tk.DISABLED)
-        keyx = tk.Button(botf, text="Key Exchange", command=self.on_key_exchange_request, font=BTNF)
-        opnb = tk.Button(botf, text="File", command=self.on_file, font=BTNF)
-        imgb = tk.Button(botf, text="Image", command=self.on_image, font=BTNF)
-        entb = tk.Button(botf, text="Enter", command=self.on_enter, font=BTNF)
-        entr = tk.Entry(botf, font=TXTF)
+        keyx = tk.Button(botf, text="Key Exchange", command=self.on_key_exchange_request, font=self.BTN_FONT)
+        opnb = tk.Button(botf, text="File", command=self.on_file, font=self.BTN_FONT)
+        imgb = tk.Button(botf, text="Image", command=self.on_image, font=self.BTN_FONT)
+        entb = tk.Button(botf, text="Enter", command=self.on_enter, font=self.BTN_FONT)
+        entr = tk.Entry(botf, font=self.TXT_FONT)
         entr.bind("<Return>", self.on_enter)
         botf.bind("<Destroy>", self.on_quit)
         topf.pack(fill=tk.BOTH, side=tk.TOP, expand=True)
@@ -343,9 +365,8 @@ class MessagerFrontend(tk.Tk, AbstractMessagerFrontend):
         entr.pack(fill=tk.X, side=tk.LEFT, expand=True)
         self.text = text
         self.entr = entr
-        self.cache = []
-        self.TXTF = TXTF
-        self.URLF = URLF
+        self.imgtk_storage: list[ImageTk.PhotoImage] = []
+        self.last_register: Callable[[Callable[[], None]], None] | None = None
 
     def encrypt(self, data: bytes):
         if self.send_key:

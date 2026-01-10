@@ -79,7 +79,7 @@ class TwoWayKeyExchanger(Generic[Sec, Pub, Key]):
         return self.get_recv_key()
 
     def after_sent_received_pub(self) -> Key:
-        """Call this method after sending the arrival of your public component.
+        """Call this method after sending the acceptance of the peer's public component.
 
         :return: The updated shared key for sending.
         """
@@ -87,7 +87,7 @@ class TwoWayKeyExchanger(Generic[Sec, Pub, Key]):
         return self.get_send_key()
 
     def after_received_sent_sec(self) -> Key:
-        """Call this method after receiving the arrival of your secret component.
+        """Call this method after receiving the acceptance of your secret component.
 
         :return: The updated shared key for receiving.
         """
