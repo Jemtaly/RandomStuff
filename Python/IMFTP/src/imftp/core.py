@@ -1,11 +1,7 @@
 from abc import ABC, abstractmethod
 
 
-class AbstractMessagerBackend(ABC):
-    @property
-    @abstractmethod
-    def descriptor(self) -> str: ...
-
+class AbstractDataSender(ABC):
     @abstractmethod
     def send(self, data: bytes): ...
 
@@ -13,7 +9,7 @@ class AbstractMessagerBackend(ABC):
     def send_quit(self): ...
 
 
-class AbstractMessagerFrontend(ABC):
+class AbstractDataReceiver(ABC):
     @abstractmethod
     def process(self, data: bytes): ...
 
@@ -21,6 +17,10 @@ class AbstractMessagerFrontend(ABC):
     def process_quit(self): ...
 
 
-class AbstractMessagerBackendFactory(ABC):
+class AbstractConnection(ABC):
+    @property
     @abstractmethod
-    def create(self, frontend: AbstractMessagerFrontend) -> AbstractMessagerBackend: ...
+    def descriptor(self) -> str: ...
+
+    @abstractmethod
+    def start(self, receiver: AbstractDataReceiver) -> AbstractDataSender: ...

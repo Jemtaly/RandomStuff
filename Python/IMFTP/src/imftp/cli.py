@@ -2,8 +2,8 @@
 
 from argparse import ArgumentParser
 
-from .backend import ClientMessagerBackendFactory, ServerMessagerBackendFactory
-from .frontend import MessagerFrontend
+from .service import establish_client_connection, establish_server_connection
+from .gui import Messager
 
 def main():
     parser = ArgumentParser(description="A simple chat application.")
@@ -21,11 +21,11 @@ def main():
 
     match args.mode:
         case "server":
-            factory = ServerMessagerBackendFactory(args.host, args.port)
+            connection = establish_server_connection(args.host, args.port)
         case "client":
-            factory = ClientMessagerBackendFactory(args.host, args.port)
+            connection = establish_client_connection(args.host, args.port)
 
-    app = MessagerFrontend(factory)
+    app = Messager(connection)
     app.mainloop()
 
 
