@@ -88,7 +88,7 @@ class KeyExchangeRequestMessage(SerializableMessage):
 
         def response(event: tk.Event | None = None):
             app.on_key_exchange_response(event)
-            link.config(fg="green", cursor="arrow", text="[accepted]")
+            link.config(font=app.TXT_FONT, bg="white", fg="green", cursor="arrow", text="[accepted]")
             link.unbind("<Enter>")
             link.unbind("<Leave>")
             link.unbind("<Button-1>")
@@ -98,7 +98,7 @@ class KeyExchangeRequestMessage(SerializableMessage):
                 app.last_register = None
 
         def enable():
-            link.config(fg="blue", cursor="hand2", text="[accept]")
+            link.config(font=app.TXT_FONT, bg="white", fg="blue", cursor="hand2", text="[accept]")
             link.bind("<Enter>", lambda event, link=link: link.config(font=app.URL_FONT))
             link.bind("<Leave>", lambda event, link=link: link.config(font=app.TXT_FONT))
             link.bind("<Button-1>", response)
