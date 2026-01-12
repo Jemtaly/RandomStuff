@@ -3,7 +3,7 @@
 from argparse import ArgumentParser
 
 from .service import establish_client_connection, establish_server_connection
-from .gui import Messager
+from .app import Messager
 
 def main():
     parser = ArgumentParser(description="A simple chat application.")

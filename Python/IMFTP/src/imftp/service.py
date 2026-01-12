@@ -1,5 +1,6 @@
 import socket
-import threading
+from threading import Thread
+from contextlib import suppress
 
 from .core import AbstractDataReceiver, AbstractDataSender, AbstractConnection
 
@@ -15,11 +16,20 @@ class Connection(AbstractConnection):
         peer_host, peer_port = self.client.getsockname()
         return f"{sock_host}:{sock_port} <-> {peer_host}:{peer_port} ({self.mode})"
 
+    def close(self):
+        self.client.close()
+
     def sendall(self, data: bytes):
         self.client.sendall(data)
 
     def recvall(self, size: int) -> bytes:
-        return self.client.recv(size, socket.MSG_WAITALL)
+        buf = bytearray()
+        while len(buf) < size:
+            chunk = self.client.recv(size - len(buf))
+            if not chunk:
+                break
+            buf.extend(chunk)
+        return bytes(buf)
 
     def start(self, receiver: AbstractDataReceiver) -> AbstractDataSender:
         self.sendall(b"CHAT")  # Handshake
@@ -32,14 +42,20 @@ class Connection(AbstractConnection):
             while True:
                 try:
                     head = connection.recvall(4)
+                    if len(head) != 4:
+                        break
                     size = int.from_bytes(head, "big")
                     data = connection.recvall(size)
+                    if len(data) != size:
+                        break
+                except Exception:
+                    break
+                with suppress(Exception):
                     receiver.process(data)
-                except Exception as e:
-                    receiver.process_quit()
-                    return
+            with suppress(Exception):
+                receiver.process_quit()
 
-        threading.Thread(target=recv_loop, daemon=True).start()
+        Thread(target=recv_loop, daemon=True).start()
 
         class DataSender(AbstractDataSender):
             def send(self, data: bytes):
@@ -51,7 +67,7 @@ class Connection(AbstractConnection):
                 connection.sendall(data)
 
             def send_quit(self):
-                connection.client.close()
+                connection.close()
 
         return DataSender()
 
