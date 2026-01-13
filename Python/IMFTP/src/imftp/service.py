@@ -1,6 +1,7 @@
-import socket
 from threading import Thread
 from contextlib import suppress
+
+import socket
 
 from .core import AbstractDataReceiver, AbstractDataSender, AbstractConnection
 
@@ -11,10 +12,14 @@ class Connection(AbstractConnection):
         self.mode = mode
 
     @property
-    def descriptor(self) -> str:
-        sock_host, sock_port = self.client.getpeername()
-        peer_host, peer_port = self.client.getsockname()
-        return f"{sock_host}:{sock_port} <-> {peer_host}:{peer_port} ({self.mode})"
+    def sockname(self) -> str:
+        host, port = self.client.getsockname()
+        return f"{host}:{port}"
+
+    @property
+    def peername(self) -> str:
+        host, port = self.client.getpeername()
+        return f"{host}:{port}"
 
     def close(self):
         self.client.close()
